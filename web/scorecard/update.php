@@ -21,6 +21,7 @@ $ALLOWED = [
     'scorecard/index.html', 'scorecard/api.php', 'scorecard/manifest.json', 'scorecard/icon-192.png', 'scorecard/.htaccess',
     'veranstalter/index.html', 'veranstalter/.htaccess',
     'anmeldung/index.html', 'anmeldung/.htaccess', 'scorecard/update.php',
+    'live/index.html', 'live/.htaccess',
 ];
 
 function fetch($url) {

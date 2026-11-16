@@ -18,6 +18,13 @@
  *   t_regs      – Veranstalter (Schlüssel): alle Anmeldungen
  *   t_paid      – Veranstalter: „bezahlt“ setzen/entfernen
  *   t_del       – Veranstalter: Anmeldung stornieren
+ *
+ * Live (WBU Sports ↔ Live-Seite ↔ Scorecard):
+ *   l_create    – Live schalten (WBU-Passwort) -> lid + Schlüssel
+ *   l_push      – WBU Sports schickt den aktuellen Stand (Kampfliste)
+ *   l_pull      – WBU Sports holt die Ergebnisse vom Supervisor
+ *   l_get       – öffentlich: Stand für Live-Seite / Fernseher
+ *   l_list      – öffentlich: laufende Live-Veranstaltungen
  */
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -122,6 +129,31 @@ function tOffen($t) {
     return !$bis || date('Y-m-d') <= $bis;
 }
 
+
+// ===================== Live =====================
+function lvfile($id) {
+    global $DIR;
+    if (!is_string($id) || !preg_match('/^[a-f0-9]{16}$/', $id)) fail('Live-Veranstaltung unbekannt', 404);
+    return "$DIR/lv_$id.json";
+}
+function withLive($id, $fn, $write = false) {
+    $f = lvfile($id);
+    if (!file_exists($f)) fail('Live-Veranstaltung nicht gefunden', 404);
+    $h = fopen($f, 'c+'); if (!$h) fail('Speicherfehler', 500);
+    flock($h, $write ? LOCK_EX : LOCK_SH);
+    $l = json_decode(stream_get_contents($h), true);
+    if (!is_array($l)) { flock($h, LOCK_UN); fclose($h); fail('Datei beschädigt', 500); }
+    $res = $fn($l);
+    if ($write) { ftruncate($h, 0); rewind($h); fwrite($h, json_encode($l, JSON_UNESCAPED_UNICODE)); fflush($h); }
+    flock($h, LOCK_UN); fclose($h);
+    return $res;
+}
+function liveRows($lid) {
+    $f = @file_get_contents(lvfile($lid));
+    $l = json_decode((string)$f, true);
+    return is_array($l) ? ($l['snap'] ?? null) : null;
+}
+
 switch ($a) {
 
 case 'events':
@@ -148,7 +180,8 @@ case 'create':
     $pin = preg_replace('/\D/', '', (string)($in['pin'] ?? ''));
     $ev = ['id' => $id, 'key' => $key, 'name' => txt($in['name'] ?? ''), 'ort' => txt($in['ort'] ?? ''),
            'date' => txt($in['date'] ?? '', 20), 'sup' => txt($in['sup'] ?? ''), 'pin' => mb_substr($pin, 0, 8),
-           'created' => time(), 'cards' => new stdClass(), 'msgs' => [], 'seen' => new stdClass()];
+           'created' => time(), 'cards' => new stdClass(), 'msgs' => [], 'seen' => new stdClass(),
+           'lid' => preg_match('/^[a-f0-9]{16}$/', (string)($in['lid'] ?? '')) ? $in['lid'] : '', 'cur' => null];
     if (file_put_contents(evfile($id), json_encode($ev, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
     out(['ok' => true, 'id' => $id, 'key' => $key]);
 
@@ -159,6 +192,25 @@ case 'push':
         $isSup = ($in['key'] ?? '') !== '' && hash_equals($ev['key'], (string)$in['key']);
         if (!$isSup && !pinOk($ev, $in['pin'] ?? '')) fail('Falsche PIN', 403);
         $item['srv'] = round(microtime(true) * 1000);
+        if (($item['t'] ?? '') === 'cur') {            // Supervisor: aktueller Kampf (Namen für die Punktrichter)
+            if (!$isSup) fail('Nicht berechtigt', 403);
+            $ev['cur'] = ['no' => (int)($item['no'] ?? 0), 'kl' => txt($item['kl'] ?? ''), 'red' => txt($item['red'] ?? ''), 'blue' => txt($item['blue'] ?? ''),
+                          'rc' => txt($item['rc'] ?? ''), 'bc' => txt($item['bc'] ?? '')];
+            return;
+        }
+        if (($item['t'] ?? '') === 'res') {            // Supervisor: Ergebnis zurück an WBU Sports
+            if (!$isSup) fail('Nicht berechtigt', 403);
+            if (empty($ev['lid'])) return;
+            $mid = txt($item['mid'] ?? '', 40); $res = is_array($item['res'] ?? null) ? $item['res'] : null;
+            withLive($ev['lid'], function (&$l) use ($mid, $res) {
+                $r = (array)$l['results'];
+                if ($res === null) unset($r[$mid]);
+                else $r[$mid] = ['k' => txt($res['k'] ?? '', 8), 'w' => in_array($res['w'] ?? null, ['R', 'B'], true) ? $res['w'] : null,
+                                 'r' => isset($res['r']) ? (int)$res['r'] : null, 't' => txt($res['t'] ?? '', 10), 'ts' => (int)($res['ts'] ?? 0), 'by' => txt($res['by'] ?? '')];
+                $l['results'] = (object)$r;
+            }, true);
+            return;
+        }
         if (($item['t'] ?? '') === 'msg') {
             if (($item['from'] ?? '') === 'sup' && !$isSup) fail('Nicht berechtigt', 403);
             if (!$isSup) $item['from'] = 'judge';
@@ -185,7 +237,8 @@ case 'sup_pull':
         if (!hash_equals($ev['key'], (string)($in['key'] ?? ''))) fail('Nicht berechtigt', 403);
         $active = 0;
         foreach ((array)$ev['seen'] as $j => $t) if (time() - $t < 20) $active++;
-        return ['cards' => array_values((array)$ev['cards']), 'msgs' => $ev['msgs'], 'judges' => $active];
+        $live = !empty($ev['lid']) ? liveRows($ev['lid']) : null;
+        return ['cards' => array_values((array)$ev['cards']), 'msgs' => $ev['msgs'], 'judges' => $active, 'live' => $live];
     });
     out(['ok' => true] + $r);
 
@@ -197,7 +250,7 @@ case 'judge_pull':
         $seen[$judge] = time();
         $ev['seen'] = $seen;
         $msgs = array_values(array_filter($ev['msgs'], function ($m) use ($judge) { return ($m['judge'] ?? '') === $judge; }));
-        return ['msgs' => $msgs, 'name' => $ev['name'], 'sup' => $ev['sup']];
+        return ['msgs' => $msgs, 'name' => $ev['name'], 'sup' => $ev['sup'], 'cur' => $ev['cur'] ?? null];
     }, true);
     out(['ok' => true] + $r);
 
@@ -278,6 +331,49 @@ case 't_del':
         fail('Anmeldung nicht gefunden', 404);
     }, true);
     out(['ok' => true]);
+
+
+case 'l_create':
+    if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
+    $l = ['id' => bin2hex(random_bytes(8)), 'key' => bin2hex(random_bytes(12)), 'created' => time(), 'updated' => time(), 'snap' => null, 'results' => new stdClass()];
+    if (file_put_contents(lvfile($l['id']), json_encode($l, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
+    out(['ok' => true, 'lid' => $l['id'], 'key' => $l['key']]);
+
+case 'l_push':
+    $snap = $in['snap'] ?? null;
+    if (!is_array($snap)) fail('Leerer Stand');
+    $js = json_encode($snap, JSON_UNESCAPED_UNICODE);
+    if (strlen($js) > 1500000) fail('Stand zu groß');
+    withLive($in['lid'] ?? '', function (&$l) use ($in, $snap) {
+        if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        $l['snap'] = $snap; $l['updated'] = time();
+    }, true);
+    out(['ok' => true]);
+
+case 'l_pull':
+    $r = withLive($in['lid'] ?? '', function (&$l) use ($in) {
+        if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        return ['results' => $l['results']];
+    });
+    out(['ok' => true] + $r);
+
+case 'l_get':
+    $r = withLive($in['lid'] ?? '', function (&$l) { return ['snap' => $l['snap'], 'updated' => $l['updated']]; });
+    out(['ok' => true] + $r);
+
+case 'l_list':
+    $list = [];
+    foreach (glob("$DIR/lv_*.json") as $f) {
+        $l = json_decode(@file_get_contents($f), true);
+        if (!is_array($l) || empty($l['snap'])) continue;
+        if (time() - ($l['updated'] ?? 0) > 3 * 86400) continue;
+        $sn = $l['snap'];
+        $open = 0; foreach (($sn['rows'] ?? []) as $x) if (empty($x['done'])) $open++;
+        $list[] = ['id' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $sn['date'] ?? '',
+                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated']];
+    }
+    usort($list, function ($x, $y) { return $y['updated'] - $x['updated']; });
+    out(['ok' => true, 'live' => $list]);
 
 default:
     fail('Unbekannte Aktion');

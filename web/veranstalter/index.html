@@ -145,7 +145,7 @@ const deDate=iso=>{const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);re
 function events(){return get('wbuEvents',[])}
 function saveEvent(ev){const a=events(),i=a.findIndex(x=>x.id===ev.id);if(i>=0)a[i]=ev;else a.push(ev);set('wbuEvents',a)}
 function cur(){return events().find(x=>x.id===S.ev)}
-function upd(fn){const ev=cur();fn(ev);saveEvent(ev);render()}
+function upd(fn){const ev=cur();fn(ev);saveEvent(ev);render();if(ev.live)livePushSoon()}
 const S={view:'home',ev:null,tab:null,cat:null};
 
 // ===================== Ergebnisarten =====================
@@ -217,7 +217,7 @@ function vCard(ev){
       <div><label>Rundendauer</label><select id="nf_dur"><option>3 Min</option><option>2 Min</option></select></div>
       <div style="display:flex;align-items:flex-end"><button class="btn" style="width:100%" onclick="addFight()">+ Kampf hinzufügen</button></div>
     </div></div>
-  <div class="card"><div class="row" style="justify-content:space-between"><b>Fight Card – ${fs.length} Kämpfe</b><div class="row noprint"><button class="btn sec sm" onclick="print()">Drucken</button><button class="btn sm" onclick="openTv()">📺 Fernseher-Anzeige</button></div></div>
+  ${liveBox(ev)}<div class="card"><div class="row" style="justify-content:space-between"><b>Fight Card – ${fs.length} Kämpfe</b><div class="row noprint"><button class="btn sec sm" onclick="print()">Drucken</button><button class="btn sm" onclick="openTv()">📺 Fernseher-Anzeige</button></div></div>
   ${fs.length?`<table><tr><th>Nr.</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Klasse / Titel</th><th>Kampfart</th><th>Runden</th><th>Ergebnis</th><th class="noprint"></th></tr>
   ${fs.map((f,i)=>`<tr><td><b>${i+1}</b></td><td class="r">${esc(f.red)}</td><td class="b">${esc(f.blue)}</td><td>${esc(f.cls)}${f.title?`<div class="muted">${esc(f.title)}</div>`:''}</td>
     <td>${esc(f.kind)}</td><td>${f.rounds} × ${esc(f.dur)}</td><td>${f.result?`<span class="badge g">${esc(resLine(f.result,f.red,f.blue))}</span>`:'<span class="muted">offen</span>'}</td>
@@ -393,7 +393,7 @@ function vKl(ev){
   const st=x=>x.m.w?'<span class="badge g">fertig</span>':(x.m.a&&x.m.b?'<span class="badge y">bereit</span>':'<span class="badge">wartet</span>');
   const ps=x=>{const g=sch.rest[x.m.id];return g==null?'<span class="muted">–</span>':g<sch.minP?`<span class="badge y" title="kürzer als die Mindestpause – ging nicht anders">${g} ⚠</span>`:`<span class="muted">${g}</span>`};
   const kurz=rows.filter(x=>sch.rest[x.m.id]!=null&&sch.rest[x.m.id]<sch.minP).length;
-  return `<div class="card"><div class="row" style="justify-content:space-between"><b>Kampfliste – ${rows.length} Kämpfe</b>
+  return `${liveBox(ev)}<div class="card"><div class="row" style="justify-content:space-between"><b>Kampfliste – ${rows.length} Kämpfe</b>
     <div class="row noprint"><span class="muted">Mindestpause:</span><select style="width:auto" onchange="upd(e=>e.pause=+this.value)">${[0,1,2,3,4,5,6,8,10,12,15].map(v=>`<option value="${v}" ${v===sch.minP?'selected':''}>${v} Kämpfe dazwischen</option>`).join('')}</select>
     <button class="btn sec sm" onclick="print()">Drucken / PDF</button><button class="btn sm" onclick="openTv()">📺 Fernseher-Anzeige</button></div></div>
   ${rows.length?`<table><tr><th>Kampf</th><th>Kategorie</th><th>Runde</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Pause</th><th>Status</th><th>Ergebnis</th></tr>
@@ -487,12 +487,14 @@ function regsCsv(){const ev=cur(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
 // ===================== Fernseher-Anzeige (eigenes Fenster, heller Hintergrund) =====================
 function openTv(){window.open(location.pathname+'?tv='+encodeURIComponent(S.ev),'wbutv','width=1280,height=720')}
 function tvRows(ev){
-  if(ev.type==='gala')return ev.fights.map((f,i)=>({no:i+1,rd:f.title||'',kl:[f.cls,f.kind].filter(Boolean).join(' · '),a:f.red,ac:'',b:f.blue,bc:'',done:!!f.result}));
+  if(ev.type==='gala')return ev.fights.map((f,i)=>({mid:f.id,no:i+1,rd:f.title||'',kl:[f.cls,f.kind].filter(Boolean).join(' · '),a:f.red,ac:'',b:f.blue,bc:'',done:!!f.result,
+    rounds:f.rounds,dur:f.dur,kind:f.kind,res:f.result?resLine(f.result,f.red,f.blue):''}));
   const sch=schedule(ev),rows=[];
   ev.cats.forEach(c=>{if(!c.bracket)return;c.bracket.forEach((col,r)=>col.forEach((m,i)=>{if(!sch.no[m.id])return;
     const side=(pid,fi)=>{if(pid)return [pname(c,pid),pclub(c,pid)];const f=r>0&&c.bracket[r-1][fi];return [f&&sch.no[f.id]?'Sieger Kampf '+sch.no[f.id]:'–',''];};
     const [a,ac]=side(m.a,2*i),[b,bc]=side(m.b,2*i+1);
-    rows.push({no:sch.no[m.id],rd:roundName(r,c.bracket.length),kl:c.name,a,ac,b,bc,done:!!m.w})}))});
+    rows.push({mid:m.id,no:sch.no[m.id],rd:roundName(r,c.bracket.length),kl:c.name,a,ac,b,bc,done:!!m.w,ready:!!(m.a&&m.b),
+      rounds:c.rounds,dur:c.dur,kind:c.kind,res:m.res&&m.res.k!=='BYE'?resLine(m.res,pname(c,m.a),pname(c,m.b)):''})}))});
   return rows.sort((x,y)=>x.no-y.no);
 }
 function renderTv(id){
@@ -512,6 +514,53 @@ function startTv(id){
   renderTv(id);window.addEventListener('storage',()=>renderTv(id));setInterval(()=>renderTv(id),3000);
 }
 
+
+// ===================== Live: Server-Anbindung (Live-Seite, Fernseher, Supervisor) =====================
+const LIVE_URL=(/^https?:/.test(location.protocol)?location.origin:'https://www.wbu-boxing.com')+'/live/';
+function liveSnap(ev){
+  const snap={name:ev.name||'',ort:ev.ort||'',date:ev.date||'',type:ev.type,rows:tvRows(ev),at:Date.now()};
+  if(ev.type==='turnier')snap.places=sortedCats(ev).map(c=>{const P=places(c),n=id=>id?{n:pname(c,id),c:pclub(c,id)}:null;
+    return {kl:c.name,first:P.done?n(P.first):null,second:P.done?n(P.second):null,third:P.third.map(n)}});
+  return snap;
+}
+let liveT=null,liveBusy=false;
+function livePushSoon(){clearTimeout(liveT);liveT=setTimeout(livePush,800)}
+async function livePush(){const ev=cur();if(!ev||!ev.live)return;
+  try{await api('l_push',{lid:ev.live.lid,key:ev.live.key,snap:liveSnap(ev)});S.liveErr=''}catch(e){S.liveErr=e.message}liveBadge()}
+// Ergebnisse vom Supervisor übernehmen
+async function livePull(){const ev=cur();if(!ev||!ev.live||liveBusy)return;liveBusy=true;
+  try{const j=await api('l_pull',{lid:ev.live.lid,key:ev.live.key});S.liveErr='';let ch=false,warn=[];
+    const e=cur(),ap=e.liveApplied||(e.liveApplied={});
+    for(const [mid,r] of Object.entries(j.results||{})){
+      if(!r||ap[mid]===r.ts)continue;
+      const typ=(RES.find(x=>x[0]===r.k)||[])[2];if(typ==null)continue;
+      const res={k:r.k,w:r.w==='R'?'A':r.w==='B'?'B':null,r:r.r||null,t:r.t||'',at:Date.now(),by:r.by||'Supervisor'};
+      if(e.type==='gala'){const f=e.fights.find(x=>x.id===mid);if(!f)continue;f.result=res;ch=true}
+      else{let c=null,m=null;e.cats.forEach(x=>{if(x.bracket){const y=findMatch(x,mid);if(y){c=x;m=y}}});if(!m)continue;
+        if(!res.w||typ===0||typ===3){warn.push(r.k);ap[mid]=r.ts;continue} // im Turnier braucht es einen Sieger
+        m.res=res;m.w=res.w==='A'?'a':'b';rebuild(c);ch=true}
+      ap[mid]=r.ts}
+    if(ch||warn.length){saveEvent(e);if(warn.length)alertDlg('Der Supervisor hat ein Unentschieden/No Contest gemeldet. Im Turnier muss es einen Sieger geben – bitte das Ergebnis hier von Hand eintragen.');render();livePushSoon()}
+  }catch(e){S.liveErr=e.message}
+  liveBusy=false;liveBadge()}
+setInterval(()=>{if(S.view==='event')livePull()},4000);
+function liveBadge(){const b=$('livebadge');if(!b)return;const ev=cur();
+  b.innerHTML=ev&&ev.live?(S.liveErr?`<span class="badge y">LIVE · keine Verbindung</span>`:'<span class="badge g">● LIVE</span>'):''}
+function liveBox(ev){
+  if(!ev.live)return `<div class="card noprint"><div class="row" style="justify-content:space-between"><div><b>🌐 Live schalten</b><div class="note">Kampfliste ins Internet: Live-Seite für Zuschauer und Fernseher, Kämpfe und Namen direkt in der Scorecard bei Supervisor und Punktrichtern, Ergebnisse kommen automatisch zurück.</div></div>
+    <button class="btn" onclick="liveOn()">Live schalten</button></div></div>`;
+  const u=LIVE_URL+'?l='+ev.live.lid;
+  return `<div class="card noprint"><div class="row" style="justify-content:space-between"><b>🌐 Live</b><span id="livebadge"></span></div>
+   <div class="grid2" style="margin-top:6px"><div><label>Live-Seite für alle (Handy, Zuschauer)</label><div class="row"><input readonly value="${u}" style="flex:1"><button class="btn sec sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${u}');this.textContent='kopiert ✓'">Kopieren</button></div></div>
+   <div><label>Fernseher (Browser am Fire TV)</label><div class="row"><input readonly value="${u}&tv=1" style="flex:1"><a class="btn sec sm" href="${u}&tv=1" target="_blank" style="text-decoration:none">Öffnen</a></div></div></div>
+   <p class="note" style="margin-bottom:0">Der Supervisor wählt in der Scorecard beim Anmelden „${esc(ev.name||'diese Veranstaltung')}“ aus. Diese Seite muss während der Veranstaltung geöffnet bleiben (Internet nötig) – sie schickt die Kampfliste und holt die Ergebnisse alle paar Sekunden.</p></div>`;
+}
+function liveOn(pass){
+  const ev=cur();if(!ev.name){alertDlg('Bitte zuerst unter „Veranstaltung“ einen Namen eintragen.');return}
+  if(pass===undefined){dlg(`<h2 style="margin-top:0">Live schalten</h2><p>Bitte das WBU-Passwort eingeben.</p><input id="pw" type="password" onkeydown="if(event.key==='Enter')liveOn($('pw').value)"><div id="pwerr" class="note" style="color:#ffcf5c"></div>
+    <div class="row" style="margin-top:12px"><button class="btn" onclick="liveOn($('pw').value)">Live schalten</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);setTimeout(()=>$('pw')&&$('pw').focus(),0);return}
+  api('l_create',{pass}).then(j=>{closeDlg();upd(e=>{e.live={lid:j.lid,key:j.key}});livePush()}).catch(e=>{if($('pwerr'))$('pwerr').textContent=e.message})}
+
 // ===================== Sichern / Laden =====================
 function exportEvent(){
   const ev=cur(),blob=new Blob([JSON.stringify(ev,null,2)],{type:'application/json'});
@@ -530,12 +579,13 @@ function alertDlg(t){dlg(`<p>${esc(t)}</p><button class="btn" onclick="closeDlg(
 function render(){
   $('app').innerHTML=S.view==='event'?vEvent():vHome();
   if($('nc_sp'))ncAlter();
+  liveBadge();
   const ev=S.view==='event'?cur():null;
-  $('topr').innerHTML=ev?`<span class="muted">${esc(ev.ort||'')} ${ev.date?'· '+esc(deDate(ev.date)):''}</span>`:'';
+  $('topr').innerHTML=ev?`${ev.live?'<span class="badge g" style="margin-right:8px">● LIVE</span>':''}<span class="muted">${esc(ev.ort||'')} ${ev.date?'· '+esc(deDate(ev.date)):''}</span>`:'';
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('6')||0;
+const WEB_VERSION=Number('7')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
