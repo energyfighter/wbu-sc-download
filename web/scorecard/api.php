@@ -471,7 +471,12 @@ case 't_publish':
         out(['ok' => true, 'tid' => $in['tid'], 'key' => $in['key']]);
     }
     if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
-    $t = ['id' => bin2hex(random_bytes(8)), 'key' => bin2hex(random_bytes(12)), 'created' => time(), 'regs' => [], 'nextNo' => 1];
+    // kein zweites Turnier mit gleichem Namen und Datum
+    foreach (glob("$DIR/tu_*.json") as $f) { $o = json_decode((string)@file_get_contents($f), true);
+        if (is_array($o) && mb_strtolower(trim($o['name'] ?? '')) === mb_strtolower(trim((string)($m['name'] ?? ''))) && ($o['date'] ?? '') === ($m['date'] ?? ''))
+            fail('Dieses Turnier ist schon veröffentlicht (gleicher Name und Datum). Unter „Auf dem Server veröffentlicht“ kannst du das alte löschen.', 409); }
+    $own = clubByToken($in['tok'] ?? '');
+    $t = ['id' => bin2hex(random_bytes(8)), 'owner' => $own ? $own['email'] : '', 'key' => bin2hex(random_bytes(12)), 'created' => time(), 'regs' => [], 'nextNo' => 1];
     tMeta($t, $m);
     if (file_put_contents(tufile($t['id']), json_encode($t, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
     out(['ok' => true, 'tid' => $t['id'], 'key' => $t['key']]);
@@ -669,6 +674,32 @@ case 'c_me':
     if (!$me) fail('Bitte neu einloggen', 403);
     out(['ok' => true, 'me' => $me]);
 
+case 't_admin':      // WBU Sports: alle veröffentlichten Turniere (auch geschlossene) – nur für Veranstalter
+case 't_admin_del':  // … und ein Turnier löschen (nur mit WBU-Passwort)
+    $me = needLogin($in['tok'] ?? '');
+    if ($me['rolle'] !== 'veranstalter') fail('Nur für Veranstalter', 403);
+    if ($a === 't_admin_del') {
+        if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
+        $f = tufile($in['tid'] ?? ''); if (!file_exists($f)) fail('Nicht gefunden', 404);
+        rename($f, $f . '.geloescht-' . date('Ymd-His'));
+        out(['ok' => true]);
+    }
+    $list = [];
+    foreach (glob("$DIR/tu_*.json") as $f) {
+        $t = json_decode(@file_get_contents($f), true); if (!is_array($t)) continue;
+        $p = tPublic($t); $p['created'] = $t['created'] ?? 0; $p['open'] = !empty($t['open']); $p['owner'] = $t['owner'] ?? ''; $list[] = $p;
+    }
+    usort($list, function ($x, $y) { return strcmp($x['date'], $y['date']) ?: $x['created'] - $y['created']; });
+    out(['ok' => true, 'turniere' => $list]);
+
+case 'c_setrole':   // eigenes Konto: Rolle ändern (z. B. Verein -> Veranstalter)
+    $rolle = (string)($in['rolle'] ?? '');
+    if (!in_array($rolle, ['club', 'trainer', 'einzel', 'veranstalter', 'sup', 'ref', 'sonst'], true)) fail('Unbekannte Rolle');
+    $me = needLogin($in['tok'] ?? '');
+    if (empty($me['email']) || strpos($me['email'], '@') === false) fail('Nicht möglich', 403);
+    withClubs(function (&$c) use ($me, $rolle) { $c[$me['email']]['rolle'] = $rolle; }, true);
+    out(['ok' => true, 'me' => clubByToken($in['tok'] ?? '')]);
+
 case 't_list':
     needLogin($in['tok'] ?? '');
     $list = [];
@@ -704,7 +735,7 @@ case 't_register':
     $files = is_array($r['files'] ?? null) ? $r['files'] : [];
     $club = clubByToken($in['tok'] ?? '');
     if (!$club) fail('Bitte zuerst einloggen', 401);
-    if (!in_array($club['rolle'], ['club', 'trainer', 'einzel'], true)) fail('Sportler anmelden können nur Clubs, Trainer und Einzelsportler', 403);
+    if (!in_array($club['rolle'], ['club', 'trainer', 'einzel', 'veranstalter'], true) || $club['email'] === '__veranstalter__') fail('Sportler anmelden können nur Clubs, Trainer, Einzelsportler und Veranstalter', 403);
     $reg['club'] = $club['email'];
     if ($reg['verein'] === '') $reg['verein'] = $club['club'];
     $res = withTurnier($in['tid'] ?? '', function (&$t) use ($reg, $files) {

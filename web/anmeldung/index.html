@@ -131,13 +131,18 @@ let AUTH=(()=>{try{return JSON.parse(sessionStorage.getItem('wbuClub')||'null')}
 function saveAuth(a){AUTH=a;try{a?sessionStorage.setItem('wbuClub',JSON.stringify(a)):sessionStorage.removeItem('wbuClub')}catch(e){}}
 const TOK=()=>AUTH?AUTH.tok:'';
 const ROLLEN={club:'Verein / Gym',trainer:'Trainer / Coach',einzel:'Einzelsportler (ohne Club)',veranstalter:'Veranstalter (Veranstaltung erstellen)',sup:'Supervisor',ref:'Kampfrichter / Punktrichter',sonst:'Sonstige'};
-const canReg=()=>AUTH&&['club','trainer','einzel'].includes(AUTH.me.rolle);
+const canReg=()=>AUTH&&['club','trainer','einzel','veranstalter'].includes(AUTH.me.rolle)&&!String(AUTH.tok).startsWith('vk:');
 async function api(a,body){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,tok:TOK(),...body})});
   let j;try{j=await r.json()}catch(e){throw new Error('Server nicht erreichbar')}
   if(r.status===401&&a!=='c_login'){saveAuth(null);S.view='login';render();throw new Error('Bitte einloggen')}
   if(!j.ok)throw new Error(j.error||'Fehler');return j}
 const docUrl=(tid,k)=>`${API}?a=t_docget&tid=${tid}&kind=${k}&tok=${TOK()}`;
 const fotoUrl=rid=>`${API}?a=t_foto&tid=${S.t.id}&rid=${rid}&tok=${TOK()}`;
+function roleDlg(){$('modal').innerHTML=`<div class="modal" onclick="if(event.target===this)this.parentNode.innerHTML=''"><div class="dlg"><h2 style="margin-top:0">Rolle ändern</h2><p>Du bist zurzeit: <b>${esc(ROLLEN[AUTH.me.rolle]||'')}</b></p>
+  <div class="chips">${Object.entries(ROLLEN).map(([k,n])=>`<div class="chip ${AUTH.me.rolle===k?'on':''}" onclick="setRole('${k}')">${n}</div>`).join('')}</div>
+  <button class="btn sec full" style="margin-top:14px" onclick="$('modal').innerHTML=''">Abbrechen</button></div></div>`}
+async function setRole(k){try{const j=await api('c_setrole',{rolle:k});saveAuth({tok:AUTH.tok,me:j.me});$('modal').innerHTML='';
+  if(k==='veranstalter'){location.href='../veranstalter/';return}render()}catch(e){alert(e.message)}}
 function logout(){saveAuth(null);S.view='login';history.replaceState(null,'','?');render()}
 function vForgot(){const st=S.fstep||1;
   return `<h1>Passwort zurücksetzen</h1><div class="card">
@@ -175,7 +180,7 @@ async function doLogin(){const g=id=>($(id)?.value||'').trim(),err=m=>{$('lerr')
     else j=await api('c_login',{email:g('l_email'),pw:g('l_pw')});
     saveAuth({tok:j.tok,me:j.me});S.err='';if(j.me.rolle==='veranstalter'){location.href='../veranstalter/';return}const q=new URLSearchParams(location.search).get('t');if(q)openT(q);else{S.view='list';loadList()}}
   catch(e){err(e.message)}}
-function accBar(){const a=$('acc');if(a)a.innerHTML=AUTH?`<b>${esc(AUTH.me.trainer)}</b><br>${esc(ROLLEN[AUTH.me.rolle]||'')}${AUTH.me.club&&AUTH.me.club!=='–'&&AUTH.me.club!=='Einzelsportler'?' · '+esc(AUTH.me.club):''} · <a href="#" onclick="logout();return false">Abmelden</a>`:''}
+function accBar(){const a=$('acc');if(a)a.innerHTML=AUTH?`<b>${esc(AUTH.me.trainer)}</b><br>${esc(ROLLEN[AUTH.me.rolle]||'')}${AUTH.me.club&&AUTH.me.club!=='–'&&AUTH.me.club!=='Einzelsportler'?' · '+esc(AUTH.me.club):''}${String(AUTH.tok).startsWith('vk:')?'':' · <a href="#" onclick="roleDlg();return false">Rolle ändern</a>'} · <a href="#" onclick="logout();return false">Abmelden</a>`:''}
 
 const S={view:'list',list:[],t:null,f:{sp:null,sex:null,gew:null},ok:null,err:''};
 let keep={}; // Verein/Trainer/Kontakt für weitere Anmeldungen merken
@@ -419,10 +424,11 @@ function vOk(){
 function again(){S.view='form';S.f={sp:S.ok.reg.sp,sex:null,gew:null,erw:false};S.err='';$('app').innerHTML='';render();scrollTo(0,0)}
 
 function render(keepInputs){
-  const h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList();
+  let h;try{h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList()}
+  catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('29')||0;
+const WEB_VERSION=Number('30')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
