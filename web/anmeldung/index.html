@@ -218,19 +218,19 @@ function klBox(){const r=klasseAus();
   return `<div class="kl"><div class="muted">Deine Klasse (Alter am Turniertag: ${r.alter} Jahre)</div><b class="nr">Nr. ${r.nr}</b> &nbsp;<b>${esc(r.k.name)}</b>
     <div style="margin-top:4px"><span class="badge">${esc(WBU_SPORT[r.k.sp].name)}</span><span class="badge">${r.k.jug?'Jugend':'Erwachsene'}</span></div></div>${wahl}`}
 function upKl(){const b=$('klbox');if(b)b.innerHTML=klBox();const d=$('docbox');if(d)d.innerHTML=docBox()}
-const DOCS=[['aus','Ausschreibung'],['ablauf','Ablaufplan'],['haft','Haftungsausschluss / Teilnahmeerklärung'],['eltern','Einverständniserklärung Eltern (Minderjährige)']];
+const DOCS=[['aus','Ausschreibung'],['ablauf','Ablaufplan'],['haft','Teilnahmeerklärung & Haftungsausschluss (unter 18: mit Unterschrift der Eltern)'],['eltern','Einverständniserklärung Eltern (Minderjährige)']];
 // Welche unterschriebenen Erklärungen braucht dieser Sportler?
 function needDocs(){const t=S.t,d=t.docs||{},geb=$('f_geb')?.value,alter=geb?wbuAlter(geb,t.date):null,n=[],sb=S.f.sp==='SB';
   if(d.haft)n.push('haft');if(t.attest&&!sb)n.push('attest');
   if(d.eltern&&!sb&&alter!=null&&alter<18)n.push('eltern'); // Shadow Boxing ist kontaktlos: keine Einverständniserklärung
   return n}
-const DOCNAME={haft:'Haftungsausschluss / Teilnahmeerklärung',eltern:'Einverständniserklärung der Eltern (Sportler unter 18)',attest:'Sportärztliches Attest / Medical Check'};
+const DOCNAME={haft:'Teilnahmeerklärung & Haftungsausschluss (unter 18: auch von den Eltern unterschrieben)',eltern:'Einverständniserklärung der Eltern (Sportler unter 18)',attest:'Sportärztliches Attest / Medical Check'};
 const FILES={};
 // Roter Pflicht-Hinweis: ohne diese Unterlagen keine Teilnahme
 function pflichtBox(t){const d=t.docs||{};if(!d.haft&&!d.eltern&&!t.attest)return '';
   return `<div style="background:#c8102e;color:#fff;border-radius:12px;padding:14px 16px;margin:14px 0 0;font-weight:700;line-height:1.5">
    <div style="font-size:18px;margin-bottom:6px">⚠ PFLICHT – ohne diese Unterlagen keine Teilnahme!</div>
-   ${d.haft?'<div>✔ <b>Haftungsausschluss / Teilnahmeerklärung</b> – für jeden Sportler, unterschrieben</div>':''}
+   ${d.haft?`<div>✔ <b>Teilnahmeerklärung &amp; Haftungsausschluss</b> – für jeden Sportler, unterschrieben${d.eltern?'':' · bei Sportlern unter 18 Jahren zusätzlich von den Eltern unterschrieben (auf demselben Blatt)'}</div>`:''}
    ${d.eltern?'<div>✔ <b>Einverständniserklärung der Eltern</b> – für jeden Sportler unter 18 Jahren (nicht Shadow Boxing)</div>':''}
    ${t.attest?`<div>✔ <b>Sportärztliches Attest</b> aus dem Jahr ${String(t.date||'').slice(0,4)} – für alle Boxer (nicht Shadow Boxing)</div>`:''}
    <div style="font-weight:400;margin-top:6px">Formulare oben herunterladen, ausdrucken, unterschreiben und als Foto oder PDF hochladen – gleich bei der Anmeldung oder später unter „Meine Anmeldungen &amp; Bezahlung“, spätestens bis zum Anmeldeschluss.</div></div>`}
@@ -321,7 +321,7 @@ function vMy(){
     <p style="margin:6px 0">${o.items.map(x=>`${esc(x.vorname)} ${esc(x.name)} (${x.nr})`).join(', ')}</p>
     <p style="margin:0">Summe <b>${euro(o.total)}</b>${o.paidAmt!=null&&o.status!=='paid'?` · eingegangen <b>${euro(o.paidAmt)}</b> – ${o.paidAmt<o.total?`<b style="color:var(--red)">es fehlen ${euro(o.total-o.paidAmt)}</b>`:'zu viel – der Veranstalter meldet sich'}`:''}</p>
     ${o.status==='open'?payBox(o,M.bank):''}</div>`).join('')}`}
-const DOCSHORT={haft:'Haftungsausschluss',eltern:'Einverständnis Eltern',attest:'Sportärztliches Attest'};
+const DOCSHORT={haft:'Teilnahmeerklärung',eltern:'Einverständnis Eltern',attest:'Sportärztliches Attest'};
 function docCard(M){const rs=(M.regs||[]).filter(x=>(x.need||[]).length);if(!rs.length)return '';
   const offen=rs.filter(x=>x.miss.length).length;
   return `<div class="card" style="${offen?'border:2px solid var(--red)':''}"><h2 style="margin-top:0">Unterlagen ${offen?`– bei ${offen} Sportler${offen>1?'n':''} fehlt noch etwas`:'– alles vollständig ✅'}</h2>
@@ -436,7 +436,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('32')||0;
+const WEB_VERSION=Number('33')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';

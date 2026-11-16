@@ -169,7 +169,7 @@ function liveRows($lid) {
 
 
 // ---- Unterlagen (Ausschreibung, Formulare, unterschriebene Erklärungen) ----
-const DOC_KINDS = ['aus' => 'Ausschreibung', 'ablauf' => 'Ablaufplan', 'haft' => 'Haftungsausschluss / Teilnahmeerklärung', 'eltern' => 'Einverständniserklärung der Eltern',
+const DOC_KINDS = ['aus' => 'Ausschreibung', 'ablauf' => 'Ablaufplan', 'haft' => 'Teilnahmeerklärung & Haftungsausschluss', 'eltern' => 'Einverständniserklärung der Eltern',
                    'attest' => 'Sportärztliches Attest / Medical Check'];
 function docdir() {
     global $DIR; $d = "$DIR/docs";
