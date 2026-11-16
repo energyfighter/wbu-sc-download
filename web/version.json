@@ -1,18 +1,18 @@
 {
-  "version": 18,
+  "version": 19,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "scorecard/api.php": "ea6429302fc2c830091f2f31a8200b00439a5b8cbd18e97f7acf0684adff223d",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "709ad3375cee81a85f43b0061d793bcc751affd9a58906bda21b2a609bf34119",
+    "scorecard/index.html": "f81a38d0c408cd6c3ad1802eb36af6379fae00cf260f1bc490f8640dca429fb1",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "b1d3b4cd538ba06dae26bf21fac8a5cc7d088874ea66b74c7579ab7d9f1652b6",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "4d1bb968ed5b7ebe7360d70559bc71cb017f1e21f5f01fd68b75b8b0ce0d8646",
+    "veranstalter/index.html": "2f10114b86a2448afda857f225cdc99f22a738c7259ba29cbe859421f5fe37cc",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "b1d8653e32e5c97b6eafac5ddfaa2bf15eaaa6d5366dbad6ffa0fb4a16c8eaa5",
+    "anmeldung/index.html": "514603a5d0aaeec68f6eea35a2a027bf71bd5e8296962a9ec686afbb415b29c3",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "live/index.html": "3341decc3e5c336cc0581a7e9916e49aba3d984fb9571c9246bff222f0781729"
   }
