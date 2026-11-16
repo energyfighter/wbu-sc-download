@@ -1,18 +1,22 @@
 {
-  "version": 20,
+  "version": 21,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "scorecard/api.php": "ea6429302fc2c830091f2f31a8200b00439a5b8cbd18e97f7acf0684adff223d",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "715d665beddd10ee19933ab8c6114957e6184813527b8183bd9aa86956eeb6ef",
+    "scorecard/index.html": "282bb2fce455f9585f2c17196b60b1bf03fc1b8b18a9a3b67b76fbfb25ffa02c",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "799d730e22a96c9f1ebd4008b7cfe472ad96ada374f1a8a16f4b8fd68622a6e9",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "54429c7f762e504715c8ec57af487eca2663ce073ce346064945d03074705924",
+    "veranstalter/index.html": "f50ee68f4d300cb9857e26e2e701d425fb745ddf7172c4b91142fc21abe5f3af",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
+    "veranstalter/docs/Ablaufplan-WBU-2027.pdf": "a9b4499165434e1758771793d6795ea3ad2806b3956567f8ec1444a41e581d5b",
+    "veranstalter/docs/Ausschreibung-WBU-2027.pdf": "86d2cb51f141654b25492a7fdad0dec7494982288275d699a17e0b8e066af15f",
+    "veranstalter/docs/WBU-DM-Einverstaendniserklaerung-Minderjaehrige.docx": "dde70502baec3aacf9ced8cd64e9efcfb03b6db3027bc08abf8824138aaca936",
+    "veranstalter/docs/WBU-DM-Haftungsausschluss-Teilnahmeerklaerung.docx": "f27663fce4dd7dedd09cb601f8ebf16521a64d54c17892a3277c2bbdd9979465",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "8cf637ddf499e3f2eaef7b1fc6a54f3a1c02ee765ac99aa851b8058a0bdbfa24",
+    "anmeldung/index.html": "210c6450028ce99e9f5a6f503c7d720aacd9838ec9ea92fd360a6ee3179bd948",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "live/index.html": "3341decc3e5c336cc0581a7e9916e49aba3d984fb9571c9246bff222f0781729"
   }
