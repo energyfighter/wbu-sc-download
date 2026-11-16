@@ -418,7 +418,7 @@ function render(keepInputs){
   const h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList();
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('26')||0;
+const WEB_VERSION=Number('27')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
