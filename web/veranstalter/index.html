@@ -87,8 +87,9 @@ const WBU_SPORT={
   K1:{name:'Kickboxen (K1)',kurz:'K1',alter:WBU_SP_ALTER.map(a=>[a[0],a[1],a[2]+500,a[3]+500])},
   MB:{name:'Masterboxen',kurz:'Master',alter:[[30,34,300,314],[35,39,328,342],[40,44,356,370],[45,49,384,398],[50,54,412,426],[55,59,440,454],[60,64,468,482],[65,69,496,510]]}
 };
-// Semi-Pro / K1: bis 15 Jahre = Jugend, ab 16 = Erwachsene. Masterboxen: alle Erwachsene.
-const wbuJugend=(von)=>von<16;
+// Semi-Pro / K1: bis 17 Jahre = Jugend, ab 18 = Erwachsene. 16- und 17-Jährige dürfen auch bei den Erwachsenen starten.
+// Masterboxen: alle Erwachsene.
+const wbuJugend=(von)=>von<18;
 const wbuAlterText=(von,bis)=>bis==null?`${von}+ J.`:`${von}–${bis} J.`;
 // Alle Klassen als Liste
 const WBU_KLASSEN=(()=>{const L=[];
@@ -102,13 +103,17 @@ const wbuKlasse=nr=>WBU_KLASSEN.find(k=>k.nr===+nr);
 function wbuAlter(geb,tag){const g=new Date(geb),t=new Date(tag||Date.now());if(isNaN(g)||isNaN(t))return null;
   let a=t.getFullYear()-g.getFullYear();if(t.getMonth()<g.getMonth()||(t.getMonth()===g.getMonth()&&t.getDate()<g.getDate()))a--;return a}
 // Passende Altersgruppe zu Sportart + Alter (oder null)
-function wbuAltersgruppe(sp,alter){const s=WBU_SPORT[sp];if(!s||alter==null)return null;
+// erw=true: 16/17-Jährige starten bei den Erwachsenen (18+)
+function wbuAltersgruppe(sp,alter,erw){const s=WBU_SPORT[sp];if(!s||alter==null)return null;
+  if(erw&&sp!=='MB'&&alter>=16&&alter<=17)return s.alter.find(a=>a[1]==null)||null;
   return s.alter.find(([von,bis])=>alter>=von&&(bis==null||alter<=bis))||null}
+// Darf dieser Sportler wahlweise bei den Erwachsenen starten?
+const wbuDarfErw=(sp,alter)=>sp!=='MB'&&alter>=16&&alter<=17;
 // Gewichtsklasse zu kg: kleinste Grenze, die nicht überschritten wird
 function wbuGewKlasse(kg){kg=+String(kg).replace(',','.');if(!(kg>0))return null;
   for(const g of WBU_GEW){if(g[0]==='-'&&kg<=+g.slice(1))return g}return '+100'}
 // Klassennummer aus Sportart, Geschlecht, Alter, Gewichtsklasse
-function wbuNr(sp,sex,alter,gew){const a=wbuAltersgruppe(sp,alter);if(!a||!gew)return null;
+function wbuNr(sp,sex,alter,gew,erw){const a=wbuAltersgruppe(sp,alter,erw);if(!a||!gew)return null;
   const i=WBU_GEW.indexOf(gew);if(i<0)return null;return (sex==='w'?a[3]:a[2])+i}
 
 // ===================== Speicher =====================
@@ -453,7 +458,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('3')||0;
+const WEB_VERSION=Number('4')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

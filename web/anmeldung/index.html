@@ -55,8 +55,9 @@ const WBU_SPORT={
   K1:{name:'Kickboxen (K1)',kurz:'K1',alter:WBU_SP_ALTER.map(a=>[a[0],a[1],a[2]+500,a[3]+500])},
   MB:{name:'Masterboxen',kurz:'Master',alter:[[30,34,300,314],[35,39,328,342],[40,44,356,370],[45,49,384,398],[50,54,412,426],[55,59,440,454],[60,64,468,482],[65,69,496,510]]}
 };
-// Semi-Pro / K1: bis 15 Jahre = Jugend, ab 16 = Erwachsene. Masterboxen: alle Erwachsene.
-const wbuJugend=(von)=>von<16;
+// Semi-Pro / K1: bis 17 Jahre = Jugend, ab 18 = Erwachsene. 16- und 17-Jährige dürfen auch bei den Erwachsenen starten.
+// Masterboxen: alle Erwachsene.
+const wbuJugend=(von)=>von<18;
 const wbuAlterText=(von,bis)=>bis==null?`${von}+ J.`:`${von}–${bis} J.`;
 // Alle Klassen als Liste
 const WBU_KLASSEN=(()=>{const L=[];
@@ -70,13 +71,17 @@ const wbuKlasse=nr=>WBU_KLASSEN.find(k=>k.nr===+nr);
 function wbuAlter(geb,tag){const g=new Date(geb),t=new Date(tag||Date.now());if(isNaN(g)||isNaN(t))return null;
   let a=t.getFullYear()-g.getFullYear();if(t.getMonth()<g.getMonth()||(t.getMonth()===g.getMonth()&&t.getDate()<g.getDate()))a--;return a}
 // Passende Altersgruppe zu Sportart + Alter (oder null)
-function wbuAltersgruppe(sp,alter){const s=WBU_SPORT[sp];if(!s||alter==null)return null;
+// erw=true: 16/17-Jährige starten bei den Erwachsenen (18+)
+function wbuAltersgruppe(sp,alter,erw){const s=WBU_SPORT[sp];if(!s||alter==null)return null;
+  if(erw&&sp!=='MB'&&alter>=16&&alter<=17)return s.alter.find(a=>a[1]==null)||null;
   return s.alter.find(([von,bis])=>alter>=von&&(bis==null||alter<=bis))||null}
+// Darf dieser Sportler wahlweise bei den Erwachsenen starten?
+const wbuDarfErw=(sp,alter)=>sp!=='MB'&&alter>=16&&alter<=17;
 // Gewichtsklasse zu kg: kleinste Grenze, die nicht überschritten wird
 function wbuGewKlasse(kg){kg=+String(kg).replace(',','.');if(!(kg>0))return null;
   for(const g of WBU_GEW){if(g[0]==='-'&&kg<=+g.slice(1))return g}return '+100'}
 // Klassennummer aus Sportart, Geschlecht, Alter, Gewichtsklasse
-function wbuNr(sp,sex,alter,gew){const a=wbuAltersgruppe(sp,alter);if(!a||!gew)return null;
+function wbuNr(sp,sex,alter,gew,erw){const a=wbuAltersgruppe(sp,alter,erw);if(!a||!gew)return null;
   const i=WBU_GEW.indexOf(gew);if(i<0)return null;return (sex==='w'?a[3]:a[2])+i}
 
 const API=window.WBU_API||'../scorecard/api.php';
@@ -91,7 +96,7 @@ const S={view:'list',list:[],t:null,f:{sp:null,sex:null,gew:null},ok:null,err:''
 let keep={}; // Verein/Trainer/Kontakt für weitere Anmeldungen merken
 
 async function loadList(){try{S.list=(await api('t_list',{})).turniere;S.err=''}catch(e){S.err=e.message}render()}
-async function openT(id){try{S.t=(await api('t_get',{tid:id})).turnier;S.view='form';S.f={sp:S.t.sports.length===1?S.t.sports[0]:null,sex:null,gew:null};S.err='';
+async function openT(id){try{S.t=(await api('t_get',{tid:id})).turnier;S.view='form';S.f={sp:S.t.sports.length===1?S.t.sports[0]:null,sex:null,gew:null,erw:false};S.err='';
   history.replaceState(null,'','?t='+id);render();scrollTo(0,0)}catch(e){S.err=e.message;S.view='list';render()}}
 
 function vList(){
@@ -110,15 +115,16 @@ function klasseAus(){
   if(!f.sp)return {err:'Bitte die Sportart wählen.'};
   if(!f.sex)return {err:'Bitte männlich oder weiblich wählen.'};
   if(alter==null)return {err:'Bitte das Geburtsdatum eingeben.'};
-  const ag=wbuAltersgruppe(f.sp,alter);
+  const ag=wbuAltersgruppe(f.sp,alter,f.erw);
   if(!ag)return {err:`Mit ${alter} Jahren gibt es im ${WBU_SPORT[f.sp].name} keine Altersklasse (${WBU_SPORT[f.sp].alter.map(a=>wbuAlterText(a[0],a[1])).join(', ')}).`};
   if(!f.gew)return {err:'Bitte das Gewicht eingeben oder die Gewichtsklasse antippen.',alter};
-  const nr=wbuNr(f.sp,f.sex,alter,f.gew);return {nr,k:wbuKlasse(nr),alter}
+  const nr=wbuNr(f.sp,f.sex,alter,f.gew,f.erw);return {nr,k:wbuKlasse(nr),alter}
 }
 function klBox(){const r=klasseAus();
   if(r.err)return `<div class="kl err">${esc(r.err)}</div>`;
+  const wahl=wbuDarfErw(S.f.sp,r.alter)?`<label>Altersklasse</label><div class="chips"><div class="chip ${S.f.erw?'':'on'}" onclick="S.f.erw=false;upKl()">16–17 J. · Jugend</div><div class="chip ${S.f.erw?'on':''}" onclick="S.f.erw=true;upKl()">18+ J. · Erwachsene</div></div>`:'';
   return `<div class="kl"><div class="muted">Deine Klasse (Alter am Turniertag: ${r.alter} Jahre)</div><b class="nr">Nr. ${r.nr}</b> &nbsp;<b>${esc(r.k.name)}</b>
-    <div style="margin-top:4px"><span class="badge">${esc(WBU_SPORT[r.k.sp].name)}</span><span class="badge">${r.k.jug?'Jugend':'Erwachsene'}</span></div></div>`}
+    <div style="margin-top:4px"><span class="badge">${esc(WBU_SPORT[r.k.sp].name)}</span><span class="badge">${r.k.jug?'Jugend':'Erwachsene'}</span></div></div>${wahl}`}
 function upKl(){const b=$('klbox');if(b)b.innerHTML=klBox()}
 function setF(k,v){S.f[k]=v;if(k==='gew'&&$('f_kg'))$('f_kg').value='';render(true)}
 function kgInput(v){const g=wbuGewKlasse(v);S.f.gew=g;document.querySelectorAll('[data-gew]').forEach(e=>e.classList.toggle('on',e.dataset.gew===g));upKl()}
@@ -179,13 +185,13 @@ function vOk(){
   <button class="btn full" onclick="again()">+ Weiteren Sportler anmelden</button>
   <p style="text-align:center"><a href="#" style="color:var(--gold)" onclick="S.view='list';history.replaceState(null,'','?');loadList();return false">Zur Turnierliste</a></p>`;
 }
-function again(){S.view='form';S.f={sp:S.ok.reg.sp,sex:null,gew:null};S.err='';$('app').innerHTML='';render();scrollTo(0,0)}
+function again(){S.view='form';S.f={sp:S.ok.reg.sp,sex:null,gew:null,erw:false};S.err='';$('app').innerHTML='';render();scrollTo(0,0)}
 
 function render(keepInputs){
   const h=S.view==='form'?vForm():S.view==='ok'?vOk():vList();
   $('app').innerHTML=h;
 }
-const WEB_VERSION=Number('3')||0;
+const WEB_VERSION=Number('4')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
