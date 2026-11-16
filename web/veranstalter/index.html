@@ -497,7 +497,7 @@ function vOnline(ev){
    <div id="onerr" class="note" style="color:#b26a00"></div></div>
   ${o.tid?payCard(ev):''}
   ${o.tid?`<div class="card"><div class="row" style="justify-content:space-between"><b>Anmeldungen: ${act.length}${act.length?` · bezahlt: ${paid} · übernommen: ${act.filter(r=>imp.has(r.id)).length}`:''}</b>
-    <div class="row"><button class="btn sec sm" onclick="pullRegs()">↻ Anmeldungen abholen</button><button class="btn ok sm" ${paid?'':'disabled'} onclick="importRegs()">Bezahlte in Kategorien übernehmen</button><button class="btn sec sm" ${regs.length?'':'disabled'} onclick="regsCsv()">Liste (Excel)</button></div></div>
+    <div class="row"><button class="btn sec sm" onclick="pullRegs()">↻ Anmeldungen abholen</button><button class="btn ok sm" ${act.length?'':'disabled'} onclick="importRegs()">In Kategorien übernehmen</button><button class="btn sec sm" ${regs.length?'':'disabled'} onclick="regsCsv()">Liste (Excel)</button></div></div>
     ${ev.regsAt?`<p class="note">Stand: ${new Date(ev.regsAt).toLocaleString('de-DE')}</p>`:''}
     ${regs.length?`<table><tr><th>Nr.</th><th>Name</th><th>Klasse</th><th>Verein</th><th>Kontakt</th><th>Unterlagen</th><th>Zahlung</th><th></th></tr>${regs.slice().sort((a,b)=>a.nr-b.nr||a.no-b.no).map(r=>`<tr style="${r.storno?'opacity:.45;text-decoration:line-through':''}">
       <td>${r.no}</td><td><b>${esc(r.vorname)} ${esc(r.name)}</b><div class="muted">${esc(deDate(r.geb))}${r.kg?' · '+esc(r.kg)+' kg':''}${r.cm?' · '+esc(r.cm)+' cm':''}</div>${r.foto?`<button class="btn sec sm" style="margin-top:3px" onclick="regDoc('${r.id}','foto')">📷 Foto</button>`:''}</td><td><b>${r.nr}</b> <span class="muted">${esc(r.klasse)}</span></td>
@@ -506,7 +506,7 @@ function vOnline(ev){
       <td style="white-space:nowrap">${r.storno?'':payBadge(r)}</td>
       <td style="white-space:nowrap">${imp.has(r.id)?'<span class="badge g">übernommen</span>':''} <button class="btn sec sm" onclick="setStorno('${r.id}',${!r.storno})">${r.storno?'zurückholen':'stornieren'}</button></td></tr>`).join('')}</table>`
     :'<p class="muted">Noch keine Anmeldungen abgeholt. „Anmeldungen abholen“ drücken.</p>'}
-    <p class="note">Nur bezahlte Sportler kommen ins System. „Bezahlte in Kategorien übernehmen“ legt die passenden Kategorien automatisch an und trägt die Sportler ein (Paarungen entstehen automatisch). Schon übernommene werden nicht doppelt eingetragen; bereits ausgeloste Kategorien bleiben unverändert.</p></div>`:''}`;
+    <p class="note">Alle angemeldeten Sportler kommen sofort ins System; wer bis zur Frist nicht vollständig bezahlt, wird beim nächsten Abholen automatisch wieder aus Kategorie und Bracket entfernt. „In Kategorien übernehmen“ legt die passenden Kategorien automatisch an und trägt die Sportler ein (Paarungen entstehen automatisch). Schon übernommene werden nicht doppelt eingetragen; bereits ausgeloste Kategorien bleiben unverändert.</p></div>`:''}`;
 }
 function onErr(m){const x=$('onerr');if(x)x.textContent=m;else alertDlg(m)}
 function publish(pass){
@@ -528,7 +528,7 @@ function payCard(ev){const os=(ev.orders||[]).filter(o=>o.status!=='cart'||o.ite
   const sum=st=>os.filter(o=>o.status===st).reduce((s,o)=>s+o.total,0);
   return `<div class="card"><div class="row" style="justify-content:space-between"><b>Zahlungen (nur für dich sichtbar)</b>
     <div class="row"><label class="btn sm" style="margin:0;color:#2a1d00">📄 Kontoauszug einlesen (PDF / CSV)<input type="file" accept=".pdf,.csv,.txt" style="display:none" onchange="readStatement(this)"></label><button class="btn sec sm" onclick="pullRegs()">↻ aktualisieren</button></div></div>
-   <p class="note">Der Kontoauszug wird nur hier im Browser gelesen und nicht hochgeladen. Gefunden werden die Zahlungscodes (WBU-…) im Verwendungszweck; nur wenn die Summe genau stimmt, kommen die Sportler ins System. Bei Fehl- oder Überbetrag bekommt der Verein automatisch eine freundliche E-Mail.</p>
+   <p class="note">Der Kontoauszug wird nur hier im Browser gelesen und nicht hochgeladen. Gefunden werden die Zahlungscodes (WBU-…) im Verwendungszweck; nur wenn die Summe genau stimmt, gilt die Anmeldung als bezahlt – sonst wird sie nach Ablauf der Frist storniert. Bei Fehl- oder Überbetrag bekommt der Verein automatisch eine freundliche E-Mail.</p>
    <div id="stmt">${S.stmt||''}</div>
    ${os.length?`<table><tr><th>Code</th><th>Verein</th><th>Sportler</th><th>Summe</th><th>Eingegangen</th><th>Status</th><th>Frist</th><th></th></tr>${os.map(o=>`<tr>
      <td><b>${esc(o.code)}</b></td><td>${esc(o.verein)}<div class="muted">${esc(o.club)}</div></td><td>${o.items.length}</td><td><b>${eur(o.total)}</b></td>
@@ -572,7 +572,7 @@ async function readStatement(inp){const f=inp.files[0];if(!f)return;const box=$(
 async function applyPayments(){const o=onl(cur());
   try{const j=await api('t_pay',{tid:o.tid,key:o.key,items:S.found.filter(p=>p.o&&p.amount!=null).map(p=>({code:p.code,amount:p.amount,ref:p.ref}))});
     S.stmt=`<div class="card" style="background:#fff"><b>Übernommen:</b><br>${j.res.map(r=>`${esc(r.code)} ${r.verein?'('+esc(r.verein)+')':''}: <b>${r.st}</b>${r.total!=null?` – ${eur(r.amount)} von ${eur(r.total)}`:''}`).join('<br>')}<p class="note" style="margin-bottom:0">Bei „zu wenig“ und „zu viel“ hat der Verein automatisch eine E-Mail bekommen.</p></div>`;
-    await pullRegs();importRegs(true)}catch(e){onErr(e.message)}}
+    await pullRegs()}catch(e){onErr(e.message)}}
 
 async function upDoc(kind,inp){const o=onl(cur());let data='',name='';
   if(inp){const f=inp.files[0];if(!f)return;if(f.size>15e6){onErr('Datei zu groß (höchstens 15 MB)');return}name=f.name;
@@ -586,17 +586,21 @@ async function syncManual(){const ev=cur(),o=onl(ev);if(!o.tid)return;
   if(!list.length)return;
   const j=await api('t_import',{tid:o.tid,key:o.key,list});
   upd(e=>e.cats.forEach(c=>c.players.forEach(p=>{if(j.ids[p.id])p.reg=j.ids[p.id]})))}
-async function pullRegs(){try{await syncManual()}catch(e){onErr(e.message)}const o=onl(cur());try{const j=await api('t_regs',{tid:o.tid,key:o.key});upd(e=>{e.regs=j.regs;e.orders=j.orders||[];e.regsAt=Date.now()})}catch(e){onErr(e.message)}}
+async function pullRegs(){try{await syncManual()}catch(e){onErr(e.message)}const o=onl(cur());try{const j=await api('t_regs',{tid:o.tid,key:o.key});let weg=0;
+    upd(e=>{e.regs=j.regs;e.orders=j.orders||[];e.regsAt=Date.now();
+      const dead=new Set(j.regs.filter(r=>r.storno||r.alive===false).map(r=>r.id));
+      e.cats.forEach(c=>{if(hasResults(c))return;const n=c.players.length;c.players=c.players.filter(p=>!p.reg||!dead.has(p.reg));if(c.players.length!==n){weg+=n-c.players.length;autoBracket(c)}})});
+    importRegs(true);if(weg)onErr(`${weg} Sportler entfernt (Zahlungsfrist abgelaufen, nicht bezahlt).`)}catch(e){onErr(e.message)}}
 async function setPaid(rid,paid){const o=onl(cur());try{await api('t_paid',{tid:o.tid,key:o.key,rid,paid});upd(e=>{e.regs.find(r=>r.id===rid).paid=paid})}catch(e){onErr(e.message)}}
 async function setStorno(rid,storno){const o=onl(cur());try{await api('t_del',{tid:o.tid,key:o.key,rid,storno});upd(e=>{e.regs.find(r=>r.id===rid).storno=storno;
   if(storno)e.cats.forEach(c=>{if(!hasResults(c)&&c.players.some(p=>p.reg===rid)){c.players=c.players.filter(p=>p.reg!==rid);autoBracket(c)}})})}catch(e){onErr(e.message)}}
 function importRegs(quiet){
   let neu=0,gesperrt=0;
   upd(e=>{const have=new Set(e.cats.flatMap(c=>c.players.map(p=>p.reg).filter(Boolean)));
-    (e.regs||[]).filter(r=>!r.storno&&r.paid&&r.frei!==false&&!have.has(r.id)&&wbuKlasse(r.nr)).forEach(r=>{const c=catFor(e,r.nr);
+    (e.regs||[]).filter(r=>!r.storno&&r.alive!==false&&r.frei!==false&&!have.has(r.id)&&wbuKlasse(r.nr)).forEach(r=>{const c=catFor(e,r.nr);
       if(hasResults(c)){gesperrt++;return}
       c.players.push({id:uid(),name:`${r.vorname} ${r.name}`,club:r.verein||r.land||'',reg:r.id});autoBracket(c);neu++})});
-  if(quiet&&!gesperrt){if(neu)onErr(`✓ ${neu} bezahlte Sportler automatisch in die Kategorien übernommen.`);return}
+  if(quiet&&!gesperrt){if(neu)onErr(`✓ ${neu} neue Sportler automatisch in die Kategorien übernommen.`);return}
   alertDlg(`${neu} Sportler in die Kategorien übernommen.`+(gesperrt?` ${gesperrt} nicht übernommen, weil die Kategorie schon schon läuft (Ergebnisse eingetragen).`:''));
 }
 function regsCsv(){const ev=cur(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -708,7 +712,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('16')||0;
+const WEB_VERSION=Number('17')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

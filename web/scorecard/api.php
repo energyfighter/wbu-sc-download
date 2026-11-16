@@ -241,8 +241,11 @@ function ostat($o) {
     if (!empty($o['storno']) || time() > ($o['due'] ?? 0)) return 'storno';
     return empty($o['closed']) ? 'cart' : 'open';
 }
-/** Zählt dieser Sportler im System (Teilnehmerliste, Kategorien, Bracket)? Nur wenn bezahlt. */
-function regIn($t, $x) {
+/** Zählt dieser Sportler im System (Teilnehmerliste, Kategorien, Bracket)?
+ *  Ja – sofort nach dem Eintragen. Raus erst, wenn die Zahlungsfrist ohne vollständige Zahlung abgelaufen ist (storno). */
+function regIn($t, $x) { return regAlive($t, $x); }
+/** Ist die Zahlung vollständig da? */
+function regPaid($t, $x) {
     if (!empty($x['storno'])) return false;
     if (empty($x['oid'])) return !empty($x['paid']) || ($x['club'] ?? '') === 'veranstalter' || empty($t['fee']);
     $o = $t['orders'][$x['oid']] ?? null;
@@ -301,13 +304,13 @@ function payMail(&$t, &$o) {
     $names = []; foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $o['id'] && empty($x['storno'])) $names[] = "- {$x['vorname']} {$x['name']} (Kategorie {$x['nr']})";
     $list = implode("\n", $names);
     if ($st === 'ok') wbuMail($o['club'], "Zahlung eingegangen – {$t['name']}",
-        "Hallo,\n\nvielen Dank! Deine Zahlung über " . euro($amt) . " (Code {$o['code']}) ist eingegangen.\nDiese Sportler sind jetzt für {$t['name']} im System:\n\n$list\n\nWir freuen uns auf euch!");
+        "Hallo,\n\nvielen Dank! Deine Zahlung über " . euro($amt) . " (Code {$o['code']}) ist eingegangen.\nDiese Sportler sind damit für {$t['name']} fest angemeldet:\n\n$list\n\nWir freuen uns auf euch!");
     elseif ($st === 'zuviel') wbuMail($o['club'], "Zahlung eingegangen – etwas zu viel überwiesen – {$t['name']}",
         "Hallo,\n\nvielen Dank! Für deine Anmeldung {$o['code']} sind " . euro($amt) . " eingegangen, die Summe beträgt aber nur " . euro($total) . ".\n" .
         "Deine Sportler sind im System:\n\n$list\n\nDen zu viel gezahlten Betrag von " . euro($amt - $total) . " klären wir mit dir – wir melden uns.");
     else wbuMail($o['club'], "Zahlung unvollständig – bitte Restbetrag überweisen – {$t['name']}",
         "Hallo,\n\nfür deine Anmeldung {$o['code']} ist eine Zahlung über " . euro($amt) . " eingegangen – die Summe beträgt aber " . euro($total) . ".\n" .
-        "Es fehlen noch " . euro($total - $amt) . ". Solange der Betrag nicht vollständig ist, sind die Sportler noch nicht im System:\n\n$list\n\n" .
+        "Es fehlen noch " . euro($total - $amt) . ". Bitte überweise den Rest bis " . date('d.m.Y', $o['due']) . " – sonst verfällt die Anmeldung und diese Sportler werden wieder entfernt:\n\n$list\n\n" .
         "Bitte überweise den Restbetrag:\n\n" . bankText($t, $o, $total - $amt) . "\n\nVielen Dank!");
 }
 
@@ -488,6 +491,7 @@ case 't_public':   // nur mit Login: Teilnehmer, Kategorien, Clubs (ohne Kontakt
                   'foto' => !empty($x['foto']), 'pid' => substr(hash('sha256', mb_strtolower($x['vorname'] . '|' . $x['name'] . '|' . $x['geb'])), 0, 12)];
             $e['vorname'] = $x['vorname']; $e['name'] = $x['name']; $e['kg'] = $x['kg']; $e['cm'] = $x['cm'] ?? ''; $e['geb'] = $x['geb'];
             $e['own'] = ($x['club'] ?? '') === $club['email'];
+            if ($e['own']) $e['bezahlt'] = regPaid($t, $x);
             $list[] = $e;
         }
         $starts = 0; foreach ($t['regs'] as $x) if (regIn($t, $x)) $starts++;
@@ -711,8 +715,8 @@ case 't_cartdel':   // Verein: Sportler aus dem Warenkorb nehmen
         $names = []; foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $o['id'] && empty($x['storno'])) $names[] = "- {$x['vorname']} {$x['name']} (Kategorie {$x['nr']}): " . euro($x['fee']);
         wbuMail($o['club'], "Deine Anmeldung {$o['code']} – bitte jetzt überweisen – {$t['name']}",
             "Hallo,\n\nvielen Dank für deine Anmeldung zu {$t['name']}:\n\n" . implode("\n", $names) . "\n\nBitte überweise jetzt genau diesen Betrag:\n\n" .
-            bankText($t, $o, $o['total']) . "\n\nBitte nur den Code {$o['code']} als Verwendungszweck angeben. Erst nach Zahlungseingang sind die Sportler im System. " .
-            "Kommt der Betrag nicht vollständig bis " . date('d.m.Y', $o['due']) . " an, verfällt die Anmeldung.");
+            bankText($t, $o, $o['total']) . "\n\nBitte nur den Code {$o['code']} als Verwendungszweck angeben. Deine Sportler stehen schon in der Teilnehmerliste. " .
+            "Kommt der Betrag nicht vollständig bis " . date('d.m.Y', $o['due']) . " an, verfällt die Anmeldung und die Sportler werden wieder entfernt.");
         return ['order' => orderView($t, $o)];
     }, true);
     out(['ok' => true] + $r);
@@ -767,7 +771,7 @@ case 't_regs':
     $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in) {
         if (!tKeyOk($t, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
         $regs = [];
-        foreach ($t['regs'] as $x) { $x['paid'] = regIn($t, $x); $x['ostat'] = !empty($x['oid']) && isset($t['orders'][$x['oid']]) ? ostat($t['orders'][$x['oid']]) : ($x['paid'] ? 'paid' : ''); $regs[] = $x; }
+        foreach ($t['regs'] as $x) { $x['paid'] = regPaid($t, $x); $x['alive'] = regAlive($t, $x); $x['ostat'] = !empty($x['oid']) && isset($t['orders'][$x['oid']]) ? ostat($t['orders'][$x['oid']]) : ($x['paid'] ? 'paid' : ''); $regs[] = $x; }
         $os = []; foreach (($t['orders'] ?? []) as $o) $os[] = orderView($t, $o);
         return ['regs' => $regs, 'orders' => $os, 'turnier' => tPublic($t)];
     });
