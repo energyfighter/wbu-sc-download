@@ -480,7 +480,7 @@ function vOnline(ev){
   return `<div class="card"><div class="row" style="justify-content:space-between"><b>Online-Anmeldung für Sportler</b>${o.tid?(o.open?'<span class="badge g">veröffentlicht · Anmeldung offen</span>':'<span class="badge y">veröffentlicht · Anmeldung geschlossen</span>'):'<span class="badge">noch nicht veröffentlicht</span>'}</div>
    <label>Angebotene Sportarten</label><div class="chips">${Object.entries(WBU_SPORT).map(([k,x])=>`<div class="chip ${o.sports.includes(k)?'on':''}" onclick="upd(e=>{const s=onl(e).sports,i=s.indexOf('${k}');i>=0?s.splice(i,1):s.push('${k}')})">${x.name}</div>`).join('')}</div>
    <div class="grid2" style="margin-top:4px">${f('schluss','Anmeldeschluss','','date')}${f('fee','Startgeld 1. Start (€)','z. B. 40')}${f('feeMore','Startgeld je weiterer Start (€)','z. B. 20 – leer = gleich')}
-   ${f('payDays','Zahlungsfrist nach Anmeldung (Tage)','z. B. 5')}${f('payBy','Spätester Zahlungseingang','','date')}
+   ${f('grace','Nachfrist nach Anmeldeschluss (Tage)','3')}
    <div><label>Sportärztliches Attest</label><select onchange="upd(e=>onl(e).attest=this.value==='1')"><option value="0" ${o.attest?'':'selected'}>nicht verlangen</option><option value="1" ${o.attest?'selected':''}>Pflicht-Upload für alle Boxer (nicht Shadow Boxing)</option></select></div>
    ${f('inhaber','Kontoinhaber','Empfänger der Überweisung')}${f('iban','IBAN','DE..')}${f('bic','BIC (optional)','')}
    <div><label>Anmeldung</label><select onchange="upd(e=>onl(e).open=this.value==='1')"><option value="1" ${o.open?'selected':''}>offen</option><option value="0" ${o.open?'':'selected'}>geschlossen</option></select></div></div>
@@ -506,7 +506,7 @@ function vOnline(ev){
       <td style="white-space:nowrap">${r.storno?'':payBadge(r)}</td>
       <td style="white-space:nowrap">${imp.has(r.id)?'<span class="badge g">übernommen</span>':''} <button class="btn sec sm" onclick="setStorno('${r.id}',${!r.storno})">${r.storno?'zurückholen':'stornieren'}</button></td></tr>`).join('')}</table>`
     :'<p class="muted">Noch keine Anmeldungen abgeholt. „Anmeldungen abholen“ drücken.</p>'}
-    <p class="note">Alle angemeldeten Sportler kommen sofort ins System; wer bis zur Frist nicht vollständig bezahlt, wird beim nächsten Abholen automatisch wieder aus Kategorie und Bracket entfernt. „In Kategorien übernehmen“ legt die passenden Kategorien automatisch an und trägt die Sportler ein (Paarungen entstehen automatisch). Schon übernommene werden nicht doppelt eingetragen; bereits ausgeloste Kategorien bleiben unverändert.</p></div>`:''}`;
+    <p class="note">Alle angemeldeten Sportler kommen sofort ins System. Nach dem Anmeldeschluss bekommt jeder, der noch nicht vollständig bezahlt hat, automatisch eine Erinnerung mit Nachfrist; wer danach nicht bezahlt hat, wird beim nächsten Abholen automatisch aus Kategorie und Bracket entfernt. „In Kategorien übernehmen“ legt die passenden Kategorien automatisch an und trägt die Sportler ein (Paarungen entstehen automatisch). Schon übernommene werden nicht doppelt eingetragen; bereits ausgeloste Kategorien bleiben unverändert.</p></div>`:''}`;
 }
 function onErr(m){const x=$('onerr');if(x)x.textContent=m;else alertDlg(m)}
 function publish(pass){
@@ -515,7 +515,7 @@ function publish(pass){
   if(!o.sports.length){onErr('Bitte mindestens eine Sportart wählen.');return}
   if(!o.tid&&pass===undefined){dlg(`<h2 style="margin-top:0">Turnier veröffentlichen</h2><p>Zum Veröffentlichen bitte das WBU-Passwort eingeben.</p><input id="pw" type="password" onkeydown="if(event.key==='Enter')publish($('pw').value)"><div id="pwerr" class="note" style="color:#b26a00"></div>
     <div class="row" style="margin-top:12px"><button class="btn" onclick="publish($('pw').value)">Veröffentlichen</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);setTimeout(()=>$('pw')&&$('pw').focus(),0);return}
-  const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,rings:ev.rings||1,payDays:o.payDays||5,payBy:o.payBy||'',inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
+  const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,rings:ev.rings||1,grace:o.grace||3,inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
   api('t_publish',{t,tid:o.tid,key:o.key,pass}).then(async j=>{closeDlg();upd(e=>{onl(e).tid=j.tid;onl(e).key=j.key});try{await syncManual()}catch(x){};onErr('✓ Veröffentlicht.')})
    .catch(e=>{if($('pwerr'))$('pwerr').textContent=e.message;else onErr(e.message)});
 }
@@ -528,7 +528,7 @@ function payCard(ev){const os=(ev.orders||[]).filter(o=>o.status!=='cart'||o.ite
   const sum=st=>os.filter(o=>o.status===st).reduce((s,o)=>s+o.total,0);
   return `<div class="card"><div class="row" style="justify-content:space-between"><b>Zahlungen (nur für dich sichtbar)</b>
     <div class="row"><label class="btn sm" style="margin:0;color:#2a1d00">📄 Kontoauszug einlesen (PDF / CSV)<input type="file" accept=".pdf,.csv,.txt" style="display:none" onchange="readStatement(this)"></label><button class="btn sec sm" onclick="pullRegs()">↻ aktualisieren</button></div></div>
-   <p class="note">Der Kontoauszug wird nur hier im Browser gelesen und nicht hochgeladen. Gefunden werden die Zahlungscodes (WBU-…) im Verwendungszweck; nur wenn die Summe genau stimmt, gilt die Anmeldung als bezahlt – sonst wird sie nach Ablauf der Frist storniert. Bei Fehl- oder Überbetrag bekommt der Verein automatisch eine freundliche E-Mail.</p>
+   <p class="note">Der Kontoauszug wird nur hier im Browser gelesen und nicht hochgeladen. Gefunden werden die Zahlungscodes (WBU-…) im Verwendungszweck; nur wenn die Summe genau stimmt, gilt die Anmeldung als bezahlt – sonst bekommt der Verein nach dem Anmeldeschluss eine Erinnerung und wird nach der Nachfrist storniert. Bei Fehl- oder Überbetrag bekommt der Verein automatisch eine freundliche E-Mail.</p>
    <div id="stmt">${S.stmt||''}</div>
    ${os.length?`<table><tr><th>Code</th><th>Verein</th><th>Sportler</th><th>Summe</th><th>Eingegangen</th><th>Status</th><th>Frist</th><th></th></tr>${os.map(o=>`<tr>
      <td><b>${esc(o.code)}</b></td><td>${esc(o.verein)}<div class="muted">${esc(o.club)}</div></td><td>${o.items.length}</td><td><b>${eur(o.total)}</b></td>
@@ -712,7 +712,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('17')||0;
+const WEB_VERSION=Number('18')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

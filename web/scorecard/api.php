@@ -26,6 +26,7 @@
  *   l_get       – öffentlich: Stand für Live-Seite / Fernseher
  *   l_list      – öffentlich: laufende Live-Veranstaltungen
  */
+date_default_timezone_set('Europe/Berlin');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -115,7 +116,7 @@ function tPublic($t) {
     return ['id' => $t['id'], 'name' => $t['name'], 'ort' => $t['ort'], 'date' => $t['date'], 'promoter' => $t['promoter'],
             'schluss' => $t['schluss'], 'fee' => $t['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'],
             'info' => $t['info'], 'sports' => $t['sports'], 'open' => $t['open'], 'anz' => $cnt, 'pers' => count($pers), 'clubs' => count($clubs), 'docs' => $t['docs'] ?? new stdClass(),
-            'feeMore' => $t['feeMore'] ?? 0, 'attest' => !empty($t['attest']), 'payDays' => $t['payDays'] ?? 5, 'payBy' => $t['payBy'] ?? '', 'rings' => $t['rings'] ?? 1, 'locked' => !empty($t['listpw'])];
+            'feeMore' => $t['feeMore'] ?? 0, 'attest' => !empty($t['attest']), 'grace' => $t['grace'] ?? 3, 'rings' => $t['rings'] ?? 1, 'locked' => !empty($t['listpw'])];
 }
 function tMeta(&$t, $m) {
     $t['name'] = txt($m['name'] ?? ''); $t['ort'] = txt($m['ort'] ?? ''); $t['promoter'] = txt($m['promoter'] ?? '');
@@ -125,8 +126,9 @@ function tMeta(&$t, $m) {
     $t['feeMore'] = max(0, min(9999, round((float)str_replace(',', '.', (string)($m['feeMore'] ?? 0)), 2)));
     $t['attest'] = !empty($m['attest']);
     $t['rings'] = (int)($m['rings'] ?? 1) === 2 ? 2 : 1;
-    $t['payDays'] = max(1, min(30, (int)($m['payDays'] ?? 5)));
-    $t['payBy'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $m['payBy'] ?? '') ? $m['payBy'] : '';
+    $t['grace'] = max(1, min(14, (int)($m['grace'] ?? 3)));
+    // Fristen offener Anmeldungen an Anmeldeschluss/Nachfrist anpassen (außer schon gemahnte)
+    foreach (($t['orders'] ?? []) as $k => $o) if (empty($o['reminded']) && empty($o['paid'])) $t['orders'][$k]['due'] = dueTs($t, $o['created']);
     if (array_key_exists('listpw', $m)) $t['listpw'] = trim((string)$m['listpw']) === '' ? '' : hash('sha256', trim((string)$m['listpw']));
     $t['inhaber'] = txt($m['inhaber'] ?? ''); $t['iban'] = txt(strtoupper(preg_replace('/\s+/', '', (string)($m['iban'] ?? ''))), 40);
     $t['bic'] = txt($m['bic'] ?? '', 20); $t['info'] = txt($m['info'] ?? '', 1500);
@@ -264,10 +266,11 @@ function newCode($t) {
          $dup = false; foreach (($t['orders'] ?? []) as $o) if ($o['code'] === $c) $dup = true; } while ($dup);
     return $c;
 }
+/** Zahlungsfrist: Anmeldeschluss + Nachfrist (Standard 3 Tage). Bis zum Anmeldeschluss fliegt niemand raus. */
 function dueTs($t, $from) {
-    $d = $from + max(1, (int)($t['payDays'] ?? 5)) * 86400;
-    if (!empty($t['payBy'])) $d = min($d, strtotime($t['payBy'] . ' 23:59:59'));
-    return $d;
+    $base = $t['schluss'] ?: $t['date'];
+    if (!$base) return $from + 7 * 86400;
+    return strtotime($base . ' 23:59:59') + max(1, (int)($t['grace'] ?? 3)) * 86400;
 }
 /** Startgeld neu berechnen (nur im Warenkorb): erster Start eines Sportlers voll, jeder weitere ermäßigt */
 function recalcFees(&$t) {
@@ -291,8 +294,9 @@ function wbuMail($to, $subject, $body) {
 }
 function euro($v) { return number_format((float)$v, 2, ',', '.') . ' €'; }
 function bankText($t, $o, $betrag) {
+    $bis = !empty($o['reminded']) ? date('d.m.Y', $o['due']) : 'sofort, spätestens zum Anmeldeschluss ' . date('d.m.Y', strtotime($t['schluss'] ?: $t['date']));
     return "Betrag: " . euro($betrag) . "\nEmpfänger: {$t['inhaber']}\nIBAN: {$t['iban']}" . ($t['bic'] ? "\nBIC: {$t['bic']}" : '') .
-           "\nVerwendungszweck: {$o['code']}\nZahlbar bis: " . date('d.m.Y', $o['due']);
+           "\nVerwendungszweck: {$o['code']}\nZahlbar: $bis";
 }
 /** Nach einer Zahlungsänderung: Verein freundlich informieren (jede Nachricht nur einmal) */
 function payMail(&$t, &$o) {
@@ -310,7 +314,7 @@ function payMail(&$t, &$o) {
         "Deine Sportler sind im System:\n\n$list\n\nDen zu viel gezahlten Betrag von " . euro($amt - $total) . " klären wir mit dir – wir melden uns.");
     else wbuMail($o['club'], "Zahlung unvollständig – bitte Restbetrag überweisen – {$t['name']}",
         "Hallo,\n\nfür deine Anmeldung {$o['code']} ist eine Zahlung über " . euro($amt) . " eingegangen – die Summe beträgt aber " . euro($total) . ".\n" .
-        "Es fehlen noch " . euro($total - $amt) . ". Bitte überweise den Rest bis " . date('d.m.Y', $o['due']) . " – sonst verfällt die Anmeldung und diese Sportler werden wieder entfernt:\n\n$list\n\n" .
+        "Es fehlen noch " . euro($total - $amt) . ". Bitte überweise den Rest – sonst werden diese Sportler nach dem Anmeldeschluss und einer kurzen Nachfrist wieder entfernt:\n\n$list\n\n" .
         "Bitte überweise den Restbetrag:\n\n" . bankText($t, $o, $total - $amt) . "\n\nVielen Dank!");
 }
 
@@ -319,7 +323,7 @@ function orderView($t, $o) {
     foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $o['id'] && empty($x['storno']))
         $items[] = ['id' => $x['id'], 'no' => $x['no'], 'vorname' => $x['vorname'], 'name' => $x['name'], 'nr' => $x['nr'], 'klasse' => $x['klasse'], 'fee' => $x['fee']];
     return ['id' => $o['id'], 'code' => $o['code'], 'status' => ostat($o), 'created' => $o['created'], 'closed' => $o['closed'] ?? null, 'due' => $o['due'],
-            'total' => orderTotal($t, $o['id']), 'paidAmt' => $o['paidAmt'] ?? null, 'paidAt' => $o['paid'] ?? null, 'verein' => $o['verein'], 'club' => $o['club'], 'items' => $items];
+            'reminded' => $o['reminded'] ?? null, 'total' => orderTotal($t, $o['id']), 'paidAmt' => $o['paidAmt'] ?? null, 'paidAt' => $o['paid'] ?? null, 'verein' => $o['verein'], 'club' => $o['club'], 'items' => $items];
 }
 
 switch ($a) {
@@ -508,6 +512,40 @@ case 't_foto':     // mit Login: Foto eines Sportlers
     fail('Kein Foto', 404);
 
 
+
+case 'cron':   // vom Cronjob (über update.php): nach Anmeldeschluss Zahlungserinnerung mit Nachfrist verschicken
+    if (!is_array($CFG) || empty($CFG['update_key']) || !hash_equals($CFG['update_key'], (string)($_GET['key'] ?? ''))) fail('Nicht berechtigt', 403);
+    $sent = 0;
+    foreach (glob("$DIR/tu_*.json") as $f) {
+        $id = substr(basename($f, '.json'), 3);
+        $t0 = json_decode((string)@file_get_contents($f), true);
+        $base = is_array($t0) ? ($t0['schluss'] ?: $t0['date']) : '';
+        if (!$base || time() <= strtotime($base . ' 23:59:59') || empty($t0['orders'])) continue;
+        $sent += withTurnier($id, function (&$t) {
+            $n = 0; $grace = max(1, (int)($t['grace'] ?? 3));
+            foreach ($t['orders'] as $k => $o) {
+                $st = ostat($o);
+                if (!empty($o['reminded']) || $st === 'paid' || $st === 'storno') continue;
+                $total = orderTotal($t, $o['id']);
+                if ($total <= 0) continue;
+                $o = &$t['orders'][$k];
+                if (empty($o['closed'])) { $o['closed'] = time(); $o['total'] = $total; }
+                $o['due'] = max($o['due'] ?? 0, strtotime(date('Y-m-d', time() + $grace * 86400) . ' 23:59:59'));
+                $o['reminded'] = time();
+                $amt = (float)($o['paidAmt'] ?? 0); $rest = round($total - $amt, 2);
+                $names = []; foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $o['id'] && empty($x['storno'])) $names[] = "- {$x['vorname']} {$x['name']} (Kategorie {$x['nr']})";
+                wbuMail($o['club'], "Letzte Erinnerung: Startgeld bitte innerhalb von $grace Tagen überweisen – {$t['name']}",
+                    "Hallo,\n\nder Anmeldeschluss für {$t['name']} ist vorbei. Für deine Anmeldung {$o['code']} ist das Startgeld noch nicht vollständig bei uns eingegangen" .
+                    ($amt > 0 ? " (eingegangen: " . euro($amt) . " von " . euro($total) . ")" : '') . ".\n\n" .
+                    "Bitte überweise innerhalb von $grace Tagen – bis spätestens " . date('d.m.Y', $o['due']) . ":\n\n" . bankText($t, $o, $rest) . "\n\n" .
+                    "Ist der Betrag bis dahin nicht vollständig eingegangen, werden diese Sportler komplett aus dem Turnier entfernt:\n\n" . implode("\n", $names) . "\n\nVielen Dank!");
+                unset($o); $n++;
+            }
+            return $n;
+        }, true);
+    }
+    out(['ok' => true, 'sent' => $sent]);
+
 case 'c_register':   // Club / Trainer / Einzelsportler legt ein Konto an
     $email = mb_strtolower(trim((string)($in['email'] ?? '')));
     $pw = (string)($in['pw'] ?? '');
@@ -689,7 +727,7 @@ case 't_my':        // Verein: eigene Anmeldungen, Warenkorb, Zahlungen
         $os = [];
         foreach (($t['orders'] ?? []) as $o) if ($o['club'] === $club['email']) $os[] = orderView($t, $o);
         usort($os, function ($a, $b) { return $b['created'] - $a['created']; });
-        return ['orders' => $os, 'bank' => ['inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic']], 'payDays' => $t['payDays'] ?? 5, 'payBy' => $t['payBy'] ?? ''];
+        return ['orders' => $os, 'bank' => ['inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic']], 'schluss' => $t['schluss'] ?: $t['date']];
     });
     out(['ok' => true] + $r);
 
@@ -716,7 +754,7 @@ case 't_cartdel':   // Verein: Sportler aus dem Warenkorb nehmen
         wbuMail($o['club'], "Deine Anmeldung {$o['code']} – bitte jetzt überweisen – {$t['name']}",
             "Hallo,\n\nvielen Dank für deine Anmeldung zu {$t['name']}:\n\n" . implode("\n", $names) . "\n\nBitte überweise jetzt genau diesen Betrag:\n\n" .
             bankText($t, $o, $o['total']) . "\n\nBitte nur den Code {$o['code']} als Verwendungszweck angeben. Deine Sportler stehen schon in der Teilnehmerliste. " .
-            "Kommt der Betrag nicht vollständig bis " . date('d.m.Y', $o['due']) . " an, verfällt die Anmeldung und die Sportler werden wieder entfernt.");
+            "Wer bis zum Anmeldeschluss nicht vollständig bezahlt hat, bekommt noch eine Erinnerung mit kurzer Nachfrist – danach werden die Sportler entfernt.");
         return ['order' => orderView($t, $o)];
     }, true);
     out(['ok' => true] + $r);

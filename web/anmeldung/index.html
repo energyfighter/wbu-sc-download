@@ -269,7 +269,7 @@ function vForm(){
     <input class="hp" id="f_website" tabindex="-1" autocomplete="off">
     <label class="chk"><input type="checkbox" id="f_ok" ${$('f_ok')?.checked?'checked':''}><span>Ich bin damit einverstanden, dass meine Angaben für die Durchführung des Turniers gespeichert und Name, Verein und Ergebnisse veröffentlicht werden. Bei Minderjährigen: Ein Erziehungsberechtigter ist einverstanden.</span></label>
     <p id="ferr" class="err">${esc(S.err)}</p>
-    <p class="muted">Der Sportler steht sofort in der Teilnehmerliste. Wenn alle eingetragen sind: „Fertig – jetzt bezahlen“ und die Gesamtsumme mit dem Zahlungscode überweisen. Ohne vollständige Zahlung bis zur Frist wird die Anmeldung storniert und die Sportler werden wieder entfernt.</p>
+    <p class="muted">Der Sportler steht sofort in der Teilnehmerliste. Wenn alle eingetragen sind: „Fertig – jetzt bezahlen“ und die Gesamtsumme mit dem Zahlungscode überweisen. Nach dem Anmeldeschluss gibt es für Unbezahlte noch eine Erinnerung mit kurzer Nachfrist – danach werden sie entfernt.</p>
     <button class="btn full" id="sendbtn" onclick="send()">Sportler eintragen</button></div>`}`;
 }
 // ===================== Meine Anmeldungen & Bezahlung =====================
@@ -279,8 +279,8 @@ const ST={cart:['Noch nicht abgeschlossen','#e2a500'],open:['Zahlung offen','#e2
 function payBox(o,b){const iban=(b.iban||'').replace(/(.{4})/g,'$1 ').trim();
   return `<div class="kl" style="margin-top:10px"><b>Jetzt überweisen – genau diesen Betrag:</b>
    <div class="pay" style="margin-top:6px"><span>Betrag</span><b style="font-size:20px">${euro(o.total)}</b><span>Empfänger</span><b>${esc(b.inhaber||'–')}</b><span>IBAN</span><b>${esc(iban)}</b>${b.bic?`<span>BIC</span><b>${esc(b.bic)}</b>`:''}
-   <span>Verwendungszweck</span><b style="font-size:20px">${esc(o.code)}</b><span>Zahlbar bis</span><b>${dt(o.due)}</b></div>
-   <p style="margin:8px 0 0">Bitte <b>nur den Code ${esc(o.code)}</b> als Verwendungszweck angeben. Kommt der Betrag nicht vollständig bis ${dt(o.due)} an, verfällt die ganze Anmeldung und die Sportler werden wieder entfernt.</p></div>`}
+   <span>Verwendungszweck</span><b style="font-size:20px">${esc(o.code)}</b><span>Zahlbar</span><b>${o.reminded?'bis spätestens '+dt(o.due):'sofort – spätestens zum Anmeldeschluss '+deDate(S.my.schluss)}</b></div>
+   <p style="margin:8px 0 0">Bitte <b>nur den Code ${esc(o.code)}</b> als Verwendungszweck angeben. ${o.reminded?`<b style="color:var(--red)">Letzte Frist: Ist der Betrag bis ${dt(o.due)} nicht vollständig da, werden die Sportler komplett entfernt.</b>`:'Wer bis zum Anmeldeschluss nicht vollständig bezahlt hat, bekommt noch eine Erinnerung mit kurzer Nachfrist – danach werden die Sportler entfernt.'}</p></div>`}
 function vMy(){
   const M=S.my;if(!M)return `<div class="card">${esc(S.myErr||'Lädt …')}</div>`;
   const cart=M.orders.find(o=>o.status==='cart'),rest=M.orders.filter(o=>o!==cart);
@@ -288,7 +288,7 @@ function vMy(){
   <div class="card"><h2 style="margin-top:0">Offene Anmeldung</h2>
    ${cart?`<table class="l"><tr><th>Sportler</th><th>Kategorie</th><th>Startgeld</th><th></th></tr>${cart.items.map(x=>`<tr><td><b>${esc(x.vorname)} ${esc(x.name)}</b></td><td>${x.nr}</td><td>${euro(x.fee)}</td><td><a href="#" style="color:var(--red);font-weight:700" onclick="cartDel('${x.id}');return false">entfernen</a></td></tr>`).join('')}
      <tr><td colspan="2"><b>Summe</b></td><td colspan="2"><b style="font-size:18px">${euro(cart.total)}</b></td></tr></table>
-     <p class="muted">Die Sportler stehen schon in der Teilnehmerliste. Bitte bis ${dt(cart.due)} abschließen und bezahlen, sonst verfällt die Anmeldung und sie werden wieder entfernt.</p>
+     <p class="muted">Die Sportler stehen schon in der Teilnehmerliste. Bitte abschließen und sofort bezahlen – spätestens zum Anmeldeschluss ${deDate(S.my.schluss)}.</p>
      <div class="g2"><button class="btn sec full" onclick="S.added='';S.tab='anm';render();scrollTo(0,0)">+ Weiteren Sportler eintragen</button><button class="btn full" onclick="checkout('${cart.id}')">Fertig – jetzt bezahlen</button></div>`
    :`<p class="muted" style="margin:0">Keine offene Anmeldung. <a href="#" style="color:#000;font-weight:700" onclick="S.tab='anm';render();return false">Sportler eintragen</a></p>`}</div>
   ${rest.map(o=>`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:17px">Anmeldung ${esc(o.code)}</b><span class="badge" style="background:${ST[o.status][1]};color:${o.status==='open'?'#2a1d00':'#fff'};border:0">${ST[o.status][0]}</span></div>
@@ -393,7 +393,7 @@ function render(keepInputs){
   const h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList();
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('17')||0;
+const WEB_VERSION=Number('18')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';

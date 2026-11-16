@@ -14,6 +14,15 @@ $cfg = @include __DIR__ . '/config.php';
 if (!is_array($cfg) || empty($cfg['update_key'])) { http_response_code(500); exit("config.php fehlt\n"); }
 if (!hash_equals($cfg['update_key'], (string)($_GET['key'] ?? ''))) { http_response_code(403); exit("Nicht berechtigt\n"); }
 
+// Bei jedem Cronjob-Lauf: Zahlungserinnerungen nach Anmeldeschluss verschicken (Aufgabe steckt in api.php)
+$host = preg_replace('/[^a-z0-9.\-:]/i', '', $_SERVER['HTTP_HOST'] ?? '');
+if ($host !== '') {
+    $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $c = @json_decode((string)@file_get_contents("$proto://$host" . dirname($_SERVER['SCRIPT_NAME']) . '/api.php?a=cron&key=' . urlencode($cfg['update_key']),
+        false, stream_context_create(['http' => ['timeout' => 20], 'ssl' => ['verify_peer' => false, 'verify_peer_name' => false]])), true);
+    if (!empty($c['sent'])) echo "Zahlungserinnerungen verschickt: {$c['sent']}\n";
+}
+
 $BASE = 'https://raw.githubusercontent.com/energyfighter/wbu-sc-download/main/web/';
 $WEBROOT = dirname(__DIR__);                      // Ordner, in dem "scorecard" liegt
 // Nur diese Dateien dürfen ersetzt werden (Ziel relativ zum Webroot)
