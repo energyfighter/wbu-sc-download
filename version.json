@@ -1,6 +1,6 @@
 {
-  "versionCode": 13,
-  "versionName": "1.13",
+  "versionCode": 14,
+  "versionName": "1.14",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Test der Update-Funktion"
+  "notes": "Künftige Updates mit weniger Rückfragen"
 }
