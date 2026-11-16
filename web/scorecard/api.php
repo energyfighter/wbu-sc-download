@@ -108,14 +108,14 @@ function tKeyOk($t, $key) { return is_string($key) && $key !== '' && hash_equals
 // Öffentliche Angaben (ohne Schlüssel und ohne Anmeldedaten)
 function tPublic($t) {
     $cnt = 0; $pers = []; $clubs = [];
-    foreach ($t['regs'] as $r) if (empty($r['storno'])) {
+    foreach ($t['regs'] as $r) if (regIn($t, $r)) {
         $cnt++; $pers[mb_strtolower($r['vorname'] . '|' . $r['name'] . '|' . $r['geb'])] = 1;
         if (trim($r['verein']) !== '') $clubs[mb_strtolower(trim($r['verein']))] = 1;
     }
     return ['id' => $t['id'], 'name' => $t['name'], 'ort' => $t['ort'], 'date' => $t['date'], 'promoter' => $t['promoter'],
             'schluss' => $t['schluss'], 'fee' => $t['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'],
             'info' => $t['info'], 'sports' => $t['sports'], 'open' => $t['open'], 'anz' => $cnt, 'pers' => count($pers), 'clubs' => count($clubs), 'docs' => $t['docs'] ?? new stdClass(),
-            'feeMore' => $t['feeMore'] ?? 0, 'attest' => !empty($t['attest']), 'rings' => $t['rings'] ?? 1, 'locked' => !empty($t['listpw'])];
+            'feeMore' => $t['feeMore'] ?? 0, 'attest' => !empty($t['attest']), 'payDays' => $t['payDays'] ?? 5, 'payBy' => $t['payBy'] ?? '', 'rings' => $t['rings'] ?? 1, 'locked' => !empty($t['listpw'])];
 }
 function tMeta(&$t, $m) {
     $t['name'] = txt($m['name'] ?? ''); $t['ort'] = txt($m['ort'] ?? ''); $t['promoter'] = txt($m['promoter'] ?? '');
@@ -125,6 +125,8 @@ function tMeta(&$t, $m) {
     $t['feeMore'] = max(0, min(9999, round((float)str_replace(',', '.', (string)($m['feeMore'] ?? 0)), 2)));
     $t['attest'] = !empty($m['attest']);
     $t['rings'] = (int)($m['rings'] ?? 1) === 2 ? 2 : 1;
+    $t['payDays'] = max(1, min(30, (int)($m['payDays'] ?? 5)));
+    $t['payBy'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $m['payBy'] ?? '') ? $m['payBy'] : '';
     if (array_key_exists('listpw', $m)) $t['listpw'] = trim((string)$m['listpw']) === '' ? '' : hash('sha256', trim((string)$m['listpw']));
     $t['inhaber'] = txt($m['inhaber'] ?? ''); $t['iban'] = txt(strtoupper(preg_replace('/\s+/', '', (string)($m['iban'] ?? ''))), 40);
     $t['bic'] = txt($m['bic'] ?? '', 20); $t['info'] = txt($m['info'] ?? '', 1500);
@@ -229,6 +231,92 @@ function clubByToken($tok) {
     $hs = hash('sha256', $tok);
     foreach ($c as $em => $a) if (in_array($hs, $a['tok'] ?? [], true)) return clubPublic($em, $a);
     return null;
+}
+
+
+// ---- Bezahlung per Überweisung: jede Anmeldung (Warenkorb) hat einen Zahlungscode ----
+// Status: cart (noch offen) -> open (abgeschlossen, Zahlung offen) -> paid; nach Ablauf der Frist ohne Zahlung: storno
+function ostat($o) {
+    if (!empty($o['paid'])) return 'paid';
+    if (!empty($o['storno']) || time() > ($o['due'] ?? 0)) return 'storno';
+    return empty($o['closed']) ? 'cart' : 'open';
+}
+/** Zählt dieser Sportler im System (Teilnehmerliste, Kategorien, Bracket)? Nur wenn bezahlt. */
+function regIn($t, $x) {
+    if (!empty($x['storno'])) return false;
+    if (empty($x['oid'])) return !empty($x['paid']) || ($x['club'] ?? '') === 'veranstalter' || empty($t['fee']);
+    $o = $t['orders'][$x['oid']] ?? null;
+    return $o && ostat($o) === 'paid';
+}
+/** Noch nicht verfallen (bezahlt, offen oder im Warenkorb) */
+function regAlive($t, $x) {
+    if (!empty($x['storno'])) return false;
+    if (empty($x['oid'])) return true;
+    $o = $t['orders'][$x['oid']] ?? null;
+    return $o && ostat($o) !== 'storno';
+}
+function newCode($t) {
+    $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    do { $c = 'WBU-'; for ($i = 0; $i < 6; $i++) $c .= $chars[random_int(0, strlen($chars) - 1)];
+         $dup = false; foreach (($t['orders'] ?? []) as $o) if ($o['code'] === $c) $dup = true; } while ($dup);
+    return $c;
+}
+function dueTs($t, $from) {
+    $d = $from + max(1, (int)($t['payDays'] ?? 5)) * 86400;
+    if (!empty($t['payBy'])) $d = min($d, strtotime($t['payBy'] . ' 23:59:59'));
+    return $d;
+}
+/** Startgeld neu berechnen (nur im Warenkorb): erster Start eines Sportlers voll, jeder weitere ermäßigt */
+function recalcFees(&$t) {
+    $seen = [];
+    usort($t['regs'], function ($a, $b) { return $a['no'] - $b['no']; });
+    foreach ($t['regs'] as &$x) {
+        if (!regAlive($t, $x)) continue;
+        $p = mb_strtolower($x['vorname'] . '|' . $x['name'] . '|' . $x['geb']);
+        $fee = (isset($seen[$p]) && !empty($t['feeMore'])) ? $t['feeMore'] : $t['fee'];
+        $seen[$p] = 1;
+        if (!empty($x['oid']) && ostat($t['orders'][$x['oid']]) === 'cart') $x['fee'] = $fee;
+    }
+}
+function orderTotal($t, $oid) { $s = 0; foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $oid && empty($x['storno'])) $s += (float)$x['fee']; return round($s, 2); }
+/** E-Mail an den Verein (Absender noreply@<Domain>) */
+function wbuMail($to, $subject, $body) {
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) return false;
+    $host = preg_replace('/^www\./', '', preg_replace('/[^a-z0-9.\-]/i', '', $_SERVER['HTTP_HOST'] ?? '')) ?: 'wbu-boxing.com';
+    $hdr = "From: WBU Turniere <noreply@$host>\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit";
+    return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body . "\n\nWorld Boxing Union", $hdr);
+}
+function euro($v) { return number_format((float)$v, 2, ',', '.') . ' €'; }
+function bankText($t, $o, $betrag) {
+    return "Betrag: " . euro($betrag) . "\nEmpfänger: {$t['inhaber']}\nIBAN: {$t['iban']}" . ($t['bic'] ? "\nBIC: {$t['bic']}" : '') .
+           "\nVerwendungszweck: {$o['code']}\nZahlbar bis: " . date('d.m.Y', $o['due']);
+}
+/** Nach einer Zahlungsänderung: Verein freundlich informieren (jede Nachricht nur einmal) */
+function payMail(&$t, &$o) {
+    $total = orderTotal($t, $o['id']); $amt = (float)($o['paidAmt'] ?? 0);
+    $st = !empty($o['paid']) ? ($amt > $total + 0.004 ? 'zuviel' : 'ok') : ($amt > 0 ? 'zuwenig' : '');
+    $key = $st . '|' . number_format($amt, 2);
+    if ($st === '' || ($o['mailKey'] ?? '') === $key) return;
+    $o['mailKey'] = $key;
+    $names = []; foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $o['id'] && empty($x['storno'])) $names[] = "- {$x['vorname']} {$x['name']} (Kategorie {$x['nr']})";
+    $list = implode("\n", $names);
+    if ($st === 'ok') wbuMail($o['club'], "Zahlung eingegangen – {$t['name']}",
+        "Hallo,\n\nvielen Dank! Deine Zahlung über " . euro($amt) . " (Code {$o['code']}) ist eingegangen.\nDiese Sportler sind jetzt für {$t['name']} im System:\n\n$list\n\nWir freuen uns auf euch!");
+    elseif ($st === 'zuviel') wbuMail($o['club'], "Zahlung eingegangen – etwas zu viel überwiesen – {$t['name']}",
+        "Hallo,\n\nvielen Dank! Für deine Anmeldung {$o['code']} sind " . euro($amt) . " eingegangen, die Summe beträgt aber nur " . euro($total) . ".\n" .
+        "Deine Sportler sind im System:\n\n$list\n\nDen zu viel gezahlten Betrag von " . euro($amt - $total) . " klären wir mit dir – wir melden uns.");
+    else wbuMail($o['club'], "Zahlung unvollständig – bitte Restbetrag überweisen – {$t['name']}",
+        "Hallo,\n\nfür deine Anmeldung {$o['code']} ist eine Zahlung über " . euro($amt) . " eingegangen – die Summe beträgt aber " . euro($total) . ".\n" .
+        "Es fehlen noch " . euro($total - $amt) . ". Solange der Betrag nicht vollständig ist, sind die Sportler noch nicht im System:\n\n$list\n\n" .
+        "Bitte überweise den Restbetrag:\n\n" . bankText($t, $o, $total - $amt) . "\n\nVielen Dank!");
+}
+
+function orderView($t, $o) {
+    $items = [];
+    foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $o['id'] && empty($x['storno']))
+        $items[] = ['id' => $x['id'], 'no' => $x['no'], 'vorname' => $x['vorname'], 'name' => $x['name'], 'nr' => $x['nr'], 'klasse' => $x['klasse'], 'fee' => $x['fee']];
+    return ['id' => $o['id'], 'code' => $o['code'], 'status' => ostat($o), 'created' => $o['created'], 'closed' => $o['closed'] ?? null, 'due' => $o['due'],
+            'total' => orderTotal($t, $o['id']), 'paidAmt' => $o['paidAmt'] ?? null, 'paidAt' => $o['paid'] ?? null, 'verein' => $o['verein'], 'club' => $o['club'], 'items' => $items];
 }
 
 switch ($a) {
@@ -392,7 +480,7 @@ case 't_public':   // nur mit Login: Teilnehmer, Kategorien, Clubs (ohne Kontakt
         $full = $club !== null;
         $list = []; $pids = []; $clubs = [];
         foreach ($t['regs'] as $x) {
-            if (!empty($x['storno'])) continue;
+            if (!regIn($t, $x)) continue;   // nur bezahlte Sportler sind im System
             $pids[mb_strtolower($x['vorname'] . '|' . $x['name'] . '|' . $x['geb'])] = 1; $clubs[mb_strtolower($x['verein'])] = 1;
             if (!$full) continue;   // ohne Login nur die Gesamtzahlen
             $e = ['id' => $x['id'], 'no' => $x['no'], 'nr' => $x['nr'], 'sp' => $x['sp'], 'sex' => $x['sex'], 'klasse' => $x['klasse'],
@@ -402,7 +490,7 @@ case 't_public':   // nur mit Login: Teilnehmer, Kategorien, Clubs (ohne Kontakt
             $e['own'] = ($x['club'] ?? '') === $club['email'];
             $list[] = $e;
         }
-        $starts = 0; foreach ($t['regs'] as $x) if (empty($x['storno'])) $starts++;
+        $starts = 0; foreach ($t['regs'] as $x) if (regIn($t, $x)) $starts++;
         return ['regs' => $list, 'full' => $full, 'count' => ['persons' => count($pids), 'starts' => $starts, 'clubs' => count($clubs)]];
     });
     out(['ok' => true] + $r);
@@ -527,7 +615,7 @@ case 't_register':
         if (!tOffen($t)) fail('Die Anmeldung für dieses Turnier ist geschlossen', 403);
         if (!in_array($reg['sp'], $t['sports'], true)) fail('Diese Sportart wird bei diesem Turnier nicht angeboten');
         foreach ($t['regs'] as $x) {
-            if (empty($x['storno']) && $x['nr'] === $reg['nr'] && $x['geb'] === $reg['geb']
+            if (regAlive($t, $x) && $x['nr'] === $reg['nr'] && $x['geb'] === $reg['geb']
                 && mb_strtolower($x['name'] . $x['vorname']) === mb_strtolower($reg['name'] . $reg['vorname'])) fail('Dieser Sportler ist in dieser Klasse bereits angemeldet');
         }
         if (count($t['regs']) >= 3000) fail('Teilnehmerzahl erreicht', 403);
@@ -549,12 +637,20 @@ case 't_register':
             $reg['foto'] = $ext;
         }
         $reg['need'] = $need; $reg['frei'] = true;
-        // Startgeld: erster Start voll, jeder weitere Start desselben Sportlers ermäßigt
-        $more = false;
-        foreach ($t['regs'] as $x) if (empty($x['storno']) && $x['geb'] === $reg['geb'] && mb_strtolower($x['name'] . $x['vorname']) === mb_strtolower($reg['name'] . $reg['vorname'])) $more = true;
-        $reg['fee'] = ($more && !empty($t['feeMore'])) ? $t['feeMore'] : $t['fee'];
+        // Warenkorb des Vereins für dieses Turnier (ein Zahlungscode für alle Sportler darin)
+        if (!empty($t['fee'])) {
+            $t['orders'] = $t['orders'] ?? [];
+            $oid = null;
+            foreach ($t['orders'] as $o) if ($o['club'] === $reg['club'] && ostat($o) === 'cart') $oid = $o['id'];
+            if (!$oid) {
+                $oid = bin2hex(random_bytes(5));
+                $t['orders'][$oid] = ['id' => $oid, 'code' => newCode($t), 'club' => $reg['club'], 'verein' => $reg['verein'], 'created' => time(), 'due' => dueTs($t, time()), 'closed' => null];
+            }
+            $reg['oid'] = $oid; $reg['fee'] = $t['fee'];
+        } else $reg['fee'] = 0;
         $t['regs'][] = $reg;
-        return ['no' => $reg['no'], 'fee' => $reg['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'], 'name' => $t['name']];
+        recalcFees($t);
+        return ['no' => $reg['no'], 'name' => $t['name']];
     }, true);
     out(['ok' => true] + $res);
 
@@ -582,10 +678,98 @@ case 't_import':   // Veranstalter: in WBU Sports eingetragene / vorab gemeldete
     }, true);
     out(['ok' => true] + $r);
 
+
+case 't_my':        // Verein: eigene Anmeldungen, Warenkorb, Zahlungen
+    $club = needLogin($in['tok'] ?? '');
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($club) {
+        $os = [];
+        foreach (($t['orders'] ?? []) as $o) if ($o['club'] === $club['email']) $os[] = orderView($t, $o);
+        usort($os, function ($a, $b) { return $b['created'] - $a['created']; });
+        return ['orders' => $os, 'bank' => ['inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic']], 'payDays' => $t['payDays'] ?? 5, 'payBy' => $t['payBy'] ?? ''];
+    });
+    out(['ok' => true] + $r);
+
+case 't_checkout':  // Verein: Anmeldung abschließen -> Summe steht fest, jetzt überweisen
+case 't_cartdel':   // Verein: Sportler aus dem Warenkorb nehmen
+    $club = needLogin($in['tok'] ?? '');
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($club, $in, $a) {
+        if ($a === 't_cartdel') {
+            foreach ($t['regs'] as &$x) if ($x['id'] === ($in['rid'] ?? '') && ($x['club'] ?? '') === $club['email']) {
+                $o = $t['orders'][$x['oid'] ?? ''] ?? null;
+                if (!$o || ostat($o) !== 'cart') fail('Nur Sportler einer noch nicht abgeschlossenen Anmeldung können entfernt werden');
+                $x['storno'] = true; unset($x);
+                recalcFees($t);
+                return ['ok' => 1];
+            }
+            fail('Nicht gefunden', 404);
+        }
+        if (!isset($t['orders'][$in['oid'] ?? ''])) fail('Anmeldung nicht gefunden', 404);
+        $o = &$t['orders'][$in['oid']];
+        if ($o['club'] !== $club['email'] || ostat($o) !== 'cart') fail('Diese Anmeldung kann nicht abgeschlossen werden');
+        if (orderTotal($t, $o['id']) <= 0) fail('Die Anmeldung ist leer');
+        $o['closed'] = time(); $o['total'] = orderTotal($t, $o['id']);
+        $names = []; foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $o['id'] && empty($x['storno'])) $names[] = "- {$x['vorname']} {$x['name']} (Kategorie {$x['nr']}): " . euro($x['fee']);
+        wbuMail($o['club'], "Deine Anmeldung {$o['code']} – bitte jetzt überweisen – {$t['name']}",
+            "Hallo,\n\nvielen Dank für deine Anmeldung zu {$t['name']}:\n\n" . implode("\n", $names) . "\n\nBitte überweise jetzt genau diesen Betrag:\n\n" .
+            bankText($t, $o, $o['total']) . "\n\nBitte nur den Code {$o['code']} als Verwendungszweck angeben. Erst nach Zahlungseingang sind die Sportler im System. " .
+            "Kommt der Betrag nicht vollständig bis " . date('d.m.Y', $o['due']) . " an, verfällt die Anmeldung.");
+        return ['order' => orderView($t, $o)];
+    }, true);
+    out(['ok' => true] + $r);
+
+case 't_pay':       // Veranstalter: Zahlungen aus dem Kontoauszug zuordnen (Betrag muss genau passen)
+case 't_opaid':     // Veranstalter: Zahlung von Hand bestätigen / zurücknehmen
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in, $a) {
+        if (!tKeyOk($t, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        $res = [];
+        if ($a === 't_opaid') {
+            if (!isset($t['orders'][$in['oid'] ?? ''])) fail('Nicht gefunden', 404);
+            $o = &$t['orders'][$in['oid']];
+            if (!empty($in['paid'])) { $o['paid'] = time(); $o['paidAmt'] = orderTotal($t, $o['id']); $o['manual'] = true; payMail($t, $o); }
+            else { $o['paid'] = null; $o['paidAmt'] = round(array_sum($o['tx'] ?? []), 2) ?: null; $o['manual'] = false; }
+            return ['res' => []];
+        }
+        // Buchungen je Code sammeln: jede Buchung hat eine eigene Kennung, doppelt eingelesene Auszüge zählen nicht doppelt
+        foreach ((array)($in['items'] ?? []) as $it) {
+            $code = strtoupper(preg_replace('/[^A-Z0-9]/i', '', (string)($it['code'] ?? '')));
+            $amt = round((float)($it['amount'] ?? 0), 2);
+            $ref = substr(preg_replace('/[^a-z0-9]/i', '', (string)($it['ref'] ?? '')), 0, 64) ?: md5($code . $amt);
+            $found = null;
+            foreach ($t['orders'] as $k => $o) if (str_replace('-', '', $o['code']) === $code) $found = $k;
+            if ($found === null) { $res[] = ['code' => $it['code'], 'st' => 'unbekannt', 'amount' => $amt]; continue; }
+            $o = &$t['orders'][$found];
+            if ($amt > 0) { $o['tx'] = $o['tx'] ?? []; $o['tx'][$ref] = $amt; }
+            unset($o);
+        }
+        $done = [];
+        foreach ((array)($in['items'] ?? []) as $it) {
+            $code = strtoupper(preg_replace('/[^A-Z0-9]/i', '', (string)($it['code'] ?? '')));
+            foreach ($t['orders'] as $k => $o) if (str_replace('-', '', $o['code']) === $code && !isset($done[$k])) {
+                $done[$k] = 1;
+                $o = &$t['orders'][$k];
+                $total = orderTotal($t, $o['id']);
+                $sum = round(array_sum($o['tx'] ?? []), 2);
+                if (empty($o['manual'])) {
+                    $o['paidAmt'] = $sum;
+                    if (empty($o['closed'])) $o['closed'] = time();
+                    $o['paid'] = ($sum + 0.004 >= $total && $total > 0) ? ($o['paid'] ?: time()) : null;
+                }
+                payMail($t, $o);
+                $res[] = ['code' => $o['code'], 'verein' => $o['verein'], 'st' => !empty($o['paid']) ? ($sum > $total + 0.004 ? 'zu viel' : 'bezahlt') : 'zu wenig', 'total' => $total, 'amount' => $sum];
+                unset($o);
+            }
+        }
+        return ['res' => $res];
+    }, true);
+    out(['ok' => true] + $r);
+
 case 't_regs':
     $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in) {
         if (!tKeyOk($t, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
-        return ['regs' => $t['regs'], 'turnier' => tPublic($t)];
+        $regs = [];
+        foreach ($t['regs'] as $x) { $x['paid'] = regIn($t, $x); $x['ostat'] = !empty($x['oid']) && isset($t['orders'][$x['oid']]) ? ostat($t['orders'][$x['oid']]) : ($x['paid'] ? 'paid' : ''); $regs[] = $x; }
+        $os = []; foreach (($t['orders'] ?? []) as $o) $os[] = orderView($t, $o);
+        return ['regs' => $regs, 'orders' => $os, 'turnier' => tPublic($t)];
     });
     out(['ok' => true] + $r);
 

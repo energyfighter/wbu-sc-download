@@ -476,10 +476,11 @@ function vOnline(ev){
   const o=onl(ev),regs=ev.regs||[],f=(k,l,ph,type)=>`<div><label>${l}</label><input ${type?`type="${type}"`:''} value="${esc(o[k]||'')}" placeholder="${ph||''}" onchange="upd(e=>onl(e).${k}=this.value)"></div>`;
   const link=o.tid?ANM_URL+'?t='+o.tid:'';
   const imp=new Set(ev.cats.flatMap(c=>c.players.map(p=>p.reg).filter(Boolean)));
-  const act=regs.filter(r=>!r.storno),paid=act.filter(r=>r.paid).length;
+  const act=regs.filter(r=>!r.storno&&r.ostat!=='storno'),paid=act.filter(r=>r.paid).length;
   return `<div class="card"><div class="row" style="justify-content:space-between"><b>Online-Anmeldung für Sportler</b>${o.tid?(o.open?'<span class="badge g">veröffentlicht · Anmeldung offen</span>':'<span class="badge y">veröffentlicht · Anmeldung geschlossen</span>'):'<span class="badge">noch nicht veröffentlicht</span>'}</div>
    <label>Angebotene Sportarten</label><div class="chips">${Object.entries(WBU_SPORT).map(([k,x])=>`<div class="chip ${o.sports.includes(k)?'on':''}" onclick="upd(e=>{const s=onl(e).sports,i=s.indexOf('${k}');i>=0?s.splice(i,1):s.push('${k}')})">${x.name}</div>`).join('')}</div>
    <div class="grid2" style="margin-top:4px">${f('schluss','Anmeldeschluss','','date')}${f('fee','Startgeld 1. Start (€)','z. B. 40')}${f('feeMore','Startgeld je weiterer Start (€)','z. B. 20 – leer = gleich')}
+   ${f('payDays','Zahlungsfrist nach Anmeldung (Tage)','z. B. 5')}${f('payBy','Spätester Zahlungseingang','','date')}
    <div><label>Sportärztliches Attest</label><select onchange="upd(e=>onl(e).attest=this.value==='1')"><option value="0" ${o.attest?'':'selected'}>nicht verlangen</option><option value="1" ${o.attest?'selected':''}>Pflicht-Upload für alle Boxer (nicht Shadow Boxing)</option></select></div>
    ${f('inhaber','Kontoinhaber','Empfänger der Überweisung')}${f('iban','IBAN','DE..')}${f('bic','BIC (optional)','')}
    <div><label>Anmeldung</label><select onchange="upd(e=>onl(e).open=this.value==='1')"><option value="1" ${o.open?'selected':''}>offen</option><option value="0" ${o.open?'':'selected'}>geschlossen</option></select></div></div>
@@ -494,17 +495,18 @@ function vOnline(ev){
    ${link?`<button class="btn sec" onclick="navigator.clipboard&&navigator.clipboard.writeText('${link}');this.textContent='Link kopiert ✓'">Anmelde-Link kopieren</button><a class="btn sec" href="${link}" target="_blank" style="text-decoration:none">Anmeldeseite öffnen</a>`:''}</div>
    ${link?`<p class="note">Anmelde-Link für Webseite, WhatsApp usw.: <b>${esc(link)}</b><br>Alle offenen Turniere stehen auch unter <b>${esc(ANM_URL)}</b></p>`:''}
    <div id="onerr" class="note" style="color:#b26a00"></div></div>
+  ${o.tid?payCard(ev):''}
   ${o.tid?`<div class="card"><div class="row" style="justify-content:space-between"><b>Anmeldungen: ${act.length}${act.length?` · bezahlt: ${paid} · übernommen: ${act.filter(r=>imp.has(r.id)).length}`:''}</b>
-    <div class="row"><button class="btn sec sm" onclick="pullRegs()">↻ Anmeldungen abholen</button><button class="btn ok sm" ${act.length?'':'disabled'} onclick="importRegs()">In Kategorien übernehmen</button><button class="btn sec sm" ${regs.length?'':'disabled'} onclick="regsCsv()">Liste (Excel)</button></div></div>
+    <div class="row"><button class="btn sec sm" onclick="pullRegs()">↻ Anmeldungen abholen</button><button class="btn ok sm" ${paid?'':'disabled'} onclick="importRegs()">Bezahlte in Kategorien übernehmen</button><button class="btn sec sm" ${regs.length?'':'disabled'} onclick="regsCsv()">Liste (Excel)</button></div></div>
     ${ev.regsAt?`<p class="note">Stand: ${new Date(ev.regsAt).toLocaleString('de-DE')}</p>`:''}
-    ${regs.length?`<table><tr><th>Nr.</th><th>Name</th><th>Klasse</th><th>Verein</th><th>Kontakt</th><th>Unterlagen</th><th>Bezahlt</th><th></th></tr>${regs.slice().sort((a,b)=>a.nr-b.nr||a.no-b.no).map(r=>`<tr style="${r.storno?'opacity:.45;text-decoration:line-through':''}">
+    ${regs.length?`<table><tr><th>Nr.</th><th>Name</th><th>Klasse</th><th>Verein</th><th>Kontakt</th><th>Unterlagen</th><th>Zahlung</th><th></th></tr>${regs.slice().sort((a,b)=>a.nr-b.nr||a.no-b.no).map(r=>`<tr style="${r.storno?'opacity:.45;text-decoration:line-through':''}">
       <td>${r.no}</td><td><b>${esc(r.vorname)} ${esc(r.name)}</b><div class="muted">${esc(deDate(r.geb))}${r.kg?' · '+esc(r.kg)+' kg':''}${r.cm?' · '+esc(r.cm)+' cm':''}</div>${r.foto?`<button class="btn sec sm" style="margin-top:3px" onclick="regDoc('${r.id}','foto')">📷 Foto</button>`:''}</td><td><b>${r.nr}</b> <span class="muted">${esc(r.klasse)}</span></td>
       <td>${esc(r.verein)}<div class="muted">${esc(r.trainer||'')}</div></td><td class="muted">${esc(r.email)}<br>${esc(r.tel)}</td>
       <td style="white-space:nowrap">${(r.need||[]).length?(r.need||[]).map(k=>r.docs&&r.docs[k]?`<button class="btn sec sm" onclick="regDoc('${r.id}','${k}')">📄 ${{haft:'Haftung',eltern:'Eltern',attest:'Attest'}[k]}</button>`:`<span class="badge y">${{haft:'Haftung',eltern:'Eltern',attest:'Attest'}[k]} fehlt</span>`).join(' ')+(r.frei!==false?' <span class="badge g">frei</span>':''):'<span class="muted">–</span>'}</td>
-      <td>${r.storno?'':`<button class="btn sm ${r.paid?'ok':'sec'}" onclick="setPaid('${r.id}',${!r.paid})">${r.paid?'✓ bezahlt':'offen'}${r.fee!=null?' · '+String(r.fee).replace('.',',')+' €':''}</button>`}</td>
+      <td style="white-space:nowrap">${r.storno?'':payBadge(r)}</td>
       <td style="white-space:nowrap">${imp.has(r.id)?'<span class="badge g">übernommen</span>':''} <button class="btn sec sm" onclick="setStorno('${r.id}',${!r.storno})">${r.storno?'zurückholen':'stornieren'}</button></td></tr>`).join('')}</table>`
     :'<p class="muted">Noch keine Anmeldungen abgeholt. „Anmeldungen abholen“ drücken.</p>'}
-    <p class="note">„In Kategorien übernehmen“ legt die passenden Kategorien automatisch an und trägt die Sportler ein. Schon übernommene werden nicht doppelt eingetragen; bereits ausgeloste Kategorien bleiben unverändert.</p></div>`:''}`;
+    <p class="note">Nur bezahlte Sportler kommen ins System. „Bezahlte in Kategorien übernehmen“ legt die passenden Kategorien automatisch an und trägt die Sportler ein (Paarungen entstehen automatisch). Schon übernommene werden nicht doppelt eingetragen; bereits ausgeloste Kategorien bleiben unverändert.</p></div>`:''}`;
 }
 function onErr(m){const x=$('onerr');if(x)x.textContent=m;else alertDlg(m)}
 function publish(pass){
@@ -513,10 +515,65 @@ function publish(pass){
   if(!o.sports.length){onErr('Bitte mindestens eine Sportart wählen.');return}
   if(!o.tid&&pass===undefined){dlg(`<h2 style="margin-top:0">Turnier veröffentlichen</h2><p>Zum Veröffentlichen bitte das WBU-Passwort eingeben.</p><input id="pw" type="password" onkeydown="if(event.key==='Enter')publish($('pw').value)"><div id="pwerr" class="note" style="color:#b26a00"></div>
     <div class="row" style="margin-top:12px"><button class="btn" onclick="publish($('pw').value)">Veröffentlichen</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);setTimeout(()=>$('pw')&&$('pw').focus(),0);return}
-  const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,rings:ev.rings||1,inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
+  const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,rings:ev.rings||1,payDays:o.payDays||5,payBy:o.payBy||'',inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
   api('t_publish',{t,tid:o.tid,key:o.key,pass}).then(async j=>{closeDlg();upd(e=>{onl(e).tid=j.tid;onl(e).key=j.key});try{await syncManual()}catch(x){};onErr('✓ Veröffentlicht.')})
    .catch(e=>{if($('pwerr'))$('pwerr').textContent=e.message;else onErr(e.message)});
 }
+// ===================== Zahlungen (Überweisung mit Zahlungscode) =====================
+const OST={cart:['nicht abgeschlossen','y'],open:['Zahlung offen','y'],paid:['bezahlt','g'],storno:['storniert','']};
+function payBadge(r){const st=r.paid?'paid':r.ostat||'open';const o=(cur().orders||[]).find(x=>x.id===r.oid);
+  return `<span class="badge ${OST[st]?OST[st][1]:''}">${OST[st]?OST[st][0]:st}</span>${r.fee!=null?' '+eur(r.fee):''}${o?`<div class="muted">${esc(o.code)}</div>`:''}`}
+const eur=v=>(+v||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+function payCard(ev){const os=(ev.orders||[]).filter(o=>o.status!=='cart'||o.items.length).slice().sort((a,b)=>b.created-a.created);
+  const sum=st=>os.filter(o=>o.status===st).reduce((s,o)=>s+o.total,0);
+  return `<div class="card"><div class="row" style="justify-content:space-between"><b>Zahlungen (nur für dich sichtbar)</b>
+    <div class="row"><label class="btn sm" style="margin:0;color:#2a1d00">📄 Kontoauszug einlesen (PDF / CSV)<input type="file" accept=".pdf,.csv,.txt" style="display:none" onchange="readStatement(this)"></label><button class="btn sec sm" onclick="pullRegs()">↻ aktualisieren</button></div></div>
+   <p class="note">Der Kontoauszug wird nur hier im Browser gelesen und nicht hochgeladen. Gefunden werden die Zahlungscodes (WBU-…) im Verwendungszweck; nur wenn die Summe genau stimmt, kommen die Sportler ins System. Bei Fehl- oder Überbetrag bekommt der Verein automatisch eine freundliche E-Mail.</p>
+   <div id="stmt">${S.stmt||''}</div>
+   ${os.length?`<table><tr><th>Code</th><th>Verein</th><th>Sportler</th><th>Summe</th><th>Eingegangen</th><th>Status</th><th>Frist</th><th></th></tr>${os.map(o=>`<tr>
+     <td><b>${esc(o.code)}</b></td><td>${esc(o.verein)}<div class="muted">${esc(o.club)}</div></td><td>${o.items.length}</td><td><b>${eur(o.total)}</b></td>
+     <td>${o.paidAmt!=null?eur(o.paidAmt):'–'}${o.paidAmt!=null&&o.status!=='paid'&&o.paidAmt<o.total?`<div style="color:var(--red);font-weight:700">fehlt ${eur(o.total-o.paidAmt)}</div>`:''}</td>
+     <td><span class="badge ${OST[o.status][1]}">${OST[o.status][0]}</span></td><td>${new Date(o.due*1000).toLocaleDateString('de-DE')}</td>
+     <td>${o.status==='paid'?`<button class="btn sec sm" onclick="oPaid('${o.id}',false)">zurücknehmen</button>`:o.status!=='cart'?`<button class="btn sec sm" onclick="oPaid('${o.id}',true)">von Hand bezahlt</button>`:''}</td></tr>`).join('')}</table>
+     <p class="note">Bezahlt: ${eur(sum('paid'))} · offen: ${eur(sum('open'))}</p>`:'<p class="muted">Noch keine Anmeldungen mit Zahlung.</p>'}</div>`}
+async function oPaid(oid,paid){const o=onl(cur());if(paid&&!confirm('Zahlung für diese Anmeldung von Hand als vollständig bezahlt markieren?'))return;
+  try{await api('t_opaid',{tid:o.tid,key:o.key,oid,paid});await pullRegs()}catch(e){onErr(e.message)}}
+// Kontoauszug lesen: PDF (über pdf.js) oder CSV; Zahlungscodes + Beträge suchen
+// PDF-Leser (pdf.js) liegt auf dem eigenen Server – keine fremde Seite nötig
+let PDFJS=null;
+async function loadPdfJs(){if(PDFJS)return PDFJS;
+  const base=/^https?:/.test(location.protocol)?new URL('.',location.href).href:'https://www.wbu-boxing.com/veranstalter/';
+  try{PDFJS=await import(base+'pdf.min.js');PDFJS.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.js';return PDFJS}
+  catch(e){throw new Error('PDF-Leser konnte nicht geladen werden – Internet prüfen oder den Auszug als CSV einlesen')}}
+async function pdfLines(file){const pdfjsLib=await loadPdfJs();const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,lines=[];
+  for(let p=1;p<=doc.numPages;p++){const c=await (await doc.getPage(p)).getTextContent(),rows={};
+    c.items.forEach(it=>{const y=Math.round(it.transform[5]/3);(rows[y]=rows[y]||[]).push(it)});
+    Object.keys(rows).sort((a,b)=>b-a).forEach(y=>lines.push(rows[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(' ').replace(/\s+/g,' ').trim()))}
+  return lines.filter(Boolean)}
+const AMT=/(?:^|\s|\+)(-?\d{1,3}(?:\.\d{3})*,\d{2})(?:\s?(?:€|EUR))?(?=\s|$)/g;
+function parseAmt(s){return +s.replace(/\./g,'').replace(',','.')}
+function findPayments(lines){const out=[],orders=cur().orders||[];
+  lines.forEach((l,i)=>{const m=l.match(/WBU\W{0,2}([A-Z0-9]{6})/i);if(!m)return;const code='WBU-'+m[1].toUpperCase();
+    const o=orders.find(x=>x.code===code);
+    // Betrag: zuerst in derselben Zeile, dann in den Nachbarzeilen derselben Buchung
+    let am=null;for(const d of [0,-1,1,-2,2,-3,3]){const L=lines[i+d];if(!L)continue;const a=[...L.matchAll(AMT)].map(x=>parseAmt(x[1])).filter(v=>v>0);
+      if(a.length){am=o&&a.includes(o.total)?o.total:a[0];break}}
+    const ctx=lines.slice(Math.max(0,i-2),i+3).join(' | ');
+    out.push({code,amount:am,ref:(code+'_'+(am||0)+'_'+ctx).replace(/[^a-z0-9]/gi,'').slice(0,64),ctx,o})});
+  return out}
+async function readStatement(inp){const f=inp.files[0];if(!f)return;const box=$('stmt');box.innerHTML='<p>Lese Kontoauszug …</p>';
+  try{const lines=/\.pdf$/i.test(f.name)?await pdfLines(f):(await f.text()).split(/\r?\n/);const P=findPayments(lines);S.found=P;
+    S.stmt=P.length?`<h3 style="margin:10px 0 6px">Gefundene Zahlungen in „${esc(f.name)}“ – bitte prüfen</h3><table><tr><th>Code</th><th>Verein</th><th>Summe soll</th><th>Betrag im Auszug</th><th>Ergebnis</th></tr>
+      ${P.map((p,i)=>`<tr><td><b>${esc(p.code)}</b><div class="muted" style="max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.ctx)}">${esc(p.ctx)}</div></td><td>${p.o?esc(p.o.verein):'<span class="badge y">Code unbekannt</span>'}</td><td>${p.o?eur(p.o.total):'–'}</td>
+      <td><input style="width:110px" value="${p.amount!=null?String(p.amount.toFixed(2)).replace('.',','):''}" onchange="S.found[${i}].amount=parseAmt(this.value)"></td><td>${!p.o?'–':p.amount==null?'<span class="badge y">Betrag nicht erkannt</span>':Math.abs(p.amount-p.o.total)<.005?'<span class="badge g">passt</span>':p.amount<p.o.total?`<span class="badge y">zu wenig (fehlt ${eur(p.o.total-p.amount)})</span>`:'<span class="badge y">zu viel</span>'}</td></tr>`).join('')}</table>
+      <div class="row" style="margin:8px 0 14px"><button class="btn ok" onclick="applyPayments()">Zahlungen übernehmen</button><button class="btn sec" onclick="S.stmt='';render()">Verwerfen</button></div>`
+      :'<p class="muted">Im Kontoauszug wurde kein Zahlungscode (WBU-…) gefunden.</p>';box.innerHTML=S.stmt}
+  catch(e){box.innerHTML='<p style="color:var(--red)">'+esc(e.message)+'</p>'}}
+async function applyPayments(){const o=onl(cur());
+  try{const j=await api('t_pay',{tid:o.tid,key:o.key,items:S.found.filter(p=>p.o&&p.amount!=null).map(p=>({code:p.code,amount:p.amount,ref:p.ref}))});
+    S.stmt=`<div class="card" style="background:#fff"><b>Übernommen:</b><br>${j.res.map(r=>`${esc(r.code)} ${r.verein?'('+esc(r.verein)+')':''}: <b>${r.st}</b>${r.total!=null?` – ${eur(r.amount)} von ${eur(r.total)}`:''}`).join('<br>')}<p class="note" style="margin-bottom:0">Bei „zu wenig“ und „zu viel“ hat der Verein automatisch eine E-Mail bekommen.</p></div>`;
+    await pullRegs();importRegs(true)}catch(e){onErr(e.message)}}
+
 async function upDoc(kind,inp){const o=onl(cur());let data='',name='';
   if(inp){const f=inp.files[0];if(!f)return;if(f.size>15e6){onErr('Datei zu groß (höchstens 15 MB)');return}name=f.name;
     data=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
@@ -529,16 +586,17 @@ async function syncManual(){const ev=cur(),o=onl(ev);if(!o.tid)return;
   if(!list.length)return;
   const j=await api('t_import',{tid:o.tid,key:o.key,list});
   upd(e=>e.cats.forEach(c=>c.players.forEach(p=>{if(j.ids[p.id])p.reg=j.ids[p.id]})))}
-async function pullRegs(){try{await syncManual()}catch(e){onErr(e.message)}const o=onl(cur());try{const j=await api('t_regs',{tid:o.tid,key:o.key});upd(e=>{e.regs=j.regs;e.regsAt=Date.now()})}catch(e){onErr(e.message)}}
+async function pullRegs(){try{await syncManual()}catch(e){onErr(e.message)}const o=onl(cur());try{const j=await api('t_regs',{tid:o.tid,key:o.key});upd(e=>{e.regs=j.regs;e.orders=j.orders||[];e.regsAt=Date.now()})}catch(e){onErr(e.message)}}
 async function setPaid(rid,paid){const o=onl(cur());try{await api('t_paid',{tid:o.tid,key:o.key,rid,paid});upd(e=>{e.regs.find(r=>r.id===rid).paid=paid})}catch(e){onErr(e.message)}}
 async function setStorno(rid,storno){const o=onl(cur());try{await api('t_del',{tid:o.tid,key:o.key,rid,storno});upd(e=>{e.regs.find(r=>r.id===rid).storno=storno;
   if(storno)e.cats.forEach(c=>{if(!hasResults(c)&&c.players.some(p=>p.reg===rid)){c.players=c.players.filter(p=>p.reg!==rid);autoBracket(c)}})})}catch(e){onErr(e.message)}}
-function importRegs(){
+function importRegs(quiet){
   let neu=0,gesperrt=0;
   upd(e=>{const have=new Set(e.cats.flatMap(c=>c.players.map(p=>p.reg).filter(Boolean)));
-    (e.regs||[]).filter(r=>!r.storno&&r.frei!==false&&!have.has(r.id)&&wbuKlasse(r.nr)).forEach(r=>{const c=catFor(e,r.nr);
+    (e.regs||[]).filter(r=>!r.storno&&r.paid&&r.frei!==false&&!have.has(r.id)&&wbuKlasse(r.nr)).forEach(r=>{const c=catFor(e,r.nr);
       if(hasResults(c)){gesperrt++;return}
       c.players.push({id:uid(),name:`${r.vorname} ${r.name}`,club:r.verein||r.land||'',reg:r.id});autoBracket(c);neu++})});
+  if(quiet&&!gesperrt){if(neu)onErr(`✓ ${neu} bezahlte Sportler automatisch in die Kategorien übernommen.`);return}
   alertDlg(`${neu} Sportler in die Kategorien übernommen.`+(gesperrt?` ${gesperrt} nicht übernommen, weil die Kategorie schon schon läuft (Ergebnisse eingetragen).`:''));
 }
 function regsCsv(){const ev=cur(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
@@ -650,7 +708,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('15')||0;
+const WEB_VERSION=Number('16')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

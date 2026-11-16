@@ -22,6 +22,7 @@ $ALLOWED = [
     'veranstalter/index.html', 'veranstalter/.htaccess',
     'anmeldung/index.html', 'anmeldung/.htaccess', 'scorecard/update.php',
     'live/index.html', 'live/.htaccess',
+    'veranstalter/pdf.min.js', 'veranstalter/pdf.worker.min.js',
 ];
 
 function fetch($url) {
@@ -49,9 +50,9 @@ $have = (int)($local['version'] ?? 0);
 if ($have >= (int)$m['version'] && !isset($_GET['force'])) exit("Aktuell (Version $have)\n");
 
 // 1. alles laden und prüfen, 2. erst dann ersetzen
-$new = [];
+$new = []; $skipped = [];
 foreach ($m['files'] as $target => $sha) {
-    if (!in_array($target, $ALLOWED, true)) exit("Abbruch: nicht erlaubte Datei $target\n");
+    if (!in_array($target, $ALLOWED, true)) { $skipped[] = $target; continue; }
     $data = fetch($BASE . $target);
     if ($data === false) exit("Abbruch: $target konnte nicht geladen werden\n");
     if (!hash_equals($sha, hash('sha256', $data))) exit("Abbruch: Prüfsumme falsch bei $target\n");

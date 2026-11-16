@@ -239,7 +239,7 @@ function vForm(){
   return `<a href="#" style="color:#000;font-weight:700" onclick="S.view='list';history.replaceState(null,'','?');loadList();return false">‹ Alle Turniere</a>
   <h1>${esc(t.name)}</h1>
   <div class="cnt">Aktuell angemeldet: <b>${t.pers??t.anz}</b> Teilnehmer · <b>${t.anz}</b> Starts · <b>${t.clubs??'–'}</b> Clubs</div>
-  <div class="tabs">${[['anm','Anmeldung'],['tn','Teilnehmer'],['kat','Kategorien'],['clubs','Clubs & Trainer']].map(([k,n])=>`<div class="tab ${S.tab===k?'on':''}" onclick="setTab('${k}')">${n}</div>`).join('')}</div>
+  <div class="tabs">${[['anm','Anmeldung']].concat(canReg()?[['my','Meine Anmeldungen & Bezahlung']]:[]).concat([['tn','Teilnehmer'],['kat','Kategorien'],['clubs','Clubs & Trainer']]).map(([k,n])=>`<div class="tab ${S.tab===k?'on':''}" onclick="setTab('${k}')">${n}</div>`).join('')}</div>
   ${S.tab==='anm'?`  <div class="card"><div class="pay">
     <span>Datum</span><b>${esc(deDate(t.date))}</b><span>Ort</span><b>${esc(t.ort||'–')}</b>
     ${t.promoter?`<span>Veranstalter</span><b>${esc(t.promoter)}</b>`:''}
@@ -248,7 +248,7 @@ function vForm(){
     ${t.info?`<p style="white-space:pre-wrap;margin:12px 0 0">${esc(t.info)}</p>`:''}
     ${Object.keys(t.docs||{}).length?`<h2 style="font-size:16px;margin:14px 0 6px">Unterlagen zum Herunterladen</h2><div class="chips">${DOCS.filter(([k])=>t.docs[k]).map(([k,n])=>`<a class="chip" style="text-decoration:none;color:var(--txt)" href="${docUrl(t.id,k)}" target="_blank">📄 ${n}</a>`).join('')}</div>
     ${t.docs.haft||t.docs.eltern?`<p class="muted" style="margin:8px 0 0">Bei der Anmeldung muss für jeden Sportler ${t.docs.haft?'der unterschriebene Haftungsausschluss':''}${t.docs.haft&&t.docs.eltern?' und ':''}${t.docs.eltern?'– bei Minderjährigen – die Einverständniserklärung der Eltern':''} hochgeladen werden (Foto oder PDF). Erst dann ist der Sportler zum Kampf freigegeben.</p>`:''}`:''}</div>`:''}
-  ${S.tab!=='anm'?vData():!canReg()?'<div class="card">Sportler anmelden können nur Vereine, Trainer und Einzelsportler. Teilnehmer, Kategorien und Clubs kannst du über die Reiter oben ansehen.</div>':!t.offen?'<div class="card err">Die Anmeldung für dieses Turnier ist geschlossen.</div>':`
+  ${S.tab==='my'?vMy():S.tab!=='anm'?vData():!canReg()?'<div class="card">Sportler anmelden können nur Vereine, Trainer und Einzelsportler. Teilnehmer, Kategorien und Clubs kannst du über die Reiter oben ansehen.</div>':!t.offen?'<div class="card err">Die Anmeldung für dieses Turnier ist geschlossen.</div>':`
   <div class="card"><h2 style="margin-top:0">Sportler anmelden</h2>
     <label>Sportart</label><div class="chips">${t.sports.map(s=>`<div class="chip ${f.sp===s?'on':''}" onclick="setF('sp','${s}')">${esc(WBU_SPORT[s].name)}</div>`).join('')}</div>
     <label>Geschlecht</label><div class="chips"><div class="chip ${f.sex==='m'?'on':''}" onclick="setF('sex','m')">Männlich</div><div class="chip ${f.sex==='w'?'on':''}" onclick="setF('sex','w')">Weiblich</div></div>
@@ -269,11 +269,38 @@ function vForm(){
     <input class="hp" id="f_website" tabindex="-1" autocomplete="off">
     <label class="chk"><input type="checkbox" id="f_ok" ${$('f_ok')?.checked?'checked':''}><span>Ich bin damit einverstanden, dass meine Angaben für die Durchführung des Turniers gespeichert und Name, Verein und Ergebnisse veröffentlicht werden. Bei Minderjährigen: Ein Erziehungsberechtigter ist einverstanden.</span></label>
     <p id="ferr" class="err">${esc(S.err)}</p>
-    <button class="btn full" id="sendbtn" onclick="send()">Verbindlich anmelden</button></div>`}`;
+    <p class="muted">Der Sportler kommt zuerst in deine offene Anmeldung. Wenn alle eingetragen sind: „Fertig – jetzt bezahlen“ und die Gesamtsumme mit dem Zahlungscode überweisen. Erst nach Zahlungseingang ist er im System.</p>
+    <button class="btn full" id="sendbtn" onclick="send()">Sportler eintragen</button></div>`}`;
 }
+// ===================== Meine Anmeldungen & Bezahlung =====================
+async function loadMy(){try{S.my=await api('t_my',{tid:S.t.id})}catch(e){S.myErr=e.message}}
+const dt=ts=>new Date(ts*1000).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+const ST={cart:['Noch nicht abgeschlossen','#e2a500'],open:['Zahlung offen','#e2a500'],paid:['✓ Bezahlt – im System','#1a9e55'],storno:['Storniert – nicht bezahlt','#c62828']};
+function payBox(o,b){const iban=(b.iban||'').replace(/(.{4})/g,'$1 ').trim();
+  return `<div class="kl" style="margin-top:10px"><b>Jetzt überweisen – genau diesen Betrag:</b>
+   <div class="pay" style="margin-top:6px"><span>Betrag</span><b style="font-size:20px">${euro(o.total)}</b><span>Empfänger</span><b>${esc(b.inhaber||'–')}</b><span>IBAN</span><b>${esc(iban)}</b>${b.bic?`<span>BIC</span><b>${esc(b.bic)}</b>`:''}
+   <span>Verwendungszweck</span><b style="font-size:20px">${esc(o.code)}</b><span>Zahlbar bis</span><b>${dt(o.due)}</b></div>
+   <p style="margin:8px 0 0">Bitte <b>nur den Code ${esc(o.code)}</b> als Verwendungszweck angeben. Kommt der Betrag nicht vollständig bis ${dt(o.due)} an, verfällt die ganze Anmeldung.</p></div>`}
+function vMy(){
+  const M=S.my;if(!M)return `<div class="card">${esc(S.myErr||'Lädt …')}</div>`;
+  const cart=M.orders.find(o=>o.status==='cart'),rest=M.orders.filter(o=>o!==cart);
+  return `${S.added?`<div class="card" style="border-color:var(--ok)"><b>✅ Eingetragen:</b> ${esc(S.added)}</div>`:''}
+  <div class="card"><h2 style="margin-top:0">Offene Anmeldung</h2>
+   ${cart?`<table class="l"><tr><th>Sportler</th><th>Kategorie</th><th>Startgeld</th><th></th></tr>${cart.items.map(x=>`<tr><td><b>${esc(x.vorname)} ${esc(x.name)}</b></td><td>${x.nr}</td><td>${euro(x.fee)}</td><td><a href="#" style="color:var(--red);font-weight:700" onclick="cartDel('${x.id}');return false">entfernen</a></td></tr>`).join('')}
+     <tr><td colspan="2"><b>Summe</b></td><td colspan="2"><b style="font-size:18px">${euro(cart.total)}</b></td></tr></table>
+     <p class="muted">Bitte bis ${dt(cart.due)} abschließen und bezahlen, sonst verfällt die Anmeldung.</p>
+     <div class="g2"><button class="btn sec full" onclick="S.added='';S.tab='anm';render();scrollTo(0,0)">+ Weiteren Sportler eintragen</button><button class="btn full" onclick="checkout('${cart.id}')">Fertig – jetzt bezahlen</button></div>`
+   :`<p class="muted" style="margin:0">Keine offene Anmeldung. <a href="#" style="color:#000;font-weight:700" onclick="S.tab='anm';render();return false">Sportler eintragen</a></p>`}</div>
+  ${rest.map(o=>`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:17px">Anmeldung ${esc(o.code)}</b><span class="badge" style="background:${ST[o.status][1]};color:${o.status==='open'?'#2a1d00':'#fff'};border:0">${ST[o.status][0]}</span></div>
+    <p style="margin:6px 0">${o.items.map(x=>`${esc(x.vorname)} ${esc(x.name)} (${x.nr})`).join(', ')}</p>
+    <p style="margin:0">Summe <b>${euro(o.total)}</b>${o.paidAmt!=null&&o.status!=='paid'?` · eingegangen <b>${euro(o.paidAmt)}</b> – ${o.paidAmt<o.total?`<b style="color:var(--red)">es fehlen ${euro(o.total-o.paidAmt)}</b>`:'zu viel – der Veranstalter meldet sich'}`:''}</p>
+    ${o.status==='open'?payBox(o,M.bank):''}</div>`).join('')}`}
+async function checkout(oid){try{await api('t_checkout',{tid:S.t.id,oid});S.added='';await loadMy();render();scrollTo(0,0)}catch(e){alert(e.message)}}
+async function cartDel(rid){if(!confirm('Diesen Sportler aus der Anmeldung nehmen?'))return;try{await api('t_cartdel',{tid:S.t.id,rid});await loadMy();render()}catch(e){alert(e.message)}}
+
 // ===================== Teilnehmer / Kategorien / Clubs (nur mit Login) =====================
 async function refreshCount(){try{const t=(await api('t_get',{tid:S.t.id})).turnier;S.t.anz=t.anz;S.t.pers=t.pers;S.t.clubs=t.clubs}catch(e){}}
-async function setTab(k){S.tab=k;render();await refreshCount();if(k!=='anm'&&!S.pub){try{S.pub=await api('t_public',{tid:S.t.id})}catch(e){S.pubErr=e.message}render()}}
+async function setTab(k){S.tab=k;render();await refreshCount();if(k==='my'){await loadMy();render();return}if(k!=='anm'&&!S.pub){try{S.pub=await api('t_public',{tid:S.t.id})}catch(e){S.pubErr=e.message}render()}}
 const ringOf=x=>(S.t.rings||1)>1?((x.sp==='MB'||x.sp==='SB')?'Arena 1 / Ring 1':'Arena 2 / Ring 2'):'';
 function gewOf(x){const k=wbuKlasse(x.nr);return k&&k.gew?k.gew+' kg':'–'}
 function stats(rs){const p={};rs.forEach(x=>p[x.pid]=x);const ps=Object.values(p);
@@ -343,8 +370,9 @@ async function send(){
   try{const j=await api('t_register',{tid:S.t.id,r:reg});S.pub=null;
     keep={verein:reg.verein,land:reg.land,trainer:reg.trainer,betreuer:reg.betreuer,email:reg.email,tel:reg.tel};
     for(const k in FILES)delete FILES[k];
-    S.ok={...j,reg,k:r.k};S.view='ok';S.err='';render();scrollTo(0,0)}
-  catch(e){fail(e.message);$('sendbtn').disabled=false;$('sendbtn').textContent='Verbindlich anmelden'}
+    S.added=`${reg.vorname} ${reg.name} – Kategorie ${r.k.nr}`;S.f={sp:reg.sp,sex:null,gew:null,erw:false};S.err='';
+    $('app').innerHTML='';S.tab='my';await loadMy();render();scrollTo(0,0)}
+  catch(e){fail(e.message);$('sendbtn').disabled=false;$('sendbtn').textContent='Sportler eintragen'}
 }
 function vOk(){
   const o=S.ok,zweck=`${o.name} Start-Nr ${o.no} ${o.reg.vorname} ${o.reg.name}`.slice(0,140);
@@ -365,7 +393,7 @@ function render(keepInputs){
   const h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList();
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('15')||0;
+const WEB_VERSION=Number('16')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
