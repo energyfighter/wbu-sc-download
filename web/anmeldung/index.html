@@ -96,6 +96,25 @@ function wbuGewKlasse(kg){kg=+String(kg).replace(',','.');if(!(kg>0))return null
 // Klassennummer aus Sportart, Geschlecht, Alter, Gewichtsklasse
 function wbuNr(sp,sex,alter,gew,erw){if(sp==='SB')return wbuAltersgruppe('SB',alter)?1000:null;const a=wbuAltersgruppe(sp,alter,erw);if(!a||!gew)return null;
   const i=WBU_GEW.indexOf(gew);if(i<0)return null;return (sex==='w'?a[3]:a[2])+i}
+// ===================== Automatische Paarungen (gleich in WBU Sports und auf der Anmeldeseite) =====================
+// Eingabe: Sportler in Anmeldereihenfolge [{id, club}]. Ausgabe: Plätze der ersten Runde (Länge 2^k), je zwei nebeneinander = ein Kampf, null = Freilos.
+// Regeln: Freilose bevorzugt an den Verein mit den meisten Startern; Sportler desselben Vereins möglichst nicht gegeneinander.
+function wbuSeedOrder(n){let a=[1];while(a.length<n){const m=a.length*2+1;a=a.flatMap(x=>[x,m-x])}return a}
+function wbuPaare(list){
+  const n=list.length;if(n<2)return list.map(x=>x.id);
+  let size=2;while(size<n)size*=2;
+  const key=x=>String(x.club||'').trim().toLowerCase()||('#'+x.id);
+  const groups={};list.forEach((x,i)=>{(groups[key(x)]=groups[key(x)]||[]).push({...x,i})});
+  const G=Object.values(groups);
+  const take=excl=>{G.sort((a,b)=>b.length-a.length||(a[0]?a[0].i:1e9)-(b[0]?b[0].i:1e9));const g=G.find(g=>g.length&&g!==excl)||G.find(g=>g.length);return g?{g,x:g.shift()}:null};
+  const pairs=[];
+  for(let b=size-n;b>0;b--){const t=take(null);pairs.push([t.x.id,null])}          // Freilose
+  while(G.some(g=>g.length)){const a=take(null),b=take(a.g);pairs.push([a.x.id,b?b.x.id:null])}  // Kämpfe: größter Verein gegen anderen Verein
+  // Freilose gleichmäßig über das Bracket verteilen
+  const pos=wbuSeedOrder(size/2),slots=new Array(size).fill(null);
+  pairs.forEach((p,k)=>{const q=pos[k]-1;slots[2*q]=p[0];slots[2*q+1]=p[1]});
+  return slots;
+}
 
 const API=window.WBU_API||'../scorecard/api.php';
 const $=id=>document.getElementById(id);
@@ -115,7 +134,23 @@ async function api(a,body){const r=await fetch(API,{method:'POST',headers:{'Cont
 const docUrl=(tid,k)=>`${API}?a=t_docget&tid=${tid}&kind=${k}&tok=${TOK()}`;
 const fotoUrl=rid=>`${API}?a=t_foto&tid=${S.t.id}&rid=${rid}&tok=${TOK()}`;
 function logout(){saveAuth(null);S.view='login';history.replaceState(null,'','?');render()}
-function vLogin(){const reg=S.lmode==='reg';
+function vForgot(){const st=S.fstep||1;
+  return `<h1>Passwort zurücksetzen</h1><div class="card">
+  <label>E-Mail deines Kontos</label><input id="l_email" type="email" value="${esc($('l_email')?.value||S.femail||'')}" autocomplete="email">
+  ${st===1?`<p class="muted">Du bekommst eine E-Mail mit einem 6-stelligen Code.</p><p id="lerr" class="err"></p><button class="btn full" onclick="forgot()">Code per E-Mail schicken</button>`
+  :`<p>Wir haben dir einen Code an <b>${esc(S.femail)}</b> geschickt (bitte auch im Spam-Ordner nachsehen).</p>
+  <label>Code aus der E-Mail</label><input id="l_code" inputmode="numeric" maxlength="6" style="font-size:22px;letter-spacing:4px">
+  <label>Neues Passwort (mindestens 6 Zeichen)</label><input id="l_pw" type="password" autocomplete="new-password">
+  <label>Neues Passwort wiederholen</label><input id="l_pw2" type="password" autocomplete="new-password">
+  <p id="lerr" class="err"></p><button class="btn full" onclick="resetPw()">Passwort ändern und einloggen</button>
+  <p><a href="#" style="color:#000;font-weight:700" onclick="forgot();return false">Code noch einmal schicken</a></p>`}
+  <p><a href="#" style="color:#000;font-weight:700" onclick="S.lmode='login';S.fstep=1;render();return false">‹ Zurück zum Einloggen</a></p></div>`}
+async function forgot(){const em=($('l_email')?.value||'').trim(),err=m=>{const e=$('lerr');if(e)e.textContent=m};
+  try{await api('c_forgot',{email:em});S.femail=em;S.fstep=2;render()}catch(e){err(e.message)}}
+async function resetPw(){const g=id=>($(id)?.value||'').trim(),err=m=>{$('lerr').textContent=m};
+  if(g('l_pw')!==g('l_pw2'))return err('Die Passwörter sind nicht gleich.');
+  try{const j=await api('c_reset',{email:S.femail,code:g('l_code'),pw:g('l_pw')});saveAuth({tok:j.tok,me:j.me});S.lmode='login';S.fstep=1;S.view='list';loadList()}catch(e){err(e.message)}}
+function vLogin(){if(S.lmode==='forgot')return vForgot();const reg=S.lmode==='reg';
   return `<h1>WBU Turniere</h1><div class="card"><p style="margin-top:0">Turniere, Teilnehmerlisten und die Anmeldung sind nur für registrierte Nutzer sichtbar. Der <b>Live-Monitor</b> während des Turniers ist für alle frei: <a href="../live/">www.wbu-boxing.com/live</a></p>
   <div class="tabs"><div class="tab ${reg?'':'on'}" onclick="S.lmode='login';render()">Einloggen</div><div class="tab ${reg?'on':''}" onclick="S.lmode='reg';render()">Neu registrieren</div></div>
   ${reg?`<label>Ich bin</label><div class="chips">${Object.entries(ROLLEN).map(([k,n])=>`<div class="chip ${S.rolle===k?'on':''}" onclick="S.rolle='${k}';document.querySelectorAll('#rollen .chip');render()">${n}</div>`).join('')}</div>
@@ -127,7 +162,7 @@ function vLogin(){const reg=S.lmode==='reg';
   ${reg?'<label>Passwort wiederholen</label><input id="l_pw2" type="password" autocomplete="new-password">':''}
   <p id="lerr" class="err">${esc(S.err||'')}</p>
   <button class="btn full" onclick="doLogin()">${reg?'Konto anlegen':'Einloggen'}</button>
-  <p class="muted" style="margin-bottom:0">${reg?'Das Konto gilt für alle WBU-Turniere. Mit E-Mail und Passwort kannst du dich jederzeit wieder einloggen.':'Passwort vergessen? Bitte beim Veranstalter melden.'}</p></div>`}
+  <p class="muted" style="margin-bottom:0">${reg?'Das Konto gilt für alle WBU-Turniere. Mit E-Mail und Passwort kannst du dich jederzeit wieder einloggen.':`<a href="#" style="color:#000;font-weight:700" onclick="S.lmode='forgot';S.fstep=1;render();return false">Passwort vergessen?</a>`}</p></div>`}
 async function doLogin(){const g=id=>($(id)?.value||'').trim(),err=m=>{$('lerr').textContent=m};
   try{let j;
     if(S.lmode==='reg'){if(!S.rolle)return err('Bitte auswählen, wer du bist.');if(g('l_pw')!==g('l_pw2'))return err('Die Passwörter sind nicht gleich.');
@@ -249,6 +284,14 @@ function profil(id){const x=S.pub.regs.find(r=>r.id===id);if(!x)return;const k=w
   <span>Gewicht</span><b>${esc(x.kg?x.kg+' kg':'–')}</b><span>Größe</span><b>${esc(x.cm?x.cm+' cm':'–')}</b><span>Geschlecht</span><b>${x.sex==='w'?'weiblich':x.sex==='m'?'männlich':'M/W Mix'}</b>
   <span>Klasse</span><b>${esc(k?k.name:x.klasse)}</b>${ringOf(x)?`<span>Zuordnung</span><b>${ringOf(x)}</b>`:''}<span>Trainer</span><b>${esc(x.trainer||'–')}</b></div></div></div>
   <button class="btn full" style="margin-top:14px" onclick="$('modal').innerHTML=''">Schließen</button></div></div>`}
+// Vorläufige Paarungen der 1. Runde (gleiche Regel wie in WBU Sports: Vereinskollegen möglichst nicht gegeneinander)
+function paarungen(nrs,rs){const out=[];
+  nrs.forEach(n=>{const xs=rs.filter(x=>x.nr===n).sort((a,b)=>a.no-b.no);if(!xs.length)return;
+    if(xs.length<2){out.push(`<div class="grp" style="cursor:default"><b>Kategorie ${n}</b><span>${esc(xs[0].vorname)} ${esc(xs[0].name)} – wartet auf Gegner</span></div>`);return}
+    const sl=wbuPaare(xs.map(x=>({id:x.id,club:x.verein}))),nm=id=>{const x=xs.find(y=>y.id===id);return x?`<b>${esc(x.vorname)} ${esc(x.name)}</b> <span class="muted">(${esc(x.verein)})</span>`:''};
+    const ps=[];for(let i=0;i<sl.length;i+=2)if(sl[i]||sl[i+1])ps.push(sl[i]&&sl[i+1]?`<span style="color:var(--red)">●</span> ${nm(sl[i])} &nbsp;vs.&nbsp; <span style="color:var(--blue)">●</span> ${nm(sl[i+1])}`:`${nm(sl[i]||sl[i+1])} – Freilos`);
+    out.push(`<div class="grp" style="cursor:default;display:block"><b>Kategorie ${n}</b><div style="margin-top:4px">${ps.join('<br>')}</div></div>`)});
+  return out.length?`<h2>Paarungen 1. Runde (vorläufig)</h2><p class="muted" style="margin-top:0">Ändern sich mit jeder neuen Anmeldung. Sportler desselben Vereins werden möglichst nicht gegeneinander gesetzt.</p>${out.join('')}`:''}
 function vData(){
   const P=S.pub;if(!P)return `<div class="card">${S.pubErr?esc(S.pubErr):'Lädt …'}</div>`;
   const rs=P.regs.slice().sort((a,b)=>a.nr-b.nr||String(a.name).localeCompare(b.name)),st=stats(rs);
@@ -268,7 +311,8 @@ function vData(){
       return `<div class="card"><span class="katbtn" onclick="S.grp=null;render()">‹ Zurück zur Übersicht</span><h2>${esc(g.label)}</h2>
       <div style="overflow-x:auto"><table class="l"><tr><th>Kategorie</th><th>Gewicht / Klasse</th><th>Athlet/in</th><th>Verein / Team</th><th>Bild</th></tr>
       ${nrs.map(n=>{const k=wbuKlasse(n),xs=rs.filter(x=>x.nr===n);return xs.length?xs.map((x,i)=>`<tr style="cursor:pointer" onclick="profil('${x.id}')"><td><b>${i?'':n}</b></td><td>${i?'':esc(k.gew?k.gew+' kg':'–')}</td><td><b>${esc(x.vorname)} ${esc(x.name)}</b></td><td>${esc(x.verein)}</td><td>${thumb(x)}</td></tr>`).join('')
-        :`<tr><td><b>${n}</b></td><td>${esc(k.gew?k.gew+' kg':'–')}</td><td colspan="3" class="muted">frei</td></tr>`}).join('')}</table></div></div>`}
+        :`<tr><td><b>${n}</b></td><td>${esc(k.gew?k.gew+' kg':'–')}</td><td colspan="3" class="muted">frei</td></tr>`}).join('')}</table></div>
+      ${paarungen(nrs,rs)}</div>`}
     return `<div class="card">${tiles([[st.pers,'Teilnehmer'],[st.m,'Männlich'],[st.w,'Weiblich'],[st.starts,'Starts'],[st.dopp,'Doppelstarts']])}${katBtns}
       <h2>Alle Kategorien</h2>${grp.map(g=>{const n=rs.filter(x=>x.nr>=g.von&&x.nr<=g.bis).length;return `<div class="grp ${n?'bel':''}" onclick="S.grp=${g.von};render();scrollTo(0,0)"><div><b>${esc(g.label)}</b><br><span class="muted">Kategorien ${g.von}${g.bis>g.von?'–'+g.bis:''}</span></div><b>${n?n+' Teilnehmer':'frei'} ›</b></div>`}).join('')}</div>`}
   // Clubs
@@ -318,7 +362,7 @@ function render(keepInputs){
   const h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList();
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('13')||0;
+const WEB_VERSION=Number('14')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';

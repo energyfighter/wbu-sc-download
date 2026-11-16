@@ -438,6 +438,44 @@ case 'c_login':
     }, true);
     out(['ok' => true] + $r);
 
+
+case 'c_forgot':   // Passwort vergessen: Code per E-Mail (Antwort immer gleich, damit niemand E-Mails ausprobieren kann)
+    $email = mb_strtolower(trim((string)($in['email'] ?? '')));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige E-Mail-Adresse angeben');
+    $send = withClubs(function (&$c) use ($email) {
+        if (!isset($c[$email])) return null;
+        if (time() - ($c[$email]['resetAt'] ?? 0) < 60) fail('Bitte eine Minute warten, dann erneut versuchen');
+        $code = (string)random_int(100000, 999999);
+        $c[$email]['reset'] = hash('sha256', $code); $c[$email]['resetAt'] = time(); $c[$email]['resetTry'] = 0;
+        return $code;
+    }, true);
+    if ($send !== null) {
+        $host = preg_replace('/[^a-z0-9.\-]/i', '', $_SERVER['HTTP_HOST'] ?? 'wbu-boxing.com');
+        $host = preg_replace('/^www\./', '', $host) ?: 'wbu-boxing.com';
+        $subj = '=?UTF-8?B?' . base64_encode('WBU – Code zum Zurücksetzen deines Passworts') . '?=';
+        $body = "Hallo,\n\ndein Code zum Zurücksetzen des Passworts für die WBU-Turnieranmeldung lautet:\n\n    $send\n\n"
+              . "Der Code ist 30 Minuten gültig. Wenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.\n\nWorld Boxing Union";
+        $hdr = "From: WBU Turniere <noreply@$host>\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit";
+        if (!@mail($email, $subj, $body, $hdr)) fail('Die E-Mail konnte nicht gesendet werden – bitte später erneut versuchen', 500);
+    }
+    out(['ok' => true]);
+
+case 'c_reset':    // Code + neues Passwort -> eingeloggt
+    $email = mb_strtolower(trim((string)($in['email'] ?? '')));
+    $pw = (string)($in['pw'] ?? '');
+    if (mb_strlen($pw) < 6) fail('Das Passwort muss mindestens 6 Zeichen haben');
+    $r = withClubs(function (&$c) use ($email, $pw, $in) {
+        $a = &$c[$email];
+        if (!isset($c[$email]) || empty($a['reset']) || time() - ($a['resetAt'] ?? 0) > 1800) fail('Der Code ist abgelaufen – bitte neu anfordern', 403);
+        if (($a['resetTry'] ?? 0) >= 5) { $a['reset'] = ''; fail('Zu viele Versuche – bitte neuen Code anfordern', 403); }
+        if (!hash_equals($a['reset'], hash('sha256', preg_replace('/\D/', '', (string)($in['code'] ?? ''))))) { $a['resetTry'] = ($a['resetTry'] ?? 0) + 1; return ['err' => 'Der Code stimmt nicht']; }
+        $a['pw'] = password_hash($pw, PASSWORD_DEFAULT); $a['reset'] = ''; $a['tok'] = [];
+        $tok = newToken($a);
+        return ['tok' => $tok, 'me' => clubPublic($email, $a)];
+    }, true);
+    if (isset($r['err'])) fail($r['err'], 403);
+    out(['ok' => true] + $r);
+
 case 'c_me':
     $me = clubByToken($in['tok'] ?? '');
     if (!$me) fail('Bitte neu einloggen', 403);
@@ -515,6 +553,30 @@ case 't_register':
         return ['no' => $reg['no'], 'fee' => $reg['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'], 'name' => $t['name']];
     }, true);
     out(['ok' => true] + $res);
+
+
+case 't_import':   // Veranstalter: in WBU Sports eingetragene / vorab gemeldete Sportler online eintragen
+    $list = $in['list'] ?? [];
+    if (!is_array($list)) fail('Liste fehlt');
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in, $list) {
+        if (!tKeyOk($t, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        $ids = [];
+        foreach (array_slice($list, 0, 500) as $x) {
+            $full = txt($x['name'] ?? '', 120); $vn = txt($x['vn'] ?? '', 60); $nn = txt($x['nn'] ?? '', 60);
+            if ($vn === '' && $nn === '') { $p = strrpos($full, ' '); $vn = $p === false ? $full : substr($full, 0, $p); $nn = $p === false ? '' : substr($full, $p + 1); }
+            $reg = ['vorname' => $vn, 'name' => $nn, 'geb' => preg_match('/^\d{4}-\d{2}-\d{2}$/', $x['geb'] ?? '') ? $x['geb'] : '',
+                    'sex' => in_array($x['sex'] ?? '', ['m', 'w'], true) ? $x['sex'] : ((int)($x['nr'] ?? 0) === 1000 ? 'x' : 'm'),
+                    'verein' => txt($x['verein'] ?? '', 100), 'land' => '', 'trainer' => txt($x['trainer'] ?? '', 100), 'email' => '', 'tel' => '',
+                    'sp' => txt($x['sp'] ?? '', 4), 'nr' => (int)($x['nr'] ?? 0), 'kg' => txt($x['kg'] ?? '', 8), 'klasse' => txt($x['klasse'] ?? '', 80),
+                    'bem' => 'vom Veranstalter eingetragen', 'betreuer' => '', 'cm' => '',
+                    'id' => bin2hex(random_bytes(6)), 'no' => $t['nextNo']++, 'at' => time(), 'paid' => false, 'docs' => [], 'need' => [], 'frei' => true,
+                    'club' => 'veranstalter', 'fee' => $t['fee']];
+            $t['regs'][] = $reg;
+            $ids[(string)($x['pid'] ?? '')] = $reg['id'];
+        }
+        return ['ids' => $ids];
+    }, true);
+    out(['ok' => true] + $r);
 
 case 't_regs':
     $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in) {

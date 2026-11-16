@@ -57,7 +57,7 @@ tr:nth-child(even) td{background:rgba(0,0,0,.03)}
 .m .p.w{font-weight:800;background:#d9f2e3}
 .m .p .s{color:var(--mut);font-size:12px}
 .m .no{font-size:11px;color:var(--mut);padding:3px 10px;background:#e3e6eb}
-.m.bye{opacity:.5;cursor:default}
+.m.bye{cursor:default;border-style:dashed}
 .modal{position:fixed;inset:0;background:rgba(20,25,35,.45);display:flex;align-items:center;justify-content:center;z-index:20}
 .dlg{background:var(--card);border:1px solid var(--gold);border-radius:16px;padding:20px;width:min(560px,94vw);max-height:90vh;overflow:auto}
 .note{font-size:13px;color:var(--mut)}
@@ -135,6 +135,25 @@ function wbuGewKlasse(kg){kg=+String(kg).replace(',','.');if(!(kg>0))return null
 // Klassennummer aus Sportart, Geschlecht, Alter, Gewichtsklasse
 function wbuNr(sp,sex,alter,gew,erw){if(sp==='SB')return wbuAltersgruppe('SB',alter)?1000:null;const a=wbuAltersgruppe(sp,alter,erw);if(!a||!gew)return null;
   const i=WBU_GEW.indexOf(gew);if(i<0)return null;return (sex==='w'?a[3]:a[2])+i}
+// ===================== Automatische Paarungen (gleich in WBU Sports und auf der Anmeldeseite) =====================
+// Eingabe: Sportler in Anmeldereihenfolge [{id, club}]. Ausgabe: Plätze der ersten Runde (Länge 2^k), je zwei nebeneinander = ein Kampf, null = Freilos.
+// Regeln: Freilose bevorzugt an den Verein mit den meisten Startern; Sportler desselben Vereins möglichst nicht gegeneinander.
+function wbuSeedOrder(n){let a=[1];while(a.length<n){const m=a.length*2+1;a=a.flatMap(x=>[x,m-x])}return a}
+function wbuPaare(list){
+  const n=list.length;if(n<2)return list.map(x=>x.id);
+  let size=2;while(size<n)size*=2;
+  const key=x=>String(x.club||'').trim().toLowerCase()||('#'+x.id);
+  const groups={};list.forEach((x,i)=>{(groups[key(x)]=groups[key(x)]||[]).push({...x,i})});
+  const G=Object.values(groups);
+  const take=excl=>{G.sort((a,b)=>b.length-a.length||(a[0]?a[0].i:1e9)-(b[0]?b[0].i:1e9));const g=G.find(g=>g.length&&g!==excl)||G.find(g=>g.length);return g?{g,x:g.shift()}:null};
+  const pairs=[];
+  for(let b=size-n;b>0;b--){const t=take(null);pairs.push([t.x.id,null])}          // Freilose
+  while(G.some(g=>g.length)){const a=take(null),b=take(a.g);pairs.push([a.x.id,b?b.x.id:null])}  // Kämpfe: größter Verein gegen anderen Verein
+  // Freilose gleichmäßig über das Bracket verteilen
+  const pos=wbuSeedOrder(size/2),slots=new Array(size).fill(null);
+  pairs.forEach((p,k)=>{const q=pos[k]-1;slots[2*q]=p[0];slots[2*q+1]=p[1]});
+  return slots;
+}
 
 // ===================== Speicher =====================
 let MEM={};
@@ -305,15 +324,15 @@ function catDetail(c){
    <div class="row"><select style="width:auto" onchange="upd(e=>e.cats.find(x=>x.id==='${c.id}').rounds=+this.value)">${[1,2,3,4,5].map(r=>`<option value="${r}" ${c.rounds===r?'selected':''}>${r} Runde${r>1?'n':''}</option>`).join('')}</select>
    <select style="width:auto" onchange="upd(e=>e.cats.find(x=>x.id==='${c.id}').dur=this.value)">${['1 Min','1,5 Min','2 Min','3 Min'].map(d=>`<option ${c.dur===d?'selected':''}>${d}</option>`).join('')}</select>
    ${(ev.rings||1)>1?`<select style="width:auto" onchange="upd(e=>e.cats.find(x=>x.id==='${c.id}').ring=+this.value)">${[1,2].map(r=>`<option value="${r}" ${ringOf(ev,c)===r?'selected':''}>Ring ${r}</option>`).join('')}</select>`:''}</div></div>
-   ${c.bracket?`<p class="note">Diese Kategorie ist bereits ausgelost. Wer jetzt Teilnehmer ändert, muss neu auslosen – dabei gehen die Ergebnisse dieser Kategorie verloren.</p>`:''}
+   <p class="note">${hasResults(c)?'Die Kategorie läuft schon (Ergebnisse eingetragen) – die Paarungen bleiben fest. Neu auslosen löscht die Ergebnisse dieser Kategorie.':c.players.length<2?'Wartet auf einen Gegner – die Paarung entsteht automatisch mit der nächsten Anmeldung.':'Paarungen entstehen automatisch nach der Anmeldung (Sportler desselben Vereins möglichst nicht gegeneinander) und sind schon jetzt unter „Brackets“ zu sehen.'}</p>
    <div class="row" style="margin-top:8px"><input id="np_name" placeholder="Vor- und Nachname" style="flex:2" onkeydown="if(event.key==='Enter')addPlayer()"><input id="np_club" placeholder="Verein / Land" style="flex:1.4" onkeydown="if(event.key==='Enter')addPlayer()"><button class="btn" onclick="addPlayer()">+ Teilnehmer</button></div>
    <table style="margin-top:10px"><tr><th>#</th><th>Name</th><th>Verein / Land</th><th></th></tr>
    ${c.players.map((p,i)=>`<tr><td>${i+1}</td><td><b>${esc(p.name)}</b>${p.reg?' <span class="badge">online</span>':''}</td><td>${esc(p.club)}</td><td style="text-align:right"><button class="btn sec sm" onclick="delPlayer('${p.id}')">✕</button></td></tr>`).join('')||'<tr><td colspan="4" class="muted">Noch keine Teilnehmer.</td></tr>'}</table>
-   <div class="row" style="margin-top:14px"><button class="btn ok" ${c.players.length<2?'disabled':''} onclick="askDraw()">${c.bracket?'Neu auslosen':'Auslosen & Bracket erstellen'}</button>
+   <div class="row" style="margin-top:14px"><button class="btn ok" ${c.players.length<2?'disabled':''} onclick="askDraw()">Neu auslosen (zufällig)</button>
    <button class="btn red" onclick="upd(e=>e.cats=e.cats.filter(x=>x.id!=='${c.id}'))">Kategorie löschen</button></div></div>`;
 }
-function addPlayer(){const n=$('np_name').value.trim();if(!n)return;const club=$('np_club').value.trim();upd(e=>e.cats.find(x=>x.id===S.cat).players.push({id:uid(),name:n,club}));setTimeout(()=>$('np_name')&&$('np_name').focus(),0)}
-function delPlayer(pid){upd(e=>{const c=e.cats.find(x=>x.id===S.cat);c.players=c.players.filter(p=>p.id!==pid)})}
+function addPlayer(){const n=$('np_name').value.trim();if(!n)return;const club=$('np_club').value.trim();upd(e=>{const c=e.cats.find(x=>x.id===S.cat);c.players.push({id:uid(),name:n,club});autoBracket(c)});setTimeout(()=>$('np_name')&&$('np_name').focus(),0)}
+function delPlayer(pid){upd(e=>{const c=e.cats.find(x=>x.id===S.cat);if(hasResults(c)){alertDlg('Die Kategorie läuft schon – erst „Neu auslosen“, dann Teilnehmer ändern.');return}c.players=c.players.filter(p=>p.id!==pid);autoBracket(c)})}
 function askDraw(){const c=cur().cats.find(x=>x.id===S.cat);
   if(c.bracket&&c.bracket.flat().some(m=>m.res&&m.res.k!=='BYE'))dlg(`<h2 style="margin-top:0">Neu auslosen?</h2><p>Die Kategorie hat schon Ergebnisse. Beim neuen Auslosen gehen sie verloren.</p><div class="row"><button class="btn red" onclick="closeDlg();doDraw()">Ja, neu auslosen</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);
   else doDraw()}
@@ -321,15 +340,18 @@ function askDraw(){const c=cur().cats.find(x=>x.id===S.cat);
 // ===================== Auslosung & Bracket (K.-o.-System) =====================
 // Reihenfolge der Setzplätze, damit Freilose (Byes) gleichmäßig verteilt sind
 function seedOrder(n){let a=[1];while(a.length<n){const m=a.length*2+1;a=a.flatMap(x=>[x,m-x])}return a}
-function doDraw(){upd(e=>{const c=e.cats.find(x=>x.id===S.cat);
-  const ps=c.players.map(p=>p.id).sort(()=>Math.random()-.5);
-  let size=2;while(size<ps.length)size*=2;
-  const order=seedOrder(size),slots=order.map(s=>ps[s-1]||null);
-  const rounds=[];let n=size/2,r0=[];
+// Bracket aus Plätzen der ersten Runde bauen (Paarungen: siehe wbuPaare – Vereinskollegen nicht gegeneinander)
+function buildBracket(c,order){
+  const slots=wbuPaare(order.map(p=>({id:p.id,club:p.club})));
+  const size=slots.length,rounds=[];let n=size/2,r0=[];
   for(let i=0;i<n;i++)r0.push({id:uid(),a:slots[2*i],b:slots[2*i+1],w:null,res:null});
   rounds.push(r0);
   while(n>1){n/=2;rounds.push(Array.from({length:n},()=>({id:uid(),a:null,b:null,w:null,res:null})))}
-  c.bracket=rounds;rebuild(c)});S.tab='br';render()}
+  c.bracket=rounds;rebuild(c)}
+const hasResults=c=>!!(c.bracket&&c.bracket.flat().some(m=>m.res&&m.res.k!=='BYE'));
+// Automatisch nach jeder Anmeldung: Paarungen neu, solange noch kein Kampf dieser Kategorie gewertet ist
+function autoBracket(c){if(hasResults(c))return;if(c.players.length<2){c.bracket=null;return}buildBracket(c,c.players)}
+function doDraw(){upd(e=>{const c=e.cats.find(x=>x.id===S.cat);buildBracket(c,c.players.slice().sort(()=>Math.random()-.5))});render()}
 // Sieger nach vorne tragen; Freilose automatisch weiter; veraltete Ergebnisse zurücksetzen
 function rebuild(c){
   const R=c.bracket;
@@ -492,7 +514,7 @@ function publish(pass){
   if(!o.tid&&pass===undefined){dlg(`<h2 style="margin-top:0">Turnier veröffentlichen</h2><p>Zum Veröffentlichen bitte das WBU-Passwort eingeben.</p><input id="pw" type="password" onkeydown="if(event.key==='Enter')publish($('pw').value)"><div id="pwerr" class="note" style="color:#b26a00"></div>
     <div class="row" style="margin-top:12px"><button class="btn" onclick="publish($('pw').value)">Veröffentlichen</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);setTimeout(()=>$('pw')&&$('pw').focus(),0);return}
   const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,rings:ev.rings||1,inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
-  api('t_publish',{t,tid:o.tid,key:o.key,pass}).then(j=>{closeDlg();upd(e=>{onl(e).tid=j.tid;onl(e).key=j.key});onErr('✓ Veröffentlicht.')})
+  api('t_publish',{t,tid:o.tid,key:o.key,pass}).then(async j=>{closeDlg();upd(e=>{onl(e).tid=j.tid;onl(e).key=j.key});try{await syncManual()}catch(x){};onErr('✓ Veröffentlicht.')})
    .catch(e=>{if($('pwerr'))$('pwerr').textContent=e.message;else onErr(e.message)});
 }
 async function upDoc(kind,inp){const o=onl(cur());let data='',name='';
@@ -500,17 +522,24 @@ async function upDoc(kind,inp){const o=onl(cur());let data='',name='';
     data=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
   try{onErr('Wird hochgeladen …');const j=await api('t_doc',{tid:o.tid,key:o.key,kind,name,data});upd(e=>{onl(e).docs=j.docs});onErr('✓ Gespeichert.')}catch(e){onErr(e.message)}}
 function regDoc(rid,kind){const o=onl(cur());window.open(`${API}?a=t_regdoc&tid=${o.tid}&key=${o.key}&rid=${rid}&kind=${kind}`,'_blank')}
-async function pullRegs(){const o=onl(cur());try{const j=await api('t_regs',{tid:o.tid,key:o.key});upd(e=>{e.regs=j.regs;e.regsAt=Date.now()})}catch(e){onErr(e.message)}}
+// Sportler, die direkt in WBU Sports stehen (z. B. vorab gemeldet), auch online eintragen
+async function syncManual(){const ev=cur(),o=onl(ev);if(!o.tid)return;
+  const list=[];ev.cats.forEach(c=>c.players.forEach(p=>{if(!p.reg)list.push({pid:p.id,nr:c.nr||0,klasse:(wbuKlasse(c.nr)||{}).name||c.name,sp:(wbuKlasse(c.nr)||{}).sp||'',
+    name:p.name,verein:p.club,vn:p.vn||'',nn:p.nn||'',geb:p.geb||'',sex:p.sex||'',kg:p.kg||'',trainer:p.trainer||''})}));
+  if(!list.length)return;
+  const j=await api('t_import',{tid:o.tid,key:o.key,list});
+  upd(e=>e.cats.forEach(c=>c.players.forEach(p=>{if(j.ids[p.id])p.reg=j.ids[p.id]})))}
+async function pullRegs(){try{await syncManual()}catch(e){onErr(e.message)}const o=onl(cur());try{const j=await api('t_regs',{tid:o.tid,key:o.key});upd(e=>{e.regs=j.regs;e.regsAt=Date.now()})}catch(e){onErr(e.message)}}
 async function setPaid(rid,paid){const o=onl(cur());try{await api('t_paid',{tid:o.tid,key:o.key,rid,paid});upd(e=>{e.regs.find(r=>r.id===rid).paid=paid})}catch(e){onErr(e.message)}}
 async function setStorno(rid,storno){const o=onl(cur());try{await api('t_del',{tid:o.tid,key:o.key,rid,storno});upd(e=>{e.regs.find(r=>r.id===rid).storno=storno;
-  if(storno)e.cats.forEach(c=>{if(!c.bracket)c.players=c.players.filter(p=>p.reg!==rid)})})}catch(e){onErr(e.message)}}
+  if(storno)e.cats.forEach(c=>{if(!hasResults(c)&&c.players.some(p=>p.reg===rid)){c.players=c.players.filter(p=>p.reg!==rid);autoBracket(c)}})})}catch(e){onErr(e.message)}}
 function importRegs(){
   let neu=0,gesperrt=0;
   upd(e=>{const have=new Set(e.cats.flatMap(c=>c.players.map(p=>p.reg).filter(Boolean)));
     (e.regs||[]).filter(r=>!r.storno&&r.frei!==false&&!have.has(r.id)&&wbuKlasse(r.nr)).forEach(r=>{const c=catFor(e,r.nr);
-      if(c.bracket){gesperrt++;return}
-      c.players.push({id:uid(),name:`${r.vorname} ${r.name}`,club:r.verein||r.land||'',reg:r.id});neu++})});
-  alertDlg(`${neu} Sportler in die Kategorien übernommen.`+(gesperrt?` ${gesperrt} nicht übernommen, weil die Kategorie schon ausgelost ist (dort neu auslosen oder von Hand eintragen).`:''));
+      if(hasResults(c)){gesperrt++;return}
+      c.players.push({id:uid(),name:`${r.vorname} ${r.name}`,club:r.verein||r.land||'',reg:r.id});autoBracket(c);neu++})});
+  alertDlg(`${neu} Sportler in die Kategorien übernommen.`+(gesperrt?` ${gesperrt} nicht übernommen, weil die Kategorie schon schon läuft (Ergebnisse eingetragen).`:''));
 }
 function regsCsv(){const ev=cur(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const rows=[['Start-Nr','Vorname','Name','Geburtsdatum','Geschlecht','Klasse-Nr','Klasse','Gewicht kg','Verein','Land','Trainer','Betreuer','E-Mail','Telefon','Startgeld','Bezahlt','Unterlagen','Storniert','Bemerkung']]
@@ -621,7 +650,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('13')||0;
+const WEB_VERSION=Number('14')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
