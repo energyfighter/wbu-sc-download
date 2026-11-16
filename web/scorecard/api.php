@@ -224,10 +224,22 @@ function withClubs($fn, $write = false) {
 }
 function clubPublic($email, $a) { return ['email' => $email, 'club' => $a['club'], 'trainer' => $a['trainer'], 'tel' => $a['tel'], 'rolle' => $a['rolle'] ?? 'club']; }
 /** Nur mit Login (Turniere, Teilnehmer, Unterlagen) – der Live-Monitor bleibt frei */
+/** Wie viele Konten sind registriert (nach Rolle)? */
+function kontenZahl() {
+    $c = json_decode((string)@file_get_contents(clubsFile()), true) ?: []; $n = ['gesamt' => count($c)];
+    foreach ($c as $a) { $r = $a['rolle'] ?? 'club'; $n[$r] = ($n[$r] ?? 0) + 1; }
+    return $n;
+}
 function needLogin($tok) { $c = clubByToken($tok); if (!$c) fail('Bitte einloggen', 401); return $c; }
 function newToken(&$a) { $tok = bin2hex(random_bytes(20)); $a['tok'] = array_slice(array_merge($a['tok'] ?? [], [hash('sha256', $tok)]), -10); return $tok; }
 /** Eingeloggter Club zum Token (oder null) */
 function clubByToken($tok) {
+    // Veranstalter-Ansicht: „vk:<Turnier>:<Schlüssel>“ – sieht alles ohne eigenes Konto
+    if (is_string($tok) && preg_match('/^vk:([A-Za-z0-9_-]+):(.+)$/', $tok, $m)) {
+        $t = json_decode((string)@file_get_contents(tufile($m[1])), true);
+        if (is_array($t) && tKeyOk($t, $m[2])) return ['email' => '__veranstalter__', 'club' => '–', 'trainer' => 'Veranstalter', 'tel' => '', 'rolle' => 'veranstalter', 'vtid' => $m[1]];
+        return null;
+    }
     if (!is_string($tok) || strlen($tok) < 20 || !file_exists(clubsFile())) return null;
     $c = json_decode((string)@file_get_contents(clubsFile()), true) ?: [];
     $hs = hash('sha256', $tok);
@@ -521,7 +533,8 @@ case 't_public':   // nur mit Login: Teilnehmer, Kategorien, Clubs (ohne Kontakt
             $list[] = $e;
         }
         $starts = 0; foreach ($t['regs'] as $x) if (regIn($t, $x)) $starts++;
-        return ['regs' => $list, 'full' => $full, 'count' => ['persons' => count($pids), 'starts' => $starts, 'clubs' => count($clubs)]];
+        if ($full && $club['rolle'] === 'veranstalter') $res['konten'] = kontenZahl();
+        return ($res ?? []) + ['regs' => $list, 'full' => $full, 'count' => ['persons' => count($pids), 'starts' => $starts, 'clubs' => count($clubs)]];
     });
     out(['ok' => true] + $r);
 
@@ -867,7 +880,7 @@ case 't_regs':
         $regs = [];
         foreach ($t['regs'] as $x) { $x['paid'] = regPaid($t, $x); $x['alive'] = regAlive($t, $x); $x['ostat'] = !empty($x['oid']) && isset($t['orders'][$x['oid']]) ? ostat($t['orders'][$x['oid']]) : ($x['paid'] ? 'paid' : ''); $regs[] = $x; }
         $os = []; foreach (($t['orders'] ?? []) as $o) $os[] = orderView($t, $o);
-        return ['regs' => $regs, 'orders' => $os, 'turnier' => tPublic($t)];
+        return ['regs' => $regs, 'orders' => $os, 'turnier' => tPublic($t), 'konten' => kontenZahl()];
     });
     out(['ok' => true] + $r);
 

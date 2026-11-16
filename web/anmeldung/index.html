@@ -126,7 +126,7 @@ const euro=v=>(+v||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 let AUTH=(()=>{try{return JSON.parse(localStorage.getItem('wbuClub')||'null')}catch(e){return null}})();
 function saveAuth(a){AUTH=a;try{a?localStorage.setItem('wbuClub',JSON.stringify(a)):localStorage.removeItem('wbuClub')}catch(e){}}
 const TOK=()=>AUTH?AUTH.tok:'';
-const ROLLEN={club:'Verein / Gym',trainer:'Trainer / Coach',einzel:'Einzelsportler (ohne Club)',sup:'Supervisor',ref:'Kampfrichter / Punktrichter',sonst:'Sonstige'};
+const ROLLEN={club:'Verein / Gym',trainer:'Trainer / Coach',einzel:'Einzelsportler (ohne Club)',sup:'Supervisor',ref:'Kampfrichter / Punktrichter',sonst:'Sonstige',veranstalter:'Veranstalter (alles sichtbar)'};
 const canReg=()=>AUTH&&['club','trainer','einzel'].includes(AUTH.me.rolle);
 async function api(a,body){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,tok:TOK(),...body})});
   let j;try{j=await r.json()}catch(e){throw new Error('Server nicht erreichbar')}
@@ -418,7 +418,7 @@ function render(keepInputs){
   const h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList();
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('25')||0;
+const WEB_VERSION=Number('26')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
@@ -426,6 +426,8 @@ async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
       d.textContent='Neue Version verfügbar – hier tippen zum Neuladen';d.onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setTimeout(checkWebVersion,3000);
 const q=new URLSearchParams(location.search).get('t');
+// Aus WBU Sports geöffnet: Veranstalter sieht alles sofort, ohne eigenes Konto
+{const vk=new URLSearchParams(location.search).get('vk');if(q&&vk){saveAuth({tok:'vk:'+q+':'+vk,me:{trainer:'Veranstalter',rolle:'veranstalter',club:'–',email:''}});history.replaceState(null,'','?t='+q)}}
 if(!AUTH){S.view='login';render()}else if(q)openT(q);else loadList();
 </script>
 </body>
