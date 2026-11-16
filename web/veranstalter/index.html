@@ -323,7 +323,7 @@ function pclub(c,pid){const p=c.players.find(x=>x.id===pid);return p?p.club:''}
 function roundName(r,total){const left=total-r;return left===1?'Finale':left===2?'Halbfinale':left===3?'Viertelfinale':left===4?'Achtelfinale':`Runde ${r+1}`}
 
 function vBr(ev){
-  const cs=ev.cats.filter(c=>c.bracket);
+  const cs=sortedCats(ev);
   if(!cs.length)return '<div class="card muted">Noch keine Kategorie ausgelost. Unter „Kategorien & Teilnehmer“ Teilnehmer eintragen und „Auslosen“ drücken.</div>';
   const c=cs.find(x=>x.id===S.cat)||cs[0];S.cat=c.id;
   const no=matchNumbers(ev);
@@ -331,7 +331,8 @@ function vBr(ev){
   <div class="card"><h2 style="margin-top:0">${esc(c.name)} <span class="muted">· ${c.players.length} Teilnehmer · ${c.rounds}×${esc(c.dur)}</span></h2>
   <div class="bracket">${c.bracket.map((col,r)=>`<div class="bcol"><h4>${roundName(r,c.bracket.length)}</h4>${col.map(m=>matchBox(c,m,no[m.id])).join('')}</div>`).join('')}
   <div class="bcol"><h4>Sieger</h4>${(()=>{const f=c.bracket[c.bracket.length-1][0];return f.w?`<div class="m" style="border-color:var(--gold);cursor:default"><div class="p w">🏆 ${esc(pname(c,f[f.w]))}</div></div>`:'<div class="m" style="cursor:default"><div class="p muted">offen</div></div>'})()}</div></div>
-  <p class="note noprint">Kampf anklicken, um das Ergebnis einzutragen. Der Sieger rückt automatisch in die nächste Runde.</p></div>`;
+  ${(()=>{const P=places(c),n=id=>esc(pname(c,id));return (P.done||P.third.length)?`<p><b>Platzierung:</b> ${P.done?`🥇 ${n(P.first)} &nbsp; 🥈 ${n(P.second)} &nbsp; `:''}${P.third.map(t=>`🥉 ${n(t)}`).join(' &nbsp; ')}</p>`:''})()}
+  <p class="note noprint">Kampf anklicken, um das Ergebnis einzutragen. Der Sieger rückt automatisch in die nächste Runde. Kein Kampf um Platz 3 – beide Halbfinal-Verlierer sind Dritte.</p></div>`;
 }
 function matchBox(c,m,no){
   const bye=m.res&&m.res.k==='BYE';
@@ -339,23 +340,50 @@ function matchBox(c,m,no){
   const can=m.a&&m.b;
   return `<div class="m ${bye?'bye':''}" ${can?`onclick="resultDlg('match','${m.id}','${c.id}')"`:''}>${no?`<div class="no">Kampf ${no}${m.res&&!bye?' · '+esc(resName(m.res.k)):''}</div>`:''}${line('a','r')}${line('b','b')}</div>`;
 }
-// Fortlaufende Kampfnummern über alle Kategorien: erst Runde 1 aller Kategorien, dann Runde 2 …
-function matchNumbers(ev){
-  const no={};let n=1;const maxR=Math.max(0,...ev.cats.filter(c=>c.bracket).map(c=>c.bracket.length));
-  for(let r=0;r<maxR;r++)ev.cats.forEach(c=>{if(!c.bracket||!c.bracket[r])return;c.bracket[r].forEach(m=>{const bye=m.res&&m.res.k==='BYE';if(!bye)no[m.id]=n++})});
-  return no;
+// ===================== Kampfreihenfolge mit Pausen =====================
+// Reihenfolge der Kategorien: Sportart (Semi-Pro, K1, Master), dann Klassennummer –
+// also jüngste Altersklasse zuerst, männlich vor weiblich, leichte vor schweren Gewichtsklassen.
+const SP_RANK={SP:0,K1:1,MB:2};
+function catRank(c){const k=c.nr&&wbuKlasse(c.nr);return k?SP_RANK[k.sp]*1000+k.nr:9000}
+function sortedCats(ev){return ev.cats.filter(c=>c.bracket).slice().sort((a,b)=>catRank(a)-catRank(b)||String(a.name).localeCompare(b.name))}
+// Plan: erst alle Kämpfe der 1. Runde (Kategorie für Kategorie), dann der 2. Runde usw.
+// Ein Kampf wird nur angesetzt, wenn beide Sportler seit ihrem letzten Kampf mindestens „Pause“ Kämpfe Ruhe hatten.
+// Geht das nicht, wird zu einer anderen Kategorie gesprungen; nur wenn es gar nicht anders geht, kommt der Kampf mit kürzerer Pause.
+function schedule(ev){
+  const minP=ev.pause??4,slot={},no={},rest={},items=[];let n=0;
+  sortedCats(ev).forEach((c,ci)=>c.bracket.forEach((col,r)=>col.forEach((m,i)=>{
+    items.push({m,c,r,i,ci,bye:!!(m.res&&m.res.k==='BYE'),feed:r>0?[c.bracket[r-1][2*i].id,c.bracket[r-1][2*i+1].id]:[]})})));
+  const done=id=>id in slot,last=it=>Math.max(-1e9,...it.feed.map(f=>slot[f]));
+  let open=items.slice(),guard=0;
+  while(open.length&&guard++<5000){
+    // Freilose sofort durchreichen
+    let moved=true;while(moved){moved=false;open=open.filter(it=>{if(it.bye&&it.feed.every(done)){slot[it.m.id]=it.feed.length?last(it):-1e9;moved=true;return false}return true})}
+    const av=open.filter(it=>!it.bye&&it.feed.every(done));if(!av.length)break;
+    av.sort((a,b)=>a.r-b.r||a.ci-b.ci||a.i-b.i);
+    const gap=it=>n-last(it)-1;
+    let pick=av.find(it=>gap(it)>=minP);
+    if(!pick)pick=av.reduce((b,it)=>gap(it)>gap(b)?it:b,av[0]);
+    n++;slot[pick.m.id]=n;no[pick.m.id]=n;const g=gap(pick);rest[pick.m.id]=g>1e6?null:g;
+    open=open.filter(it=>it!==pick);
+  }
+  return {no,rest,minP};
 }
+function matchNumbers(ev){return schedule(ev).no}
 function vKl(ev){
-  const no=matchNumbers(ev),rows=[];
+  const sch=schedule(ev),no=sch.no,rows=[];
   ev.cats.forEach(c=>{if(!c.bracket)return;c.bracket.forEach((col,r)=>col.forEach(m=>{if(no[m.id])rows.push({no:no[m.id],c,m,r})}))});
   rows.sort((x,y)=>x.no-y.no);
   const st=x=>x.m.w?'<span class="badge g">fertig</span>':(x.m.a&&x.m.b?'<span class="badge y">bereit</span>':'<span class="badge">wartet</span>');
-  return `<div class="card"><div class="row" style="justify-content:space-between"><b>Kampfliste – ${rows.length} Kämpfe</b><button class="btn sec sm noprint" onclick="print()">Drucken</button></div>
-  ${rows.length?`<table><tr><th>Kampf</th><th>Kategorie</th><th>Runde</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Status</th><th>Ergebnis</th></tr>
+  const ps=x=>{const g=sch.rest[x.m.id];return g==null?'<span class="muted">–</span>':g<sch.minP?`<span class="badge y" title="kürzer als die Mindestpause – ging nicht anders">${g} ⚠</span>`:`<span class="muted">${g}</span>`};
+  const kurz=rows.filter(x=>sch.rest[x.m.id]!=null&&sch.rest[x.m.id]<sch.minP).length;
+  return `<div class="card"><div class="row" style="justify-content:space-between"><b>Kampfliste – ${rows.length} Kämpfe</b>
+    <div class="row noprint"><span class="muted">Mindestpause:</span><select style="width:auto" onchange="upd(e=>e.pause=+this.value)">${[0,1,2,3,4,5,6,8,10,12,15].map(v=>`<option value="${v}" ${v===sch.minP?'selected':''}>${v} Kämpfe dazwischen</option>`).join('')}</select>
+    <button class="btn sec sm" onclick="print()">Drucken / PDF</button></div></div>
+  ${rows.length?`<table><tr><th>Kampf</th><th>Kategorie</th><th>Runde</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Pause</th><th>Status</th><th>Ergebnis</th></tr>
   ${rows.map(x=>`<tr ${x.m.a&&x.m.b?`style="cursor:pointer" onclick="resultDlg('match','${x.m.id}','${x.c.id}')"`:''}><td><b>${x.no}</b></td><td>${esc(x.c.name)}</td><td>${roundName(x.r,x.c.bracket.length)}</td>
-   <td class="r">${esc(pname(x.c,x.m.a)||'–')}</td><td class="b">${esc(pname(x.c,x.m.b)||'–')}</td><td>${st(x)}</td><td>${x.m.res?esc(resLine(x.m.res,pname(x.c,x.m.a),pname(x.c,x.m.b))):''}</td></tr>`).join('')}</table>`
+   <td class="r">${esc(pname(x.c,x.m.a)||'–')}</td><td class="b">${esc(pname(x.c,x.m.b)||'–')}</td><td>${ps(x)}</td><td>${st(x)}</td><td>${x.m.res?esc(resLine(x.m.res,pname(x.c,x.m.a),pname(x.c,x.m.b))):''}</td></tr>`).join('')}</table>`
   :'<p class="muted">Noch keine Kategorie ausgelost.</p>'}</div>
-  <p class="note noprint">Die Kampfliste ist die Reihenfolge für den Ring: zuerst alle Kämpfe der ersten Runde aller Kategorien, dann die nächste Runde. „Bereit“ heißt: beide Gegner stehen fest. Diese Liste geht später automatisch an das Supervisor-Handy.</p>`;
+  <p class="note noprint">Reihenfolge: zuerst die erste Runde aller Kategorien – Semi-Pro, dann K1, dann Master; jeweils jüngste Altersklasse zuerst, männlich vor weiblich, leichte vor schweren Gewichtsklassen. Danach die nächste Runde. Hat ein Sportler noch nicht genug Pause, wird ein Kampf aus einer anderen Kategorie vorgezogen. „Pause“ = Kämpfe seit dem letzten Kampf dieser Sportler; ⚠ heißt: kürzer ging es nicht.${kurz?` Zurzeit ${kurz}× kürzere Pause.`:''}</p>`;
 }
 
 // ===================== Ergebnisse =====================
@@ -364,14 +392,17 @@ function vErg(ev){
     return `<div class="card"><div class="row" style="justify-content:space-between"><b>Ergebnisse</b><button class="btn sec sm noprint" onclick="print()">Drucken</button></div>
     <table><tr><th>Nr.</th><th>Kampf</th><th>Klasse / Titel</th><th>Ergebnis</th></tr>${ev.fights.map((f,i)=>`<tr><td>${i+1}</td><td><span class="r">${esc(f.red)}</span> vs. <span class="b">${esc(f.blue)}</span></td><td>${esc(f.cls)}${f.title?' · '+esc(f.title):''}</td><td>${f.result?esc(resLine(f.result,f.red,f.blue)):'<span class="muted">offen</span>'}</td></tr>`).join('')}</table></div>`;
   }
-  return `<div class="card"><div class="row" style="justify-content:space-between"><b>Platzierungen</b><button class="btn sec sm noprint" onclick="print()">Drucken</button></div>
-  <table><tr><th>Kategorie</th><th>🥇 1. Platz</th><th>🥈 2. Platz</th><th>🥉 3. Platz</th></tr>${ev.cats.filter(c=>c.bracket).map(c=>{
-    const R=c.bracket,f=R[R.length-1][0],first=f.w?f[f.w]:null,second=f.w?f[f.w==='a'?'b':'a']:null;
-    const semis=R.length>1?R[R.length-2]:[];const thirds=semis.map(m=>m.w?m[m.w==='a'?'b':'a']:null).filter(Boolean);
-    const p=id=>id?`${esc(pname(c,id))}<div class="muted">${esc(pclub(c,id))}</div>`:'<span class="muted">offen</span>';
-    return `<tr><td><b>${esc(c.name)}</b></td><td>${p(first)}</td><td>${p(second)}</td><td>${thirds.length?thirds.map(p).join('<br>'):'<span class="muted">–</span>'}</td></tr>`}).join('')}</table>
-  <p class="note">Im Boxen gibt es üblicherweise zwei 3. Plätze (beide Halbfinal-Verlierer).</p></div>`;
+  const cs=sortedCats(ev);
+  return `<div class="card"><div class="row" style="justify-content:space-between"><b>Platzierungen</b><button class="btn sec sm noprint" onclick="print()">Drucken / PDF</button></div>
+  <table><tr><th>Kategorie</th><th>🥇 1. Platz</th><th>🥈 2. Platz</th><th>🥉 3. Platz</th><th>🥉 3. Platz</th></tr>${cs.map(c=>{
+    const P=places(c),p=id=>id?`${esc(pname(c,id))}<div class="muted">${esc(pclub(c,id))}</div>`:'<span class="muted">–</span>';
+    return `<tr><td><b>${esc(c.name)}</b><div class="muted">${c.players.length} Teilnehmer</div></td><td>${P.done?p(P.first):'<span class="muted">offen</span>'}</td><td>${P.done?p(P.second):'<span class="muted">offen</span>'}</td><td>${p(P.third[0])}</td><td>${p(P.third[1])}</td></tr>`}).join('')}</table>
+  <p class="note">Es gibt keinen Kampf um Platz 3: Beide Verlierer der Halbfinals belegen gemeinsam den 3. Platz.</p></div>`;
 }
+// Platzierungen einer Kategorie (K.-o.-System, zwei 3. Plätze)
+function places(c){const R=c.bracket,f=R[R.length-1][0];
+  const lose=m=>m.w&&m.a&&m.b?m[m.w==='a'?'b':'a']:null;
+  return {done:!!f.w,first:f.w?f[f.w]:null,second:lose(f),third:R.length>1?R[R.length-2].map(lose).filter(Boolean):[]}}
 
 // ===================== Online-Anmeldung =====================
 const API=/^https?:/.test(location.protocol)?'../scorecard/api.php':'https://www.wbu-boxing.com/scorecard/api.php';
@@ -458,7 +489,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('4')||0;
+const WEB_VERSION=Number('5')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
