@@ -62,11 +62,11 @@ const deDate=iso=>{const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);re
 async function api(a,body){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,...body}),cache:'no-store'});
   let j;try{j=await r.json()}catch(e){throw new Error('Server nicht erreichbar')}if(!j.ok)throw new Error(j.error||'Fehler');return j}
 const Q=new URLSearchParams(location.search),LID=Q.get('l'),TV=Q.get('tv')==='1';
-const S={tab:'live',snap:null,err:''};
+const S={tab:'live',snap:null,err:'',ring:+(Q.get('ring')||0)};
 const uhr=()=>new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 const big=()=>innerWidth>=1100;
 
-function head(sn){return `<div class="top"><img src="${LOGO}"><div><h1>${esc(sn?sn.name:'WBU Live')}</h1><span>${sn?esc([sn.ort,deDate(sn.date)].filter(Boolean).join(' · '))+' · Kampfreihenfolge':'World Boxing Union · Turniere und Galas live'}</span></div><div class="sp"></div><div class="uhr">${uhr()}</div></div>`}
+function head(sn){return `<div class="top"><img src="${LOGO}"><div><h1>${esc(sn?sn.name:'WBU Live')}</h1><span>${sn?esc([sn.ort,deDate(sn.date)].filter(Boolean).join(' · '))+((sn.rings||1)>1?' · Ring '+S.ring:'')+' · Kampfreihenfolge':'World Boxing Union · Turniere und Galas live'}</span></div><div class="sp"></div><div class="uhr">${uhr()}</div></div>`}
 function card(f,i,showRes){
   const tag=showRes?`<span class="rd">${esc(f.rd)}</span>`:i===0?'<span class="tag">IM RING</span>':i<3?'<span class="tag y">BEREIT MACHEN</span>':`<span class="rd">${esc(f.rd)}</span>`;
   return `<div class="f ${showRes?'':i===0?'now':i<3?'next':''}"><div class="h"><span class="no">Kampf ${f.no}</span>${tag}</div><div class="kl">${esc(f.kl)}</div>
@@ -79,8 +79,10 @@ function vList(list){
   :'<p class="mut">Zurzeit läuft keine Veranstaltung live.</p>'}</div>`}
 
 function vLive(sn){
-  const rows=sn.rows||[],open=rows.filter(r=>!r.done),done=rows.filter(r=>r.done);
-  const bar=TV?'':`<div class="btnbar"><button class="btn ${S.tab==='live'?'on':''}" onclick="S.tab='live';draw()">Nächste Kämpfe</button><button class="btn ${S.tab==='done'?'on':''}" onclick="S.tab='done';draw()">Bisherige Kämpfe (${done.length})</button>${sn.places&&sn.places.length?`<button class="btn ${S.tab==='pl'?'on':''}" onclick="S.tab='pl';draw()">Platzierungen</button>`:''}</div>`;
+  const rings=sn.rings||1;if(rings>1&&!S.ring)S.ring=1;
+  const all=sn.rows||[],rows=rings>1?all.filter(r=>(r.ring||1)===S.ring):all,open=rows.filter(r=>!r.done),done=rows.filter(r=>r.done);
+  const ringBar=rings>1&&!TV?`<div class="btnbar">${Array.from({length:rings},(_,i)=>`<button class="btn ${S.ring===i+1?'on':''}" onclick="S.ring=${i+1};draw()">Ring ${i+1}</button>`).join('')}</div>`:'';
+  const bar=TV?'':ringBar+`<div class="btnbar"><button class="btn ${S.tab==='live'?'on':''}" onclick="S.tab='live';draw()">Nächste Kämpfe</button><button class="btn ${S.tab==='done'?'on':''}" onclick="S.tab='done';draw()">Bisherige Kämpfe (${done.length})</button>${sn.places&&sn.places.length?`<button class="btn ${S.tab==='pl'?'on':''}" onclick="S.tab='pl';draw()">Platzierungen</button>`:''}</div>`;
   let body;
   if(S.tab==='done'&&!TV)body=done.length?`<div class="grid ${big()?'wide':''}">${done.slice().reverse().map((f,i)=>card(f,i,true)).join('')}</div>`:'<div class="empty">Noch keine Kämpfe beendet.</div>';
   else if(S.tab==='pl'&&!TV)body=`<div style="padding:12px"><table><tr><th>Kategorie</th><th>1.</th><th>2.</th><th>3.</th><th>3.</th></tr>${sn.places.map(p=>{const n=x=>x?`<b>${esc(x.n)}</b><br><span class="mut">${esc(x.c)}</span>`:'<span class="mut">–</span>';

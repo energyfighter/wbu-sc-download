@@ -102,7 +102,9 @@ const WBU_SP_ALTER=[[10,11,100,114],[12,13,128,142],[14,15,156,170],[16,17,184,1
 const WBU_SPORT={
   SP:{name:'Semi-Pro Boxen',kurz:'Semi-Pro',alter:WBU_SP_ALTER},
   K1:{name:'Kickboxen (K1)',kurz:'K1',alter:WBU_SP_ALTER.map(a=>[a[0],a[1],a[2]+500,a[3]+500])},
-  MB:{name:'Masterboxen',kurz:'Master',alter:[[30,34,300,314],[35,39,328,342],[40,44,356,370],[45,49,384,398],[50,54,412,426],[55,59,440,454],[60,64,468,482],[65,69,496,510]]}
+  MB:{name:'Masterboxen',kurz:'Master',alter:[[30,34,300,314],[35,39,328,342],[40,44,356,370],[45,49,384,398],[50,54,412,426],[55,59,440,454],[60,64,468,482],[65,69,496,510]]},
+  // Shadow Boxing Battle: Schattenboxen gegeneinander, alle Altersklassen, männlich/weiblich gemischt, keine Gewichtsklassen – ein Bracket
+  SB:{name:'Shadow Boxing Battle',kurz:'Shadow Boxing',alter:[[10,99,1000,1000]],ohneGewicht:true}
 };
 // Semi-Pro / K1: bis 17 Jahre = Jugend, ab 18 = Erwachsene. 16- und 17-Jährige dürfen auch bei den Erwachsenen starten.
 // Masterboxen: alle Erwachsene.
@@ -110,7 +112,8 @@ const wbuJugend=(von)=>von<18;
 const wbuAlterText=(von,bis)=>bis==null?`${von}+ J.`:`${von}–${bis} J.`;
 // Alle Klassen als Liste
 const WBU_KLASSEN=(()=>{const L=[];
-  for(const [sp,s] of Object.entries(WBU_SPORT))for(const [von,bis,mNr,wNr] of s.alter)for(const sex of ['m','w'])
+  L.push({nr:1000,sp:'SB',sex:'x',von:10,bis:99,gew:'',jug:false,name:'Shadow Boxing Battle (M/W Mix, 10–99 J.)'});
+  for(const [sp,s] of Object.entries(WBU_SPORT))if(!s.ohneGewicht)for(const [von,bis,mNr,wNr] of s.alter)for(const sex of ['m','w'])
     WBU_GEW.forEach((g,i)=>{const nr=(sex==='m'?mNr:wNr)+i;
       L.push({nr,sp,sex,von,bis,gew:g,jug:sp!=='MB'&&wbuJugend(von),
         name:`${s.kurz} ${sex==='m'?'Männlich':'Weiblich'} ${wbuAlterText(von,bis)} ${g} kg`})});
@@ -122,15 +125,15 @@ function wbuAlter(geb,tag){const g=new Date(geb),t=new Date(tag||Date.now());if(
 // Passende Altersgruppe zu Sportart + Alter (oder null)
 // erw=true: 16/17-Jährige starten bei den Erwachsenen (18+)
 function wbuAltersgruppe(sp,alter,erw){const s=WBU_SPORT[sp];if(!s||alter==null)return null;
-  if(erw&&sp!=='MB'&&alter>=16&&alter<=17)return s.alter.find(a=>a[1]==null)||null;
+  if(erw&&wbuDarfErw(sp,alter))return s.alter.find(a=>a[1]==null)||null;
   return s.alter.find(([von,bis])=>alter>=von&&(bis==null||alter<=bis))||null}
 // Darf dieser Sportler wahlweise bei den Erwachsenen starten?
-const wbuDarfErw=(sp,alter)=>sp!=='MB'&&alter>=16&&alter<=17;
+const wbuDarfErw=(sp,alter)=>(sp==='SP'||sp==='K1')&&alter>=16&&alter<=17;
 // Gewichtsklasse zu kg: kleinste Grenze, die nicht überschritten wird
 function wbuGewKlasse(kg){kg=+String(kg).replace(',','.');if(!(kg>0))return null;
   for(const g of WBU_GEW){if(g[0]==='-'&&kg<=+g.slice(1))return g}return '+100'}
 // Klassennummer aus Sportart, Geschlecht, Alter, Gewichtsklasse
-function wbuNr(sp,sex,alter,gew,erw){const a=wbuAltersgruppe(sp,alter,erw);if(!a||!gew)return null;
+function wbuNr(sp,sex,alter,gew,erw){if(sp==='SB')return wbuAltersgruppe('SB',alter)?1000:null;const a=wbuAltersgruppe(sp,alter,erw);if(!a||!gew)return null;
   const i=WBU_GEW.indexOf(gew);if(i<0)return null;return (sex==='w'?a[3]:a[2])+i}
 
 // ===================== Speicher =====================
@@ -217,7 +220,7 @@ function vCard(ev){
       <div><label>Rundendauer</label><select id="nf_dur"><option>3 Min</option><option>2 Min</option></select></div>
       <div style="display:flex;align-items:flex-end"><button class="btn" style="width:100%" onclick="addFight()">+ Kampf hinzufügen</button></div>
     </div></div>
-  ${liveBox(ev)}<div class="card"><div class="row" style="justify-content:space-between"><b>Fight Card – ${fs.length} Kämpfe</b><div class="row noprint"><button class="btn sec sm" onclick="print()">Drucken</button><button class="btn sm" onclick="openTv()">📺 Fernseher-Anzeige</button></div></div>
+  ${liveBox(ev)}<div class="card"><div class="row" style="justify-content:space-between"><b>Fight Card – ${fs.length} Kämpfe</b><div class="row noprint"><button class="btn sec sm" onclick="print()">Drucken</button><button class="btn sm" onclick="openTv(0)">📺 Fernseher-Anzeige</button></div></div>
   ${fs.length?`<table><tr><th>Nr.</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Klasse / Titel</th><th>Kampfart</th><th>Runden</th><th>Ergebnis</th><th class="noprint"></th></tr>
   ${fs.map((f,i)=>`<tr><td><b>${i+1}</b></td><td class="r">${esc(f.red)}</td><td class="b">${esc(f.blue)}</td><td>${esc(f.cls)}${f.title?`<div class="muted">${esc(f.title)}</div>`:''}</td>
     <td>${esc(f.kind)}</td><td>${f.rounds} × ${esc(f.dur)}</td><td>${f.result?`<span class="badge g">${esc(resLine(f.result,f.red,f.blue))}</span>`:'<span class="muted">offen</span>'}</td>
@@ -281,22 +284,27 @@ function vCats(ev){
     <div class="grid2"><div><label>Geschlecht</label><select id="nc_sex"><option value="m">Männlich</option><option value="w">Weiblich</option></select></div>
     <div><label>Altersklasse</label><select id="nc_alter"></select></div></div>
     <label>Gewichtsklasse</label><select id="nc_gew">${WBU_GEW.map(g=>`<option>${g}</option>`).join('')}</select>
-    <div class="grid2"><div><label>Runden</label><select id="nc_rounds">${[1,2,3,4,5].map(r=>`<option ${r===3?'selected':''}>${r}</option>`).join('')}</select></div>
-    <div><label>Dauer</label><select id="nc_dur"><option>2 Min</option><option>3 Min</option><option>1,5 Min</option><option>1 Min</option></select></div></div>
+
     <button class="btn" style="width:100%;margin-top:10px" onclick="addCat()">+ Kategorie</button>
-    <p class="note" style="margin-bottom:0">Alle Klassen sind fest nach WBU-Tabelle vorgegeben (mit Klassennummer). Online-Anmeldungen legen ihre Kategorien automatisch an.</p></div>
+    <p class="note" style="margin-bottom:0">Kampfzeit automatisch: unter 12 J. 3 × 1,5 Min, ab 12 J. 3 × 2 Min, Shadow Boxing 2 Min (änderbar). Alle Klassen sind fest nach WBU-Tabelle vorgegeben (mit Klassennummer). Online-Anmeldungen legen ihre Kategorien automatisch an.</p></div>
     <div class="card" style="padding:6px">${ev.cats.map(x=>`<div class="evrow" style="${x.id===S.cat?'background:var(--card2)':''}" onclick="S.cat='${x.id}';render()"><div style="flex:1"><b>${esc(x.name)}</b><div class="muted">${x.players.length} Teilnehmer · ${x.rounds}×${esc(x.dur)}</div></div>${x.bracket?'<span class="badge g">ausgelost</span>':''}</div>`).join('')||'<p class="muted" style="padding:8px">Noch keine Kategorien.</p>'}</div></div>
   <div>${c?catDetail(c):'<div class="card muted">Links eine Kategorie anlegen.</div>'}</div></div>`;
 }
-function ncAlter(){const sp=$('nc_sp')?.value;if(!sp)return;$('nc_alter').innerHTML=WBU_SPORT[sp].alter.map((a,i)=>`<option value="${i}">${wbuAlterText(a[0],a[1])}${sp!=='MB'?(wbuJugend(a[0])?' · Jugend':' · Erwachsene'):''}</option>`).join('')}
-function catFor(e,nr,rounds,dur){let c=e.cats.find(x=>x.nr===nr);if(c)return c;const k=wbuKlasse(nr);
+function ncAlter(){const sp=$('nc_sp')?.value;if(!sp)return;['nc_sex','nc_gew'].forEach(x=>{const e=$(x);if(e)e.disabled=sp==='SB'});$('nc_alter').innerHTML=WBU_SPORT[sp].alter.map((a,i)=>`<option value="${i}">${wbuAlterText(a[0],a[1])}${sp==='SP'||sp==='K1'?(wbuJugend(a[0])?' · Jugend':' · Erwachsene'):sp==='SB'?' · alle, M/W gemischt':''}</option>`).join('')}
+// Kampfzeiten: Shadow Boxing 1 × 2 Min, Kinder unter 12: 3 × 1,5 Min, ab 12: 3 × 2 Min
+function defTime(k){return k.sp==='SB'?[1,'2 Min']:k.von<12?[3,'1,5 Min']:[3,'2 Min']}
+function catFor(e,nr,rounds,dur){let c=e.cats.find(x=>x.nr===nr);if(c)return c;const k=wbuKlasse(nr);const dt=defTime(k);rounds=rounds||dt[0];dur=dur||dt[1];
   c={id:uid(),nr,name:`${nr} · ${k.name}`,rounds:rounds||3,dur:dur||'2 Min',kind:WBU_SPORT[k.sp].kurz,players:[],bracket:null};
   e.cats.push(c);e.cats.sort((a,b)=>(a.nr||9999)-(b.nr||9999));return c}
 function addCat(){const sp=$('nc_sp').value,a=WBU_SPORT[sp].alter[+$('nc_alter').value],i=WBU_GEW.indexOf($('nc_gew').value);
-  const nr=($('nc_sex').value==='w'?a[3]:a[2])+i;let id;
-  upd(e=>{const ex=e.cats.find(x=>x.nr===nr);id=(ex||catFor(e,nr,+$('nc_rounds').value,$('nc_dur').value)).id});S.cat=id;render()}
+  const nr=sp==='SB'?1000:($('nc_sex').value==='w'?a[3]:a[2])+i;let id;
+  upd(e=>{const ex=e.cats.find(x=>x.nr===nr);id=(ex||catFor(e,nr)).id});S.cat=id;render()}
 function catDetail(c){
-  return `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(c.name)}</h2><span class="muted">${esc(c.kind)} · ${c.rounds} × ${esc(c.dur)}</span></div>
+  const ev=cur();
+  return `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(c.name)}</h2>
+   <div class="row"><select style="width:auto" onchange="upd(e=>e.cats.find(x=>x.id==='${c.id}').rounds=+this.value)">${[1,2,3,4,5].map(r=>`<option value="${r}" ${c.rounds===r?'selected':''}>${r} Runde${r>1?'n':''}</option>`).join('')}</select>
+   <select style="width:auto" onchange="upd(e=>e.cats.find(x=>x.id==='${c.id}').dur=this.value)">${['1 Min','1,5 Min','2 Min','3 Min'].map(d=>`<option ${c.dur===d?'selected':''}>${d}</option>`).join('')}</select>
+   ${(ev.rings||1)>1?`<select style="width:auto" onchange="upd(e=>e.cats.find(x=>x.id==='${c.id}').ring=+this.value)">${[1,2].map(r=>`<option value="${r}" ${ringOf(ev,c)===r?'selected':''}>Ring ${r}</option>`).join('')}</select>`:''}</div></div>
    ${c.bracket?`<p class="note">Diese Kategorie ist bereits ausgelost. Wer jetzt Teilnehmer ändert, muss neu auslosen – dabei gehen die Ergebnisse dieser Kategorie verloren.</p>`:''}
    <div class="row" style="margin-top:8px"><input id="np_name" placeholder="Vor- und Nachname" style="flex:2" onkeydown="if(event.key==='Enter')addPlayer()"><input id="np_club" placeholder="Verein / Land" style="flex:1.4" onkeydown="if(event.key==='Enter')addPlayer()"><button class="btn" onclick="addPlayer()">+ Teilnehmer</button></div>
    <table style="margin-top:10px"><tr><th>#</th><th>Name</th><th>Verein / Land</th><th></th></tr>
@@ -343,7 +351,7 @@ function vBr(ev){
   const cs=sortedCats(ev);
   if(!cs.length)return '<div class="card muted">Noch keine Kategorie ausgelost. Unter „Kategorien & Teilnehmer“ Teilnehmer eintragen und „Auslosen“ drücken.</div>';
   const c=cs.find(x=>x.id===S.cat)||cs[0];S.cat=c.id;
-  const no=matchNumbers(ev);
+  const sch=schedule(ev),no={};Object.keys(sch.no).forEach(k=>no[k]=((ev.rings||1)>1?'Ring '+sch.ring[k]+' · ':'')+'Kampf '+sch.no[k]);
   return `<div class="row noprint" style="margin-bottom:10px">${cs.map(x=>`<div class="chip ${x.id===c.id?'on':''}" onclick="S.cat='${x.id}';render()">${esc(x.name)}</div>`).join('')}<div style="flex:1"></div><button class="btn sec sm" onclick="print()">Bracket drucken</button></div>
   <div class="card"><h2 style="margin-top:0">${esc(c.name)} <span class="muted">· ${c.players.length} Teilnehmer · ${c.rounds}×${esc(c.dur)}</span></h2>
   <div class="bracket">${c.bracket.map((col,r)=>`<div class="bcol"><h4>${roundName(r,c.bracket.length)}</h4>${col.map(m=>matchBox(c,m,no[m.id])).join('')}</div>`).join('')}
@@ -355,52 +363,67 @@ function matchBox(c,m,no){
   const bye=m.res&&m.res.k==='BYE';
   const line=(side,cls)=>{const pid=m[side];const w=m.w===side;return `<div class="p ${w?'w':''}"><span class="${cls}">${pid?esc(pname(c,pid)):(bye?'<span class="muted">Freilos</span>':'<span class="muted">–</span>')}</span><span class="s">${pid?esc(pclub(c,pid)):''}</span></div>`};
   const can=m.a&&m.b;
-  return `<div class="m ${bye?'bye':''}" ${can?`onclick="resultDlg('match','${m.id}','${c.id}')"`:''}>${no?`<div class="no">Kampf ${no}${m.res&&!bye?' · '+esc(resName(m.res.k)):''}</div>`:''}${line('a','r')}${line('b','b')}</div>`;
+  return `<div class="m ${bye?'bye':''}" ${can?`onclick="resultDlg('match','${m.id}','${c.id}')"`:''}>${no?`<div class="no">${no}${m.res&&!bye?' · '+esc(resName(m.res.k)):''}</div>`:''}${line('a','r')}${line('b','b')}</div>`;
 }
 // ===================== Kampfreihenfolge mit Pausen =====================
 // Reihenfolge der Kategorien: Sportart (Semi-Pro, K1, Master), dann Klassennummer –
 // also jüngste Altersklasse zuerst, männlich vor weiblich, leichte vor schweren Gewichtsklassen.
-const SP_RANK={SP:0,K1:1,MB:2};
+const SP_RANK={SP:0,K1:1,MB:2,SB:3};
 function catRank(c){const k=c.nr&&wbuKlasse(c.nr);return k?SP_RANK[k.sp]*1000+k.nr:9000}
 function sortedCats(ev){return ev.cats.filter(c=>c.bracket).slice().sort((a,b)=>catRank(a)-catRank(b)||String(a.name).localeCompare(b.name))}
 // Plan: erst alle Kämpfe der 1. Runde (Kategorie für Kategorie), dann der 2. Runde usw.
 // Ein Kampf wird nur angesetzt, wenn beide Sportler seit ihrem letzten Kampf mindestens „Pause“ Kämpfe Ruhe hatten.
 // Geht das nicht, wird zu einer anderen Kategorie gesprungen; nur wenn es gar nicht anders geht, kommt der Kampf mit kürzerer Pause.
+// Ring einer Kategorie: bei 2 Ringen standardmäßig Master + Shadow Boxing in Ring 1, alle anderen in Ring 2 (änderbar)
+function ringOf(ev,c){if((ev.rings||1)<2)return 1;if(c.ring)return c.ring;const k=c.nr&&wbuKlasse(c.nr);return k&&(k.sp==='MB'||k.sp==='SB')?1:2}
+const isSB=c=>c.nr===1000;
 function schedule(ev){
-  const minP=ev.pause??4,slot={},no={},rest={},items=[];let n=0;
-  sortedCats(ev).forEach((c,ci)=>c.bracket.forEach((col,r)=>col.forEach((m,i)=>{
-    items.push({m,c,r,i,ci,bye:!!(m.res&&m.res.k==='BYE'),feed:r>0?[c.bracket[r-1][2*i].id,c.bracket[r-1][2*i+1].id]:[]})})));
-  const done=id=>id in slot,last=it=>Math.max(-1e9,...it.feed.map(f=>slot[f]));
-  let open=items.slice(),guard=0;
-  while(open.length&&guard++<5000){
-    // Freilose sofort durchreichen
-    let moved=true;while(moved){moved=false;open=open.filter(it=>{if(it.bye&&it.feed.every(done)){slot[it.m.id]=it.feed.length?last(it):-1e9;moved=true;return false}return true})}
-    const av=open.filter(it=>!it.bye&&it.feed.every(done));if(!av.length)break;
-    av.sort((a,b)=>a.r-b.r||a.ci-b.ci||a.i-b.i);
-    const gap=it=>n-last(it)-1;
-    let pick=av.find(it=>gap(it)>=minP);
-    if(!pick)pick=av.reduce((b,it)=>gap(it)>gap(b)?it:b,av[0]);
-    n++;slot[pick.m.id]=n;no[pick.m.id]=n;const g=gap(pick);rest[pick.m.id]=g>1e6?null:g;
-    open=open.filter(it=>it!==pick);
-  }
-  return {no,rest,minP};
+  const minP=ev.pause??4,no={},rest={},ring={},cs=sortedCats(ev),R=(ev.rings||1)<2?[1]:[1,2];
+  R.forEach(rg=>{
+    const cats=cs.filter(c=>ringOf(ev,c)===rg),slot={};let n=0;
+    // erst alle regulären Kämpfe, Shadow Boxing Battle ganz am Schluss
+    [cats.filter(c=>!isSB(c)),cats.filter(isSB)].forEach(pc=>{
+      const items=[];
+      pc.forEach((c,ci)=>c.bracket.forEach((col,r)=>col.forEach((m,i)=>{
+        items.push({m,c,r,i,ci,bye:!!(m.res&&m.res.k==='BYE'),feed:r>0?[c.bracket[r-1][2*i].id,c.bracket[r-1][2*i+1].id]:[]})})));
+      const done=id=>id in slot,last=it=>Math.max(-1e9,...it.feed.map(f=>slot[f]));
+      let open=items.slice(),guard=0;
+      while(open.length&&guard++<5000){
+        let moved=true;while(moved){moved=false;open=open.filter(it=>{if(it.bye&&it.feed.every(done)){slot[it.m.id]=it.feed.length?last(it):-1e9;moved=true;return false}return true})}
+        const av=open.filter(it=>!it.bye&&it.feed.every(done));if(!av.length)break;
+        av.sort((a,b)=>a.r-b.r||a.ci-b.ci||a.i-b.i);
+        const gap=it=>n-last(it)-1;
+        let pick=av.find(it=>gap(it)>=minP);
+        if(!pick)pick=av.reduce((b,it)=>gap(it)>gap(b)?it:b,av[0]);
+        n++;slot[pick.m.id]=n;no[pick.m.id]=n;ring[pick.m.id]=rg;const g=gap(pick);rest[pick.m.id]=g>1e6?null:g;
+        open=open.filter(it=>it!==pick);
+      }
+    });
+  });
+  return {no,rest,minP,ring};
 }
 function matchNumbers(ev){return schedule(ev).no}
 function vKl(ev){
-  const sch=schedule(ev),no=sch.no,rows=[];
-  ev.cats.forEach(c=>{if(!c.bracket)return;c.bracket.forEach((col,r)=>col.forEach(m=>{if(no[m.id])rows.push({no:no[m.id],c,m,r})}))});
-  rows.sort((x,y)=>x.no-y.no);
+  const sch=schedule(ev),no=sch.no,rows=[],rings=ev.rings||1;
+  ev.cats.forEach(c=>{if(!c.bracket)return;c.bracket.forEach((col,r)=>col.forEach(m=>{if(no[m.id])rows.push({no:no[m.id],ring:sch.ring[m.id],c,m,r})}))});
+  rows.sort((x,y)=>x.ring-y.ring||x.no-y.no);
   const st=x=>x.m.w?'<span class="badge g">fertig</span>':(x.m.a&&x.m.b?'<span class="badge y">bereit</span>':'<span class="badge">wartet</span>');
   const ps=x=>{const g=sch.rest[x.m.id];return g==null?'<span class="muted">–</span>':g<sch.minP?`<span class="badge y" title="kürzer als die Mindestpause – ging nicht anders">${g} ⚠</span>`:`<span class="muted">${g}</span>`};
   const kurz=rows.filter(x=>sch.rest[x.m.id]!=null&&sch.rest[x.m.id]<sch.minP).length;
-  return `${liveBox(ev)}<div class="card"><div class="row" style="justify-content:space-between"><b>Kampfliste – ${rows.length} Kämpfe</b>
-    <div class="row noprint"><span class="muted">Mindestpause:</span><select style="width:auto" onchange="upd(e=>e.pause=+this.value)">${[0,1,2,3,4,5,6,8,10,12,15].map(v=>`<option value="${v}" ${v===sch.minP?'selected':''}>${v} Kämpfe dazwischen</option>`).join('')}</select>
-    <button class="btn sec sm" onclick="print()">Drucken / PDF</button><button class="btn sm" onclick="openTv()">📺 Fernseher-Anzeige</button></div></div>
-  ${rows.length?`<table><tr><th>Kampf</th><th>Kategorie</th><th>Runde</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Pause</th><th>Status</th><th>Ergebnis</th></tr>
-  ${rows.map(x=>`<tr ${x.m.a&&x.m.b?`style="cursor:pointer" onclick="resultDlg('match','${x.m.id}','${x.c.id}')"`:''}><td><b>${x.no}</b></td><td>${esc(x.c.name)}</td><td>${roundName(x.r,x.c.bracket.length)}</td>
-   <td class="r">${esc(pname(x.c,x.m.a)||'–')}</td><td class="b">${esc(pname(x.c,x.m.b)||'–')}</td><td>${ps(x)}</td><td>${st(x)}</td><td>${x.m.res?esc(resLine(x.m.res,pname(x.c,x.m.a),pname(x.c,x.m.b))):''}</td></tr>`).join('')}</table>`
-  :'<p class="muted">Noch keine Kategorie ausgelost.</p>'}</div>
-  <p class="note noprint">Reihenfolge: zuerst die erste Runde aller Kategorien – Semi-Pro, dann K1, dann Master; jeweils jüngste Altersklasse zuerst, männlich vor weiblich, leichte vor schweren Gewichtsklassen. Danach die nächste Runde. Hat ein Sportler noch nicht genug Pause, wird ein Kampf aus einer anderen Kategorie vorgezogen. „📺 Fernseher-Anzeige“ öffnet ein eigenes Fenster: auf den Fernseher ziehen und mit F11 auf Vollbild stellen – es aktualisiert sich von selbst. „Pause“ = Kämpfe seit dem letzten Kampf dieser Sportler; ⚠ heißt: kürzer ging es nicht.${kurz?` Zurzeit ${kurz}× kürzere Pause.`:''}</p>`;
+  const table=rg=>{const rs=rows.filter(x=>x.ring===rg);
+    return `<div class="card"><div class="row" style="justify-content:space-between"><b>${rings>1?`Ring ${rg} – `:''}Kampfliste – ${rs.length} Kämpfe</b>
+    <div class="row noprint"><button class="btn sm" onclick="openTv(${rg})">📺 Fernseher${rings>1?' Ring '+rg:'-Anzeige'}</button></div></div>
+    ${rs.length?`<table><tr><th>Kampf</th><th>Kategorie</th><th>Runde</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Pause</th><th>Status</th><th>Ergebnis</th></tr>
+    ${rs.map(x=>`<tr ${x.m.a&&x.m.b?`style="cursor:pointer" onclick="resultDlg('match','${x.m.id}','${x.c.id}')"`:''}><td><b>${x.no}</b></td><td>${esc(x.c.name)}</td><td>${roundName(x.r,x.c.bracket.length)}</td>
+     <td class="r">${esc(pname(x.c,x.m.a)||'–')}</td><td class="b">${esc(pname(x.c,x.m.b)||'–')}</td><td>${ps(x)}</td><td>${st(x)}</td><td>${x.m.res?esc(resLine(x.m.res,pname(x.c,x.m.a),pname(x.c,x.m.b))):''}</td></tr>`).join('')}</table>`
+    :'<p class="muted">Noch keine ausgeloste Kategorie in diesem Ring.</p>'}</div>`};
+  return `${liveBox(ev)}<div class="card noprint"><div class="row">
+    <span><b>Ringe:</b></span><select style="width:auto" onchange="upd(e=>e.rings=+this.value)">${[1,2].map(v=>`<option value="${v}" ${v===rings?'selected':''}>${v} Ring${v>1?'e':''}</option>`).join('')}</select>
+    <span style="margin-left:14px"><b>Mindestpause:</b></span><select style="width:auto" onchange="upd(e=>e.pause=+this.value)">${[0,1,2,3,4,5,6,8,10,12,15].map(v=>`<option value="${v}" ${v===sch.minP?'selected':''}>${v} Kämpfe dazwischen</option>`).join('')}</select>
+    <div style="flex:1"></div><button class="btn sec sm" onclick="print()">Drucken / PDF</button></div>
+    ${rings>1?'<p class="note" style="margin-bottom:0">Ring 1: Masterboxen und am Schluss Shadow Boxing Battle · Ring 2: alle anderen. Bei einer Kategorie kann der Ring unter „Kategorien & Teilnehmer“ geändert werden.</p>':''}</div>
+  ${(rings>1?[1,2]:[1]).map(table).join('')}
+  <p class="note noprint">Reihenfolge je Ring: zuerst die erste Runde aller Kategorien – Semi-Pro, dann K1, dann Master; jeweils jüngste Altersklasse zuerst, männlich vor weiblich, leichte vor schweren Gewichtsklassen. Danach die nächste Runde. Shadow Boxing Battle kommt immer ganz am Schluss. Hat ein Sportler noch nicht genug Pause, wird ein Kampf aus einer anderen Kategorie vorgezogen. „Pause“ = Kämpfe seit dem letzten Kampf dieser Sportler; ⚠ heißt: kürzer ging es nicht.${kurz?` Zurzeit ${kurz}× kürzere Pause.`:''} „📺 Fernseher“ öffnet ein eigenes Fenster: auf den Fernseher ziehen und mit F11 auf Vollbild stellen.</p>`;
 }
 
 // ===================== Ergebnisse =====================
@@ -426,7 +449,7 @@ const API=/^https?:/.test(location.protocol)?'../scorecard/api.php':'https://www
 const ANM_URL=(/^https?:/.test(location.protocol)?location.origin:'https://www.wbu-boxing.com')+'/anmeldung/';
 async function api(a,body){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,...body})});
   let j;try{j=await r.json()}catch(e){throw new Error('Server nicht erreichbar – Internet prüfen')}if(!j.ok)throw new Error(j.error||'Fehler');return j}
-function onl(ev){if(!ev.online)ev.online={sports:['SP','K1','MB'],fee:'',schluss:'',inhaber:'',iban:'',bic:'',info:'',open:true};return ev.online}
+function onl(ev){if(!ev.online)ev.online={sports:['SP','K1','MB','SB'],fee:'',schluss:'',inhaber:'',iban:'',bic:'',info:'',open:true};return ev.online}
 function vOnline(ev){
   const o=onl(ev),regs=ev.regs||[],f=(k,l,ph,type)=>`<div><label>${l}</label><input ${type?`type="${type}"`:''} value="${esc(o[k]||'')}" placeholder="${ph||''}" onchange="upd(e=>onl(e).${k}=this.value)"></div>`;
   const link=o.tid?ANM_URL+'?t='+o.tid:'';
@@ -434,10 +457,16 @@ function vOnline(ev){
   const act=regs.filter(r=>!r.storno),paid=act.filter(r=>r.paid).length;
   return `<div class="card"><div class="row" style="justify-content:space-between"><b>Online-Anmeldung für Sportler</b>${o.tid?(o.open?'<span class="badge g">veröffentlicht · Anmeldung offen</span>':'<span class="badge y">veröffentlicht · Anmeldung geschlossen</span>'):'<span class="badge">noch nicht veröffentlicht</span>'}</div>
    <label>Angebotene Sportarten</label><div class="chips">${Object.entries(WBU_SPORT).map(([k,x])=>`<div class="chip ${o.sports.includes(k)?'on':''}" onclick="upd(e=>{const s=onl(e).sports,i=s.indexOf('${k}');i>=0?s.splice(i,1):s.push('${k}')})">${x.name}</div>`).join('')}</div>
-   <div class="grid2" style="margin-top:4px">${f('schluss','Anmeldeschluss','','date')}${f('fee','Startgeld pro Start (€)','z. B. 25')}
+   <div class="grid2" style="margin-top:4px">${f('schluss','Anmeldeschluss','','date')}${f('fee','Startgeld 1. Start (€)','z. B. 40')}${f('feeMore','Startgeld je weiterer Start (€)','z. B. 20 – leer = gleich')}
+   <div><label>Sportärztliches Attest</label><select onchange="upd(e=>onl(e).attest=this.value==='1')"><option value="0" ${o.attest?'':'selected'}>nicht verlangen</option><option value="1" ${o.attest?'selected':''}>Pflicht-Upload für alle Boxer (nicht Shadow Boxing)</option></select></div>
    ${f('inhaber','Kontoinhaber','Empfänger der Überweisung')}${f('iban','IBAN','DE..')}${f('bic','BIC (optional)','')}
    <div><label>Anmeldung</label><select onchange="upd(e=>onl(e).open=this.value==='1')"><option value="1" ${o.open?'selected':''}>offen</option><option value="0" ${o.open?'':'selected'}>geschlossen</option></select></div></div>
    <label>Hinweise für die Sportler (optional)</label><textarea style="width:100%;min-height:70px;padding:9px 10px;border-radius:9px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font:inherit" onchange="upd(e=>onl(e).info=this.value)" placeholder="z. B. Wiegen ab 8 Uhr, Startpass mitbringen …">${esc(o.info||'')}</textarea>
+   ${o.tid?`<label style="margin-top:12px">Unterlagen für die Sportler (Ausschreibung, Ablaufplan, Formulare)</label>
+   <table>${[['aus','Ausschreibung','zum Lesen'],['ablauf','Ablaufplan','zum Lesen'],['haft','Haftungsausschluss / Teilnahmeerklärung','Pflicht-Upload für alle Sportler'],['eltern','Einverständniserklärung Eltern','Pflicht-Upload für Sportler unter 18 (nicht Shadow Boxing)']].map(([k,n,h])=>{const d=(o.docs||{})[k];
+     return `<tr><td><b>${n}</b><div class="muted">${h}</div></td><td>${d?`✅ ${esc(d.name)} <a href="${API}?a=t_docget&tid=${o.tid}&kind=${k}" target="_blank">ansehen</a>`:'<span class="muted">noch nicht hochgeladen</span>'}</td>
+     <td style="text-align:right;white-space:nowrap"><label class="btn sec sm" style="display:inline-block;margin:0;color:var(--txt)">${d?'Ersetzen':'Hochladen'}<input type="file" accept=".pdf,.doc,.docx,image/*" style="display:none" onchange="upDoc('${k}',this)"></label>${d?` <button class="btn sec sm" onclick="upDoc('${k}',null)">✕</button>`:''}</td></tr>`}).join('')}</table>
+   <p class="note">Sind die beiden Formulare hochgeladen, muss bei der Anmeldung jeder Sportler den unterschriebenen Haftungsausschluss hochladen – Sportler unter 18 zusätzlich die Einverständniserklärung der Eltern. Mit den Unterlagen ist der Sportler automatisch freigegeben.</p>`:'<p class="note">Nach dem Veröffentlichen kannst du hier Ausschreibung, Ablaufplan und die Formulare hochladen.</p>'}
    <p class="note">Name, Ort und Datum kommen aus „Veranstaltung“. Die Altersklasse wird nach dem Alter am Turniertag automatisch bestimmt.</p>
    <div class="row"><button class="btn" onclick="publish()">${o.tid?'Änderungen veröffentlichen':'Turnier veröffentlichen'}</button>
    ${link?`<button class="btn sec" onclick="navigator.clipboard&&navigator.clipboard.writeText('${link}');this.textContent='Link kopiert ✓'">Anmelde-Link kopieren</button><a class="btn sec" href="${link}" target="_blank" style="text-decoration:none">Anmeldeseite öffnen</a>`:''}</div>
@@ -446,10 +475,11 @@ function vOnline(ev){
   ${o.tid?`<div class="card"><div class="row" style="justify-content:space-between"><b>Anmeldungen: ${act.length}${act.length?` · bezahlt: ${paid} · übernommen: ${act.filter(r=>imp.has(r.id)).length}`:''}</b>
     <div class="row"><button class="btn sec sm" onclick="pullRegs()">↻ Anmeldungen abholen</button><button class="btn ok sm" ${act.length?'':'disabled'} onclick="importRegs()">In Kategorien übernehmen</button><button class="btn sec sm" ${regs.length?'':'disabled'} onclick="regsCsv()">Liste (Excel)</button></div></div>
     ${ev.regsAt?`<p class="note">Stand: ${new Date(ev.regsAt).toLocaleString('de-DE')}</p>`:''}
-    ${regs.length?`<table><tr><th>Nr.</th><th>Name</th><th>Klasse</th><th>Verein</th><th>Kontakt</th><th>Bezahlt</th><th></th></tr>${regs.slice().sort((a,b)=>a.nr-b.nr||a.no-b.no).map(r=>`<tr style="${r.storno?'opacity:.45;text-decoration:line-through':''}">
+    ${regs.length?`<table><tr><th>Nr.</th><th>Name</th><th>Klasse</th><th>Verein</th><th>Kontakt</th><th>Unterlagen</th><th>Bezahlt</th><th></th></tr>${regs.slice().sort((a,b)=>a.nr-b.nr||a.no-b.no).map(r=>`<tr style="${r.storno?'opacity:.45;text-decoration:line-through':''}">
       <td>${r.no}</td><td><b>${esc(r.vorname)} ${esc(r.name)}</b><div class="muted">${esc(deDate(r.geb))}${r.kg?' · '+esc(r.kg)+' kg':''}</div></td><td><b>${r.nr}</b> <span class="muted">${esc(r.klasse)}</span></td>
       <td>${esc(r.verein)}<div class="muted">${esc(r.trainer||'')}</div></td><td class="muted">${esc(r.email)}<br>${esc(r.tel)}</td>
-      <td>${r.storno?'':`<button class="btn sm ${r.paid?'ok':'sec'}" onclick="setPaid('${r.id}',${!r.paid})">${r.paid?'✓ bezahlt':'offen'}</button>`}</td>
+      <td style="white-space:nowrap">${(r.need||[]).length?(r.need||[]).map(k=>r.docs&&r.docs[k]?`<button class="btn sec sm" onclick="regDoc('${r.id}','${k}')">📄 ${{haft:'Haftung',eltern:'Eltern',attest:'Attest'}[k]}</button>`:`<span class="badge y">${{haft:'Haftung',eltern:'Eltern',attest:'Attest'}[k]} fehlt</span>`).join(' ')+(r.frei!==false?' <span class="badge g">frei</span>':''):'<span class="muted">–</span>'}</td>
+      <td>${r.storno?'':`<button class="btn sm ${r.paid?'ok':'sec'}" onclick="setPaid('${r.id}',${!r.paid})">${r.paid?'✓ bezahlt':'offen'}${r.fee!=null?' · '+String(r.fee).replace('.',',')+' €':''}</button>`}</td>
       <td style="white-space:nowrap">${imp.has(r.id)?'<span class="badge g">übernommen</span>':''} <button class="btn sec sm" onclick="setStorno('${r.id}',${!r.storno})">${r.storno?'zurückholen':'stornieren'}</button></td></tr>`).join('')}</table>`
     :'<p class="muted">Noch keine Anmeldungen abgeholt. „Anmeldungen abholen“ drücken.</p>'}
     <p class="note">„In Kategorien übernehmen“ legt die passenden Kategorien automatisch an und trägt die Sportler ein. Schon übernommene werden nicht doppelt eingetragen; bereits ausgeloste Kategorien bleiben unverändert.</p></div>`:''}`;
@@ -461,10 +491,15 @@ function publish(pass){
   if(!o.sports.length){onErr('Bitte mindestens eine Sportart wählen.');return}
   if(!o.tid&&pass===undefined){dlg(`<h2 style="margin-top:0">Turnier veröffentlichen</h2><p>Zum Veröffentlichen bitte das WBU-Passwort eingeben.</p><input id="pw" type="password" onkeydown="if(event.key==='Enter')publish($('pw').value)"><div id="pwerr" class="note" style="color:#b26a00"></div>
     <div class="row" style="margin-top:12px"><button class="btn" onclick="publish($('pw').value)">Veröffentlichen</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);setTimeout(()=>$('pw')&&$('pw').focus(),0);return}
-  const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
+  const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
   api('t_publish',{t,tid:o.tid,key:o.key,pass}).then(j=>{closeDlg();upd(e=>{onl(e).tid=j.tid;onl(e).key=j.key});onErr('✓ Veröffentlicht.')})
    .catch(e=>{if($('pwerr'))$('pwerr').textContent=e.message;else onErr(e.message)});
 }
+async function upDoc(kind,inp){const o=onl(cur());let data='',name='';
+  if(inp){const f=inp.files[0];if(!f)return;if(f.size>15e6){onErr('Datei zu groß (höchstens 15 MB)');return}name=f.name;
+    data=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
+  try{onErr('Wird hochgeladen …');const j=await api('t_doc',{tid:o.tid,key:o.key,kind,name,data});upd(e=>{onl(e).docs=j.docs});onErr('✓ Gespeichert.')}catch(e){onErr(e.message)}}
+function regDoc(rid,kind){const o=onl(cur());window.open(`${API}?a=t_regdoc&tid=${o.tid}&key=${o.key}&rid=${rid}&kind=${kind}`,'_blank')}
 async function pullRegs(){const o=onl(cur());try{const j=await api('t_regs',{tid:o.tid,key:o.key});upd(e=>{e.regs=j.regs;e.regsAt=Date.now()})}catch(e){onErr(e.message)}}
 async function setPaid(rid,paid){const o=onl(cur());try{await api('t_paid',{tid:o.tid,key:o.key,rid,paid});upd(e=>{e.regs.find(r=>r.id===rid).paid=paid})}catch(e){onErr(e.message)}}
 async function setStorno(rid,storno){const o=onl(cur());try{await api('t_del',{tid:o.tid,key:o.key,rid,storno});upd(e=>{e.regs.find(r=>r.id===rid).storno=storno;
@@ -472,20 +507,20 @@ async function setStorno(rid,storno){const o=onl(cur());try{await api('t_del',{t
 function importRegs(){
   let neu=0,gesperrt=0;
   upd(e=>{const have=new Set(e.cats.flatMap(c=>c.players.map(p=>p.reg).filter(Boolean)));
-    (e.regs||[]).filter(r=>!r.storno&&!have.has(r.id)&&wbuKlasse(r.nr)).forEach(r=>{const c=catFor(e,r.nr);
+    (e.regs||[]).filter(r=>!r.storno&&r.frei!==false&&!have.has(r.id)&&wbuKlasse(r.nr)).forEach(r=>{const c=catFor(e,r.nr);
       if(c.bracket){gesperrt++;return}
       c.players.push({id:uid(),name:`${r.vorname} ${r.name}`,club:r.verein||r.land||'',reg:r.id});neu++})});
   alertDlg(`${neu} Sportler in die Kategorien übernommen.`+(gesperrt?` ${gesperrt} nicht übernommen, weil die Kategorie schon ausgelost ist (dort neu auslosen oder von Hand eintragen).`:''));
 }
 function regsCsv(){const ev=cur(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const rows=[['Start-Nr','Vorname','Name','Geburtsdatum','Geschlecht','Klasse-Nr','Klasse','Gewicht kg','Verein','Land','Trainer','E-Mail','Telefon','Bezahlt','Storniert','Bemerkung']]
-   .concat((ev.regs||[]).map(r=>[r.no,r.vorname,r.name,deDate(r.geb),r.sex==='w'?'weiblich':'männlich',r.nr,r.klasse,r.kg,r.verein,r.land,r.trainer,r.email,r.tel,r.paid?'ja':'nein',r.storno?'ja':'',r.bem]));
+  const rows=[['Start-Nr','Vorname','Name','Geburtsdatum','Geschlecht','Klasse-Nr','Klasse','Gewicht kg','Verein','Land','Trainer','Betreuer','E-Mail','Telefon','Startgeld','Bezahlt','Unterlagen','Storniert','Bemerkung']]
+   .concat((ev.regs||[]).map(r=>[r.no,r.vorname,r.name,deDate(r.geb),r.sex==='w'?'weiblich':r.sex==='m'?'männlich':'',r.nr,r.klasse,r.kg,r.verein,r.land,r.trainer,r.betreuer||'',r.email,r.tel,r.fee??'',r.paid?'ja':'nein',(r.need||[]).every(k=>r.docs&&r.docs[k])?'vollständig':'fehlt',r.storno?'ja':'',r.bem]));
   const blob=new Blob(['﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Anmeldungen-${(ev.name||'Turnier').replace(/[^\wäöüÄÖÜß-]+/g,'_')}.csv`;a.click()}
 
 
 // ===================== Fernseher-Anzeige (eigenes Fenster, heller Hintergrund) =====================
-function openTv(){window.open(location.pathname+'?tv='+encodeURIComponent(S.ev),'wbutv','width=1280,height=720')}
+function openTv(rg){window.open(location.pathname+'?tv='+encodeURIComponent(S.ev)+(rg?'&ring='+rg:''),'wbutv'+(rg||''),'width=1280,height=720')}
 function tvRows(ev){
   if(ev.type==='gala')return ev.fights.map((f,i)=>({mid:f.id,no:i+1,rd:f.title||'',kl:[f.cls,f.kind].filter(Boolean).join(' · '),a:f.red,ac:'',b:f.blue,bc:'',done:!!f.result,
     rounds:f.rounds,dur:f.dur,kind:f.kind,res:f.result?resLine(f.result,f.red,f.blue):''}));
@@ -493,16 +528,17 @@ function tvRows(ev){
   ev.cats.forEach(c=>{if(!c.bracket)return;c.bracket.forEach((col,r)=>col.forEach((m,i)=>{if(!sch.no[m.id])return;
     const side=(pid,fi)=>{if(pid)return [pname(c,pid),pclub(c,pid)];const f=r>0&&c.bracket[r-1][fi];return [f&&sch.no[f.id]?'Sieger Kampf '+sch.no[f.id]:'–',''];};
     const [a,ac]=side(m.a,2*i),[b,bc]=side(m.b,2*i+1);
-    rows.push({mid:m.id,no:sch.no[m.id],rd:roundName(r,c.bracket.length),kl:c.name,a,ac,b,bc,done:!!m.w,ready:!!(m.a&&m.b),
+    rows.push({mid:m.id,no:sch.no[m.id],ring:sch.ring[m.id],rd:roundName(r,c.bracket.length),kl:c.name,a,ac,b,bc,done:!!m.w,ready:!!(m.a&&m.b),
       rounds:c.rounds,dur:c.dur,kind:c.kind,res:m.res&&m.res.k!=='BYE'?resLine(m.res,pname(c,m.a),pname(c,m.b)):''})}))});
-  return rows.sort((x,y)=>x.no-y.no);
+  return rows.sort((x,y)=>x.ring-y.ring||x.no-y.no);
 }
 function renderTv(id){
   const ev=events().find(x=>x.id===id);
   if(!ev){document.body.innerHTML='<p style="padding:40px;font-size:30px">Veranstaltung nicht gefunden.</p>';return}
-  const open=tvRows(ev).filter(r=>!r.done).slice(0,24),logo=document.querySelector('#top img').src;
+  const RG=+(new URLSearchParams(location.search).get('ring')||0);
+  const open=tvRows(ev).filter(r=>!r.done&&(!RG||(r.ring||1)===RG)).slice(0,24),logo=document.querySelector('#top img').src;
   const t=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-  document.getElementById('tv').innerHTML=`<div class="tvtop"><img src="${logo}"><div><h1>${esc(ev.name||'')}</h1><span>${esc([ev.ort,deDate(ev.date)].filter(Boolean).join(' · '))} · Kampfreihenfolge</span></div><div style="flex:1"></div><div class="uhr">${t}</div></div>
+  document.getElementById('tv').innerHTML=`<div class="tvtop"><img src="${logo}"><div><h1>${esc(ev.name||'')}</h1><span>${esc([ev.ort,deDate(ev.date)].filter(Boolean).join(' · '))} · ${RG&&(ev.rings||1)>1?'<b>Ring '+RG+'</b> · ':''}Kampfreihenfolge</span></div><div style="flex:1"></div><div class="uhr">${t}</div></div>
   ${open.length?`<div class="tvgrid">${open.map((f,i)=>`<div class="tf ${i===0?'now':i<3?'next':''}"><div class="h"><span class="no">Kampf ${f.no}</span>${i===0?'<span class="tag">IM RING</span>':i<3?'<span class="tag y">BEREIT MACHEN</span>':`<span class="rd">${esc(f.rd)}</span>`}</div>
    <div class="kl">${esc(f.kl)}</div><div class="ec"><div class="r"><small>ROTE ECKE</small><b>${esc(f.a)}</b><i>${esc(f.ac)||'&nbsp;'}</i></div><div class="bl"><small>BLAUE ECKE</small><b>${esc(f.b)}</b><i>${esc(f.bc)||'&nbsp;'}</i></div></div></div>`).join('')}</div>`
    :'<div style="padding:80px;font-size:40px;font-weight:700;text-align:center">Alle Kämpfe beendet</div>'}`;
@@ -518,7 +554,7 @@ function startTv(id){
 // ===================== Live: Server-Anbindung (Live-Seite, Fernseher, Supervisor) =====================
 const LIVE_URL=(/^https?:/.test(location.protocol)?location.origin:'https://www.wbu-boxing.com')+'/live/';
 function liveSnap(ev){
-  const snap={name:ev.name||'',ort:ev.ort||'',date:ev.date||'',type:ev.type,rows:tvRows(ev),at:Date.now()};
+  const snap={name:ev.name||'',ort:ev.ort||'',date:ev.date||'',type:ev.type,rings:ev.rings||1,rows:tvRows(ev),at:Date.now()};
   if(ev.type==='turnier')snap.places=sortedCats(ev).map(c=>{const P=places(c),n=id=>id?{n:pname(c,id),c:pclub(c,id)}:null;
     return {kl:c.name,first:P.done?n(P.first):null,second:P.done?n(P.second):null,third:P.third.map(n)}});
   return snap;
@@ -585,7 +621,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('11')||0;
+const WEB_VERSION=Number('12')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

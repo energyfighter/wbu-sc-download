@@ -314,7 +314,8 @@ async function loadLives(){const sel=$('evl');if(!sel)return;
     sel.innerHTML='<option value="">– ohne WBU Sports –</option>'+LIVES.map(l=>`<option value="${l.id}" ${S.lid===l.id?'selected':''}>${esc(l.name)} · ${esc(l.ort||'')} · ${esc(fromIso(l.date)||l.date||'')}</option>`).join('')}catch(e){}}
 function pickLive(id){S.lid=id||'';if($('npw'))$('npw').style.display=S.lid?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l)return;
   if($('evn'))$('evn').value=l.name;if($('evo'))$('evo').value=l.ort||'';if($('evd')&&l.date)$('evd').value=l.date}
-function liveRows(){return (S.live&&S.live.rows)||[]}
+function myRing(){return +get('wbuRing',1)}
+function liveRows(){const r=(S.live&&S.live.rows)||[];return (S.live&&S.live.rings||1)>1?r.filter(x=>(x.ring||1)===myRing()):r}
 // welcher WBU-Sports-Kampf gehört zu Scorecard-Kampf no? (automatisch der nächste offene)
 function liveFor(no){
   if(!liveLid()||!S.live)return null;
@@ -331,11 +332,15 @@ function assignLive(no,mid,auto){const r=liveRows().find(x=>x.mid===mid);if(!r)r
 function liveCard(no){const r=liveFor(no);if(!liveLid())return '';
   const meta=get('wbuMeta',{}),used=new Set(Object.entries(meta).filter(([k,m])=>+k!==no&&m.mid).map(([k,m])=>m.mid));
   const opts=liveRows().filter(x=>!x.done&&!used.has(x.mid));
+  const rg=(S.live&&S.live.rings)||1;
   return `<div class="card" style="border-color:var(--gold)"><div class="muted">Aus WBU Sports${S.live?'':' – wird geladen …'}</div>
+   ${rg>1?`<label>Mein Ring</label><div class="chips">${Array.from({length:rg},(_,i)=>`<div class="chip ${myRing()===i+1?'on':''}" onclick="setRing(${i+1})">Ring ${i+1}</div>`).join('')}</div>`:''}
    ${r?`<div style="font-size:18px;font-weight:800;margin-top:2px">Kampf ${r.no} · ${esc(r.kl)}</div><div class="muted">${esc(r.rd||'')}</div>
    <div class="row2" style="margin-top:6px"><div><div class="muted" style="color:#ff8a8a">ROTE ECKE</div><b style="color:#ff8a8a;font-size:17px">${esc(r.a)}</b><div class="muted">${esc(r.ac||'')}</div></div>
    <div><div class="muted" style="color:#8dbcff">BLAUE ECKE</div><b style="color:#8dbcff;font-size:17px">${esc(r.b)}</b><div class="muted">${esc(r.bc||'')}</div></div></div>`:'<b>Keine offenen Kämpfe in WBU Sports.</b>'}
    ${opts.length>1?`<label>Anderen Kampf nehmen</label><select onchange="if(this.value)assignLive(${no},this.value)"><option value="">– Kampf wählen –</option>${opts.map(x=>`<option value="${x.mid}">Kampf ${x.no} · ${esc(x.a)} vs. ${esc(x.b)}</option>`).join('')}</select>`:''}</div>`}
+// Ring wechseln: noch nicht gewerteten Kampf neu zuordnen
+function setRing(n){set('wbuRing',n);const no=curNo(fights()),m=get('wbuMeta',{})[no];if(m&&m.mid&&!m.result){const all=get('wbuMeta',{});delete all[no].mid;set('wbuMeta',all)}render()}
 function curInfo(){const no=curNo(fights()),r=liveFor(no),m=get('wbuMeta',{})[no]||{};
   return r?{no:r.no,kl:r.kl,red:r.a,blue:r.b,rc:r.ac||'',bc:r.bc||''}:{no:0,kl:m.title||'',red:m.red||'',blue:m.blue||'',rc:'',bc:''}}
 function sendCur(){if(S.role!=='sup')return;const c=curInfo(),js=JSON.stringify(c);if(js===S.lastCur)return;
@@ -753,7 +758,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('11')||0;
+const WEB_VERSION=Number('12')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

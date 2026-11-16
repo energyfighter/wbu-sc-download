@@ -110,17 +110,20 @@ function tPublic($t) {
     $cnt = 0; foreach ($t['regs'] as $r) if (empty($r['storno'])) $cnt++;
     return ['id' => $t['id'], 'name' => $t['name'], 'ort' => $t['ort'], 'date' => $t['date'], 'promoter' => $t['promoter'],
             'schluss' => $t['schluss'], 'fee' => $t['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'],
-            'info' => $t['info'], 'sports' => $t['sports'], 'open' => $t['open'], 'anz' => $cnt];
+            'info' => $t['info'], 'sports' => $t['sports'], 'open' => $t['open'], 'anz' => $cnt, 'docs' => $t['docs'] ?? new stdClass(),
+            'feeMore' => $t['feeMore'] ?? 0, 'attest' => !empty($t['attest'])];
 }
 function tMeta(&$t, $m) {
     $t['name'] = txt($m['name'] ?? ''); $t['ort'] = txt($m['ort'] ?? ''); $t['promoter'] = txt($m['promoter'] ?? '');
     $t['date'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $m['date'] ?? '') ? $m['date'] : '';
     $t['schluss'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $m['schluss'] ?? '') ? $m['schluss'] : '';
     $t['fee'] = max(0, min(9999, round((float)str_replace(',', '.', (string)($m['fee'] ?? 0)), 2)));
+    $t['feeMore'] = max(0, min(9999, round((float)str_replace(',', '.', (string)($m['feeMore'] ?? 0)), 2)));
+    $t['attest'] = !empty($m['attest']);
     $t['inhaber'] = txt($m['inhaber'] ?? ''); $t['iban'] = txt(strtoupper(preg_replace('/\s+/', '', (string)($m['iban'] ?? ''))), 40);
     $t['bic'] = txt($m['bic'] ?? '', 20); $t['info'] = txt($m['info'] ?? '', 1500);
-    $sp = array_values(array_intersect(['SP', 'K1', 'MB'], (array)($m['sports'] ?? [])));
-    $t['sports'] = $sp ?: ['SP', 'K1', 'MB'];
+    $sp = array_values(array_intersect(['SP', 'K1', 'MB', 'SB'], (array)($m['sports'] ?? [])));
+    $t['sports'] = $sp ?: ['SP', 'K1', 'MB', 'SB'];
     $t['open'] = !empty($m['open']);
 }
 function tOffen($t) {
@@ -152,6 +155,49 @@ function liveRows($lid) {
     $f = @file_get_contents(lvfile($lid));
     $l = json_decode((string)$f, true);
     return is_array($l) ? ($l['snap'] ?? null) : null;
+}
+
+
+// ---- Unterlagen (Ausschreibung, Formulare, unterschriebene Erklärungen) ----
+const DOC_KINDS = ['aus' => 'Ausschreibung', 'ablauf' => 'Ablaufplan', 'haft' => 'Haftungsausschluss / Teilnahmeerklärung', 'eltern' => 'Einverständniserklärung der Eltern',
+                   'attest' => 'Sportärztliches Attest / Medical Check'];
+function docdir() {
+    global $DIR; $d = "$DIR/docs";
+    if (!is_dir($d)) @mkdir($d, 0755, true);
+    return $d;
+}
+/** Base64-Datei prüfen (PDF, JPG, PNG, Word) – gibt [Daten, Endung] zurück */
+function decodeFile($b64, $max = 12000000) {
+    $data = base64_decode(preg_replace('/^data:[^,]*,/', '', (string)$b64), true);
+    if ($data === false || $data === '') fail('Datei fehlerhaft');
+    if (strlen($data) > $max) fail('Datei zu groß (höchstens ' . round($max / 1000000) . ' MB)');
+    if (strncmp($data, '%PDF', 4) === 0) return [$data, 'pdf'];
+    if (strncmp($data, "\xFF\xD8", 2) === 0) return [$data, 'jpg'];
+    if (strncmp($data, "\x89PNG", 4) === 0) return [$data, 'png'];
+    if (strncmp($data, "PK", 2) === 0) return [$data, 'docx'];
+    fail('Nur PDF, Foto (JPG/PNG) oder Word-Datei erlaubt');
+}
+function sendFile($path, $ext, $name) {
+    if (!file_exists($path)) { http_response_code(404); header('Content-Type: text/plain; charset=utf-8'); exit('Datei nicht gefunden'); }
+    $types = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'png' => 'image/png',
+              'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    header('Content-Type: ' . ($types[$ext] ?? 'application/octet-stream'));
+    header('Content-Disposition: ' . ($ext === 'docx' ? 'attachment' : 'inline') . '; filename="' . preg_replace('/[^\w.\- äöüÄÖÜß]/u', '_', $name) . '"');
+    header('Content-Length: ' . filesize($path));
+    readfile($path); exit;
+}
+/** Welche Unterlagen muss dieser Sportler hochladen? */
+function needDocs($t, $reg) {
+    $need = [];
+    $docs = (array)($t['docs'] ?? []);
+    if (!empty($docs['haft'])) $need[] = 'haft';
+    // Shadow Boxing Battle ist kontaktlos: keine Einverständniserklärung und kein Attest nötig
+    if (!empty($t['attest']) && $reg['sp'] !== 'SB') $need[] = 'attest';
+    if (!empty($docs['eltern']) && $reg['sp'] !== 'SB' && $reg['geb'] && $t['date']) {
+        $g = new DateTime($reg['geb']); $d = new DateTime($t['date']);
+        if ($g->diff($d)->y < 18) $need[] = 'eltern';
+    }
+    return $need;
 }
 
 switch ($a) {
@@ -270,6 +316,41 @@ case 't_publish':
     if (file_put_contents(tufile($t['id']), json_encode($t, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
     out(['ok' => true, 'tid' => $t['id'], 'key' => $t['key']]);
 
+
+case 't_doc':   // Veranstalter lädt Ausschreibung / Ablaufplan / Formulare hoch (oder löscht sie)
+    $kind = (string)($in['kind'] ?? '');
+    if (!isset(DOC_KINDS[$kind])) fail('Unbekannte Unterlage');
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in, $kind) {
+        if (!tKeyOk($t, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        $docs = (array)($t['docs'] ?? []);
+        foreach (glob(docdir() . "/t_{$t['id']}_{$kind}.*") as $old) @unlink($old);
+        if (empty($in['data'])) { unset($docs[$kind]); }
+        else {
+            [$data, $ext] = decodeFile($in['data'], 15000000);
+            file_put_contents(docdir() . "/t_{$t['id']}_{$kind}.$ext", $data);
+            $docs[$kind] = ['name' => txt($in['name'] ?? DOC_KINDS[$kind], 120), 'ext' => $ext, 'size' => strlen($data), 'at' => time()];
+        }
+        $t['docs'] = (object)$docs;
+        return ['docs' => $t['docs']];
+    }, true);
+    out(['ok' => true] + $r);
+
+case 't_docget':   // öffentlich: Ausschreibung / Formulare herunterladen
+    $tid = (string)($_GET['tid'] ?? $in['tid'] ?? ''); $kind = (string)($_GET['kind'] ?? $in['kind'] ?? '');
+    if (!isset(DOC_KINDS[$kind])) fail('Unbekannte Unterlage');
+    $t = json_decode((string)@file_get_contents(tufile($tid)), true);
+    $d = $t['docs'][$kind] ?? null;
+    if (!$d) fail('Nicht vorhanden', 404);
+    sendFile(docdir() . "/t_{$tid}_{$kind}.{$d['ext']}", $d['ext'], $d['name']);
+
+case 't_regdoc':   // Veranstalter: hochgeladene Erklärung eines Sportlers ansehen
+    $tid = (string)($_GET['tid'] ?? ''); $rid = (string)($_GET['rid'] ?? ''); $kind = (string)($_GET['kind'] ?? '');
+    $t = json_decode((string)@file_get_contents(tufile($tid)), true);
+    if (!is_array($t) || !tKeyOk($t, (string)($_GET['key'] ?? ''))) fail('Nicht berechtigt', 403);
+    foreach ($t['regs'] as $x) if ($x['id'] === $rid && !empty($x['docs'][$kind]))
+        sendFile(docdir() . "/r_{$tid}_{$rid}_{$kind}.{$x['docs'][$kind]['ext']}", $x['docs'][$kind]['ext'], $x['docs'][$kind]['name']);
+    fail('Nicht vorhanden', 404);
+
 case 't_list':
     $list = [];
     foreach (glob("$DIR/tu_*.json") as $f) {
@@ -295,11 +376,12 @@ case 't_register':
             'sex' => ($r['sex'] ?? '') === 'w' ? 'w' : 'm', 'verein' => txt($r['verein'] ?? '', 100), 'land' => txt($r['land'] ?? '', 60),
             'trainer' => txt($r['trainer'] ?? '', 100), 'email' => txt($r['email'] ?? '', 120), 'tel' => txt($r['tel'] ?? '', 40),
             'sp' => txt($r['sp'] ?? '', 4), 'nr' => (int)($r['nr'] ?? 0), 'kg' => txt($r['kg'] ?? '', 8), 'klasse' => txt($r['klasse'] ?? '', 80),
-            'bem' => txt($r['bem'] ?? '', 500)];
+            'bem' => txt($r['bem'] ?? '', 500), 'betreuer' => txt($r['betreuer'] ?? '', 200)];
     if ($reg['vorname'] === '' || $reg['name'] === '' || $reg['geb'] === '') fail('Bitte Vorname, Name und Geburtsdatum angeben');
     if (!filter_var($reg['email'], FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige E-Mail-Adresse angeben');
-    if ($reg['nr'] < 100 || $reg['nr'] > 999 || $reg['klasse'] === '') fail('Bitte eine Klasse wählen');
-    $res = withTurnier($in['tid'] ?? '', function (&$t) use ($reg) {
+    if ($reg['nr'] < 100 || $reg['nr'] > 1000 || $reg['klasse'] === '') fail('Bitte eine Klasse wählen');
+    $files = is_array($r['files'] ?? null) ? $r['files'] : [];
+    $res = withTurnier($in['tid'] ?? '', function (&$t) use ($reg, $files) {
         if (!tOffen($t)) fail('Die Anmeldung für dieses Turnier ist geschlossen', 403);
         if (!in_array($reg['sp'], $t['sports'], true)) fail('Diese Sportart wird bei diesem Turnier nicht angeboten');
         foreach ($t['regs'] as $x) {
@@ -308,8 +390,23 @@ case 't_register':
         }
         if (count($t['regs']) >= 3000) fail('Teilnehmerzahl erreicht', 403);
         $reg['id'] = bin2hex(random_bytes(6)); $reg['no'] = $t['nextNo']++; $reg['at'] = time(); $reg['paid'] = false;
+        // Unterschriebene Erklärungen: Pflicht je nach Alter – erst damit ist der Sportler freigegeben
+        $need = needDocs($t, $reg); $reg['docs'] = [];
+        foreach ($need as $k) {
+            if (empty($files[$k]['data'])) fail('Bitte die unterschriebene ' . DOC_KINDS[$k] . ' hochladen');
+        }
+        foreach ($need as $k) {
+            [$data, $ext] = decodeFile($files[$k]['data'], 8000000);
+            file_put_contents(docdir() . "/r_{$t['id']}_{$reg['id']}_{$k}.$ext", $data);
+            $reg['docs'][$k] = ['name' => txt($files[$k]['name'] ?? $k, 120), 'ext' => $ext];
+        }
+        $reg['need'] = $need; $reg['frei'] = true;
+        // Startgeld: erster Start voll, jeder weitere Start desselben Sportlers ermäßigt
+        $more = false;
+        foreach ($t['regs'] as $x) if (empty($x['storno']) && $x['geb'] === $reg['geb'] && mb_strtolower($x['name'] . $x['vorname']) === mb_strtolower($reg['name'] . $reg['vorname'])) $more = true;
+        $reg['fee'] = ($more && !empty($t['feeMore'])) ? $t['feeMore'] : $t['fee'];
         $t['regs'][] = $reg;
-        return ['no' => $reg['no'], 'fee' => $t['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'], 'name' => $t['name']];
+        return ['no' => $reg['no'], 'fee' => $reg['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'], 'name' => $t['name']];
     }, true);
     out(['ok' => true] + $res);
 
@@ -383,7 +480,7 @@ case 'l_list':
         $sn = $l['snap'];
         $open = 0; foreach (($sn['rows'] ?? []) as $x) if (empty($x['done'])) $open++;
         $list[] = ['id' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $sn['date'] ?? '',
-                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated']];
+                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'rings' => $sn['rings'] ?? 1];
     }
     usort($list, function ($x, $y) { return $y['updated'] - $x['updated']; });
     out(['ok' => true, 'live' => $list]);
