@@ -1,6 +1,6 @@
 {
-  "versionCode": 12,
-  "versionName": "1.12",
+  "versionCode": 13,
+  "versionName": "1.13",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Neu: Chat zwischen Supervisor und Punktrichtern"
+  "notes": "Test der Update-Funktion"
 }
