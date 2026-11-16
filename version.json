@@ -1,6 +1,6 @@
 {
-  "versionCode": 14,
-  "versionName": "1.14",
+  "versionCode": 24,
+  "versionName": "1.24",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Künftige Updates mit weniger Rückfragen"
+  "notes": "Turniere aus WBU Sports: Supervisor übernimmt Kämpfe und Namen, Punktrichter sehen die Namen per Bluetooth, Ergebnisse gehen automatisch zurück."
 }
