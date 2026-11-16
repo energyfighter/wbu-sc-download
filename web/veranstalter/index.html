@@ -476,7 +476,7 @@ function vOnline(ev){
     <div class="row"><button class="btn sec sm" onclick="pullRegs()">↻ Anmeldungen abholen</button><button class="btn ok sm" ${act.length?'':'disabled'} onclick="importRegs()">In Kategorien übernehmen</button><button class="btn sec sm" ${regs.length?'':'disabled'} onclick="regsCsv()">Liste (Excel)</button></div></div>
     ${ev.regsAt?`<p class="note">Stand: ${new Date(ev.regsAt).toLocaleString('de-DE')}</p>`:''}
     ${regs.length?`<table><tr><th>Nr.</th><th>Name</th><th>Klasse</th><th>Verein</th><th>Kontakt</th><th>Unterlagen</th><th>Bezahlt</th><th></th></tr>${regs.slice().sort((a,b)=>a.nr-b.nr||a.no-b.no).map(r=>`<tr style="${r.storno?'opacity:.45;text-decoration:line-through':''}">
-      <td>${r.no}</td><td><b>${esc(r.vorname)} ${esc(r.name)}</b><div class="muted">${esc(deDate(r.geb))}${r.kg?' · '+esc(r.kg)+' kg':''}</div></td><td><b>${r.nr}</b> <span class="muted">${esc(r.klasse)}</span></td>
+      <td>${r.no}</td><td><b>${esc(r.vorname)} ${esc(r.name)}</b><div class="muted">${esc(deDate(r.geb))}${r.kg?' · '+esc(r.kg)+' kg':''}${r.cm?' · '+esc(r.cm)+' cm':''}</div>${r.foto?`<button class="btn sec sm" style="margin-top:3px" onclick="regDoc('${r.id}','foto')">📷 Foto</button>`:''}</td><td><b>${r.nr}</b> <span class="muted">${esc(r.klasse)}</span></td>
       <td>${esc(r.verein)}<div class="muted">${esc(r.trainer||'')}</div></td><td class="muted">${esc(r.email)}<br>${esc(r.tel)}</td>
       <td style="white-space:nowrap">${(r.need||[]).length?(r.need||[]).map(k=>r.docs&&r.docs[k]?`<button class="btn sec sm" onclick="regDoc('${r.id}','${k}')">📄 ${{haft:'Haftung',eltern:'Eltern',attest:'Attest'}[k]}</button>`:`<span class="badge y">${{haft:'Haftung',eltern:'Eltern',attest:'Attest'}[k]} fehlt</span>`).join(' ')+(r.frei!==false?' <span class="badge g">frei</span>':''):'<span class="muted">–</span>'}</td>
       <td>${r.storno?'':`<button class="btn sm ${r.paid?'ok':'sec'}" onclick="setPaid('${r.id}',${!r.paid})">${r.paid?'✓ bezahlt':'offen'}${r.fee!=null?' · '+String(r.fee).replace('.',',')+' €':''}</button>`}</td>
@@ -491,7 +491,7 @@ function publish(pass){
   if(!o.sports.length){onErr('Bitte mindestens eine Sportart wählen.');return}
   if(!o.tid&&pass===undefined){dlg(`<h2 style="margin-top:0">Turnier veröffentlichen</h2><p>Zum Veröffentlichen bitte das WBU-Passwort eingeben.</p><input id="pw" type="password" onkeydown="if(event.key==='Enter')publish($('pw').value)"><div id="pwerr" class="note" style="color:#b26a00"></div>
     <div class="row" style="margin-top:12px"><button class="btn" onclick="publish($('pw').value)">Veröffentlichen</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);setTimeout(()=>$('pw')&&$('pw').focus(),0);return}
-  const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
+  const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,rings:ev.rings||1,inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
   api('t_publish',{t,tid:o.tid,key:o.key,pass}).then(j=>{closeDlg();upd(e=>{onl(e).tid=j.tid;onl(e).key=j.key});onErr('✓ Veröffentlicht.')})
    .catch(e=>{if($('pwerr'))$('pwerr').textContent=e.message;else onErr(e.message)});
 }
@@ -621,7 +621,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('12')||0;
+const WEB_VERSION=Number('13')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

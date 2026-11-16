@@ -111,7 +111,7 @@ function tPublic($t) {
     return ['id' => $t['id'], 'name' => $t['name'], 'ort' => $t['ort'], 'date' => $t['date'], 'promoter' => $t['promoter'],
             'schluss' => $t['schluss'], 'fee' => $t['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'],
             'info' => $t['info'], 'sports' => $t['sports'], 'open' => $t['open'], 'anz' => $cnt, 'docs' => $t['docs'] ?? new stdClass(),
-            'feeMore' => $t['feeMore'] ?? 0, 'attest' => !empty($t['attest'])];
+            'feeMore' => $t['feeMore'] ?? 0, 'attest' => !empty($t['attest']), 'rings' => $t['rings'] ?? 1, 'locked' => !empty($t['listpw'])];
 }
 function tMeta(&$t, $m) {
     $t['name'] = txt($m['name'] ?? ''); $t['ort'] = txt($m['ort'] ?? ''); $t['promoter'] = txt($m['promoter'] ?? '');
@@ -120,6 +120,8 @@ function tMeta(&$t, $m) {
     $t['fee'] = max(0, min(9999, round((float)str_replace(',', '.', (string)($m['fee'] ?? 0)), 2)));
     $t['feeMore'] = max(0, min(9999, round((float)str_replace(',', '.', (string)($m['feeMore'] ?? 0)), 2)));
     $t['attest'] = !empty($m['attest']);
+    $t['rings'] = (int)($m['rings'] ?? 1) === 2 ? 2 : 1;
+    if (array_key_exists('listpw', $m)) $t['listpw'] = trim((string)$m['listpw']) === '' ? '' : hash('sha256', trim((string)$m['listpw']));
     $t['inhaber'] = txt($m['inhaber'] ?? ''); $t['iban'] = txt(strtoupper(preg_replace('/\s+/', '', (string)($m['iban'] ?? ''))), 40);
     $t['bic'] = txt($m['bic'] ?? '', 20); $t['info'] = txt($m['info'] ?? '', 1500);
     $sp = array_values(array_intersect(['SP', 'K1', 'MB', 'SB'], (array)($m['sports'] ?? [])));
@@ -198,6 +200,31 @@ function needDocs($t, $reg) {
         if ($g->diff($d)->y < 18) $need[] = 'eltern';
     }
     return $need;
+}
+
+
+// ---- Club-/Trainer-Konten (für alle Turniere): selbst gewähltes Passwort ----
+function clubsFile() { global $DIR; return "$DIR/clubs.json"; }
+function withClubs($fn, $write = false) {
+    $h = fopen(clubsFile(), 'c+'); if (!$h) fail('Speicherfehler', 500);
+    flock($h, $write ? LOCK_EX : LOCK_SH);
+    $c = json_decode(stream_get_contents($h), true); if (!is_array($c)) $c = [];
+    $res = $fn($c);
+    if ($write) { ftruncate($h, 0); rewind($h); fwrite($h, json_encode($c, JSON_UNESCAPED_UNICODE)); fflush($h); }
+    flock($h, LOCK_UN); fclose($h);
+    return $res;
+}
+function clubPublic($email, $a) { return ['email' => $email, 'club' => $a['club'], 'trainer' => $a['trainer'], 'tel' => $a['tel'], 'rolle' => $a['rolle'] ?? 'club']; }
+/** Nur mit Login (Turniere, Teilnehmer, Unterlagen) – der Live-Monitor bleibt frei */
+function needLogin($tok) { $c = clubByToken($tok); if (!$c) fail('Bitte einloggen', 401); return $c; }
+function newToken(&$a) { $tok = bin2hex(random_bytes(20)); $a['tok'] = array_slice(array_merge($a['tok'] ?? [], [hash('sha256', $tok)]), -10); return $tok; }
+/** Eingeloggter Club zum Token (oder null) */
+function clubByToken($tok) {
+    if (!is_string($tok) || strlen($tok) < 20 || !file_exists(clubsFile())) return null;
+    $c = json_decode((string)@file_get_contents(clubsFile()), true) ?: [];
+    $hs = hash('sha256', $tok);
+    foreach ($c as $em => $a) if (in_array($hs, $a['tok'] ?? [], true)) return clubPublic($em, $a);
+    return null;
 }
 
 switch ($a) {
@@ -335,7 +362,8 @@ case 't_doc':   // Veranstalter lädt Ausschreibung / Ablaufplan / Formulare hoc
     }, true);
     out(['ok' => true] + $r);
 
-case 't_docget':   // öffentlich: Ausschreibung / Formulare herunterladen
+case 't_docget':   // mit Login: Ausschreibung / Formulare herunterladen
+    needLogin((string)($_GET['tok'] ?? $in['tok'] ?? ''));
     $tid = (string)($_GET['tid'] ?? $in['tid'] ?? ''); $kind = (string)($_GET['kind'] ?? $in['kind'] ?? '');
     if (!isset(DOC_KINDS[$kind])) fail('Unbekannte Unterlage');
     $t = json_decode((string)@file_get_contents(tufile($tid)), true);
@@ -347,11 +375,76 @@ case 't_regdoc':   // Veranstalter: hochgeladene Erklärung eines Sportlers anse
     $tid = (string)($_GET['tid'] ?? ''); $rid = (string)($_GET['rid'] ?? ''); $kind = (string)($_GET['kind'] ?? '');
     $t = json_decode((string)@file_get_contents(tufile($tid)), true);
     if (!is_array($t) || !tKeyOk($t, (string)($_GET['key'] ?? ''))) fail('Nicht berechtigt', 403);
+    foreach ($t['regs'] as $x) if ($x['id'] === $rid && $kind === 'foto' && !empty($x['foto']))
+        sendFile(docdir() . "/r_{$tid}_{$rid}_foto.{$x['foto']}", $x['foto'], 'foto.' . $x['foto']);
     foreach ($t['regs'] as $x) if ($x['id'] === $rid && !empty($x['docs'][$kind]))
         sendFile(docdir() . "/r_{$tid}_{$rid}_{$kind}.{$x['docs'][$kind]['ext']}", $x['docs'][$kind]['ext'], $x['docs'][$kind]['name']);
     fail('Nicht vorhanden', 404);
 
+
+case 't_public':   // nur mit Login: Teilnehmer, Kategorien, Clubs (ohne Kontaktdaten)
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in) {
+        $club = clubByToken($in['tok'] ?? '');
+        $full = $club !== null;
+        $list = []; $pids = []; $clubs = [];
+        foreach ($t['regs'] as $x) {
+            if (!empty($x['storno'])) continue;
+            $pids[mb_strtolower($x['vorname'] . '|' . $x['name'] . '|' . $x['geb'])] = 1; $clubs[mb_strtolower($x['verein'])] = 1;
+            if (!$full) continue;   // ohne Login nur die Gesamtzahlen
+            $e = ['id' => $x['id'], 'no' => $x['no'], 'nr' => $x['nr'], 'sp' => $x['sp'], 'sex' => $x['sex'], 'klasse' => $x['klasse'],
+                  'verein' => $x['verein'], 'land' => $x['land'], 'trainer' => $x['trainer'], 'betreuer' => $x['betreuer'] ?? '',
+                  'foto' => !empty($x['foto']), 'pid' => substr(hash('sha256', mb_strtolower($x['vorname'] . '|' . $x['name'] . '|' . $x['geb'])), 0, 12)];
+            $e['vorname'] = $x['vorname']; $e['name'] = $x['name']; $e['kg'] = $x['kg']; $e['cm'] = $x['cm'] ?? ''; $e['geb'] = $x['geb'];
+            $e['own'] = ($x['club'] ?? '') === $club['email'];
+            $list[] = $e;
+        }
+        $starts = 0; foreach ($t['regs'] as $x) if (empty($x['storno'])) $starts++;
+        return ['regs' => $list, 'full' => $full, 'count' => ['persons' => count($pids), 'starts' => $starts, 'clubs' => count($clubs)]];
+    });
+    out(['ok' => true] + $r);
+
+case 't_foto':     // mit Login: Foto eines Sportlers
+    needLogin((string)($_GET['tok'] ?? ''));
+    $tid = (string)($_GET['tid'] ?? ''); $rid = (string)($_GET['rid'] ?? '');
+    $t = json_decode((string)@file_get_contents(tufile($tid)), true);
+    if (is_array($t)) foreach ($t['regs'] as $x) if ($x['id'] === $rid && !empty($x['foto']) && empty($x['storno']))
+        sendFile(docdir() . "/r_{$tid}_{$rid}_foto.{$x['foto']}", $x['foto'], 'foto.' . $x['foto']);
+    fail('Kein Foto', 404);
+
+
+case 'c_register':   // Club / Trainer / Einzelsportler legt ein Konto an
+    $email = mb_strtolower(trim((string)($in['email'] ?? '')));
+    $pw = (string)($in['pw'] ?? '');
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige E-Mail-Adresse angeben');
+    if (mb_strlen($pw) < 6) fail('Das Passwort muss mindestens 6 Zeichen haben');
+    $club = txt($in['club'] ?? '', 100); $trainer = txt($in['trainer'] ?? '', 100);
+    if ($trainer === '') fail('Bitte deinen Namen angeben');
+    if ($club === '') $club = '–';
+    $r = withClubs(function (&$c) use ($email, $pw, $club, $trainer, $in) {
+        if (isset($c[$email])) fail('Für diese E-Mail gibt es schon ein Konto – bitte einloggen');
+        $rolle = in_array($in['rolle'] ?? '', ['club', 'trainer', 'einzel', 'sup', 'ref', 'sonst'], true) ? $in['rolle'] : 'club';
+        $c[$email] = ['club' => $club, 'trainer' => $trainer, 'tel' => txt($in['tel'] ?? '', 40), 'rolle' => $rolle, 'pw' => password_hash($pw, PASSWORD_DEFAULT), 'created' => time(), 'tok' => []];
+        $tok = newToken($c[$email]);
+        return ['tok' => $tok, 'me' => clubPublic($email, $c[$email])];
+    }, true);
+    out(['ok' => true] + $r);
+
+case 'c_login':
+    $email = mb_strtolower(trim((string)($in['email'] ?? '')));
+    $r = withClubs(function (&$c) use ($email, $in) {
+        if (!isset($c[$email]) || !password_verify((string)($in['pw'] ?? ''), $c[$email]['pw'])) { sleep(1); fail('E-Mail oder Passwort falsch', 403); }
+        $tok = newToken($c[$email]);
+        return ['tok' => $tok, 'me' => clubPublic($email, $c[$email])];
+    }, true);
+    out(['ok' => true] + $r);
+
+case 'c_me':
+    $me = clubByToken($in['tok'] ?? '');
+    if (!$me) fail('Bitte neu einloggen', 403);
+    out(['ok' => true, 'me' => $me]);
+
 case 't_list':
+    needLogin($in['tok'] ?? '');
     $list = [];
     foreach (glob("$DIR/tu_*.json") as $f) {
         $t = json_decode(@file_get_contents($f), true);
@@ -364,6 +457,7 @@ case 't_list':
     out(['ok' => true, 'turniere' => $list]);
 
 case 't_get':
+    needLogin($in['tok'] ?? '');
     $r = withTurnier($in['tid'] ?? '', function (&$t) { $p = tPublic($t); $p['offen'] = tOffen($t); return $p; });
     out(['ok' => true, 'turnier' => $r]);
 
@@ -376,11 +470,17 @@ case 't_register':
             'sex' => ($r['sex'] ?? '') === 'w' ? 'w' : 'm', 'verein' => txt($r['verein'] ?? '', 100), 'land' => txt($r['land'] ?? '', 60),
             'trainer' => txt($r['trainer'] ?? '', 100), 'email' => txt($r['email'] ?? '', 120), 'tel' => txt($r['tel'] ?? '', 40),
             'sp' => txt($r['sp'] ?? '', 4), 'nr' => (int)($r['nr'] ?? 0), 'kg' => txt($r['kg'] ?? '', 8), 'klasse' => txt($r['klasse'] ?? '', 80),
-            'bem' => txt($r['bem'] ?? '', 500), 'betreuer' => txt($r['betreuer'] ?? '', 200)];
+            'bem' => txt($r['bem'] ?? '', 500), 'betreuer' => txt($r['betreuer'] ?? '', 200),
+            'cm' => txt($r['cm'] ?? '', 5)];
     if ($reg['vorname'] === '' || $reg['name'] === '' || $reg['geb'] === '') fail('Bitte Vorname, Name und Geburtsdatum angeben');
     if (!filter_var($reg['email'], FILTER_VALIDATE_EMAIL)) fail('Bitte eine gültige E-Mail-Adresse angeben');
     if ($reg['nr'] < 100 || $reg['nr'] > 1000 || $reg['klasse'] === '') fail('Bitte eine Klasse wählen');
     $files = is_array($r['files'] ?? null) ? $r['files'] : [];
+    $club = clubByToken($in['tok'] ?? '');
+    if (!$club) fail('Bitte zuerst einloggen', 401);
+    if (!in_array($club['rolle'], ['club', 'trainer', 'einzel'], true)) fail('Sportler anmelden können nur Clubs, Trainer und Einzelsportler', 403);
+    $reg['club'] = $club['email'];
+    if ($reg['verein'] === '') $reg['verein'] = $club['club'];
     $res = withTurnier($in['tid'] ?? '', function (&$t) use ($reg, $files) {
         if (!tOffen($t)) fail('Die Anmeldung für dieses Turnier ist geschlossen', 403);
         if (!in_array($reg['sp'], $t['sports'], true)) fail('Diese Sportart wird bei diesem Turnier nicht angeboten');
@@ -399,6 +499,12 @@ case 't_register':
             [$data, $ext] = decodeFile($files[$k]['data'], 8000000);
             file_put_contents(docdir() . "/r_{$t['id']}_{$reg['id']}_{$k}.$ext", $data);
             $reg['docs'][$k] = ['name' => txt($files[$k]['name'] ?? $k, 120), 'ext' => $ext];
+        }
+        if (!empty($files['foto']['data'])) {      // Foto des Sportlers (freiwillig)
+            [$data, $ext] = decodeFile($files['foto']['data'], 6000000);
+            if ($ext !== 'jpg' && $ext !== 'png') fail('Das Foto muss ein Bild (JPG/PNG) sein');
+            file_put_contents(docdir() . "/r_{$t['id']}_{$reg['id']}_foto.$ext", $data);
+            $reg['foto'] = $ext;
         }
         $reg['need'] = $need; $reg['frei'] = true;
         // Startgeld: erster Start voll, jeder weitere Start desselben Sportlers ermäßigt
