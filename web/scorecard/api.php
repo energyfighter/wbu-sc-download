@@ -289,8 +289,10 @@ function orderTotal($t, $oid) { $s = 0; foreach ($t['regs'] as $x) if (($x['oid'
 function wbuMail($to, $subject, $body) {
     if (!filter_var($to, FILTER_VALIDATE_EMAIL)) return false;
     $host = preg_replace('/^www\./', '', preg_replace('/[^a-z0-9.\-]/i', '', $_SERVER['HTTP_HOST'] ?? '')) ?: 'wbu-boxing.com';
-    $hdr = "From: WBU Turniere <noreply@$host>\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit";
-    return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body . "\n\nWorld Boxing Union", $hdr);
+    global $CFG;
+    $rt = (is_array($CFG) && !empty($CFG['reply_to'])) ? $CFG['reply_to'] : 'dm@wbu-boxing.com';
+    $hdr = "From: WBU Turniere <noreply@$host>\r\nReply-To: $rt\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit";
+    return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body . "\n\nFragen? Einfach auf diese E-Mail antworten oder an $rt schreiben.\n\nWorld Boxing Union", $hdr);
 }
 function euro($v) { return number_format((float)$v, 2, ',', '.') . ' €'; }
 function bankText($t, $o, $betrag) {
