@@ -180,7 +180,7 @@ async function doLogin(){const g=id=>($(id)?.value||'').trim(),err=m=>{$('lerr')
     else j=await api('c_login',{email:g('l_email'),pw:g('l_pw')});
     saveAuth({tok:j.tok,me:j.me});S.err='';if(j.me.rolle==='veranstalter'){location.href='../veranstalter/';return}const q=new URLSearchParams(location.search).get('t');if(q)openT(q);else{S.view='list';loadList()}}
   catch(e){err(e.message)}}
-function accBar(){const a=$('acc');if(a)a.innerHTML=AUTH?`<b>${esc(AUTH.me.trainer)}</b><br>${esc(ROLLEN[AUTH.me.rolle]||'')}${AUTH.me.club&&AUTH.me.club!=='–'&&AUTH.me.club!=='Einzelsportler'?' · '+esc(AUTH.me.club):''}${String(AUTH.tok).startsWith('vk:')?'':' · <a href="#" onclick="roleDlg();return false">Rolle ändern</a>'} · <a href="#" onclick="logout();return false">Abmelden</a>`:''}
+function accBar(){const a=$('acc');if(a)a.innerHTML=AUTH?`<b>${esc(AUTH.me.trainer)}</b><br>${esc(ROLLEN[AUTH.me.rolle]||'')}${AUTH.me.club&&AUTH.me.club!=='–'&&AUTH.me.club!=='Einzelsportler'?' · '+esc(AUTH.me.club):''}${String(AUTH.tok).startsWith('vk:')?'':' · <a href="#" style="font-weight:700" onclick="roleDlg();return false">Rolle ändern</a>'} · <a href="#" onclick="logout();return false">Abmelden</a>`:''}
 
 const S={view:'list',list:[],t:null,f:{sp:null,sex:null,gew:null},ok:null,err:''};
 let keep={}; // Verein/Trainer/Kontakt für weitere Anmeldungen merken
@@ -226,6 +226,14 @@ function needDocs(){const t=S.t,d=t.docs||{},geb=$('f_geb')?.value,alter=geb?wbu
   return n}
 const DOCNAME={haft:'Haftungsausschluss / Teilnahmeerklärung',eltern:'Einverständniserklärung der Eltern (Sportler unter 18)',attest:'Sportärztliches Attest / Medical Check'};
 const FILES={};
+// Roter Pflicht-Hinweis: ohne diese Unterlagen keine Teilnahme
+function pflichtBox(t){const d=t.docs||{};if(!d.haft&&!d.eltern&&!t.attest)return '';
+  return `<div style="background:#c8102e;color:#fff;border-radius:12px;padding:14px 16px;margin:14px 0 0;font-weight:700;line-height:1.5">
+   <div style="font-size:18px;margin-bottom:6px">⚠ PFLICHT – ohne diese Unterlagen keine Teilnahme!</div>
+   ${d.haft?'<div>✔ <b>Haftungsausschluss / Teilnahmeerklärung</b> – für jeden Sportler, unterschrieben</div>':''}
+   ${d.eltern?'<div>✔ <b>Einverständniserklärung der Eltern</b> – für jeden Sportler unter 18 Jahren (nicht Shadow Boxing)</div>':''}
+   ${t.attest?`<div>✔ <b>Sportärztliches Attest</b> aus dem Jahr ${String(t.date||'').slice(0,4)} – für alle Boxer (nicht Shadow Boxing)</div>`:''}
+   <div style="font-weight:400;margin-top:6px">Formulare oben herunterladen, ausdrucken, unterschreiben und als Foto oder PDF hochladen – gleich bei der Anmeldung oder später unter „Meine Anmeldungen &amp; Bezahlung“, spätestens bis zum Anmeldeschluss.</div></div>`}
 const attYear=()=>String(S.t.date||new Date().toISOString()).slice(0,4);
 function attErr(d){if(!d)return 'Bitte das Ausstellungsdatum des Attests eintragen.';if(d.slice(0,4)!==attYear())return 'Das sportärztliche Attest muss aus dem Jahr '+attYear()+' sein.';return ''}
 // Datei lesen: Fotos werden verkleinert, PDFs bleiben wie sie sind
@@ -234,7 +242,7 @@ async function fileData(f){if(f.type.startsWith('image/')){const img=await new P
     c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.85)}
   if(f.size>8e6)throw new Error('PDF zu groß (höchstens 8 MB)');return await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
 function docBox(){const n=needDocs();if(!n.length)return '';
-  return `<h2 style="font-size:16px;margin:16px 0 4px">Unterschriebene Unterlagen hochladen</h2><p class="muted" style="margin:0 0 6px">Formular herunterladen, ausdrucken, unterschreiben${n.includes('eltern')?' (Eltern!)':''} und hier als Foto oder PDF hochladen${n.includes('attest')?' – dazu ein Foto oder PDF des sportärztlichen Attests aus dem Jahr '+attYear():''}.</p>
+  return `${pflichtBox(S.t)}<h2 style="font-size:16px;margin:16px 0 4px">Unterschriebene Unterlagen hochladen</h2><p class="muted" style="margin:0 0 6px">Formular herunterladen, ausdrucken, unterschreiben${n.includes('eltern')?' (Eltern!)':''} und hier als Foto oder PDF hochladen${n.includes('attest')?' – dazu ein Foto oder PDF des sportärztlichen Attests aus dem Jahr '+attYear():''}.</p>
    <p style="margin:0 0 6px"><b>Noch nicht alles da?</b> Der Sportler kann trotzdem eingetragen werden. Fehlende Unterlagen lädst du später unter „Meine Anmeldungen &amp; Bezahlung“ hoch – spätestens bis zum Anmeldeschluss. Danach gibt es eine Erinnerung mit ${S.t.grace||3} Tagen Nachfrist, dann wird der Sportler entfernt.</p>
    ${n.map(k=>`<label>${DOCNAME[k]} – Pflicht</label>${k==='attest'?`<label style="margin-top:2px">Attest ausgestellt am (muss aus ${attYear()} sein)</label><input type="date" id="f_attest" value="${esc($('f_attest')?.value||'')}">`:''}
    <div class="upl"><input type="file" accept="image/*,application/pdf" onchange="pickFile('${k}',this)"><span id="fs_${k}" class="muted">${FILES[k]?'✅ '+esc(FILES[k].name):''}</span></div>
@@ -264,7 +272,7 @@ function vForm(){
     <span>Startgeld</span><b>${t.fee?euro(t.fee)+(t.feeMore?' · jeder weitere Start '+euro(t.feeMore):' pro Start'):'kostenlos'}</b></div>
     ${t.info?`<p style="white-space:pre-wrap;margin:12px 0 0">${esc(t.info)}</p>`:''}
     ${Object.keys(t.docs||{}).length?`<h2 style="font-size:16px;margin:14px 0 6px">Unterlagen zum Herunterladen</h2><div class="chips">${DOCS.filter(([k])=>t.docs[k]).map(([k,n])=>`<a class="chip" style="text-decoration:none;color:var(--txt)" href="${docUrl(t.id,k)}" target="_blank">📄 ${n}</a>`).join('')}</div>
-    ${t.docs.haft||t.docs.eltern?`<p class="muted" style="margin:8px 0 0">Bei der Anmeldung muss für jeden Sportler ${t.docs.haft?'der unterschriebene Haftungsausschluss':''}${t.docs.haft&&t.docs.eltern?' und ':''}${t.docs.eltern?'– bei Minderjährigen – die Einverständniserklärung der Eltern':''} hochgeladen werden (Foto oder PDF). Erst dann ist der Sportler zum Kampf freigegeben.</p>`:''}`:''}</div>`:''}
+    ${pflichtBox(t)}`:''}</div>`:''}
   ${S.tab==='my'?vMy():S.tab!=='anm'?vData():!canReg()?'<div class="card">Sportler anmelden können nur Vereine, Trainer und Einzelsportler. Teilnehmer, Kategorien und Clubs kannst du über die Reiter oben ansehen.</div>':!t.offen?'<div class="card err">Die Anmeldung für dieses Turnier ist geschlossen.</div>':`
   <div class="card"><h2 style="margin-top:0">Sportler anmelden</h2>
     <label>Sportart</label><div class="chips">${t.sports.map(s=>`<div class="chip ${f.sp===s?'on':''}" onclick="setF('sp','${s}')">${esc(WBU_SPORT[s].name)}</div>`).join('')}</div>
@@ -428,7 +436,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('30')||0;
+const WEB_VERSION=Number('31')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
