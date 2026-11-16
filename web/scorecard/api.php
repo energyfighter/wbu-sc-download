@@ -357,6 +357,19 @@ case 'l_pull':
     });
     out(['ok' => true] + $r);
 
+case 'l_result':
+    // Ergebnis von der Android-App (Supervisor per Bluetooth): mit WBU-Passwort
+    if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
+    $mid = txt($in['mid'] ?? '', 40); $res = is_array($in['res'] ?? null) ? $in['res'] : null;
+    if ($mid === '' || !$res) fail('Ergebnis fehlt');
+    withLive($in['lid'] ?? '', function (&$l) use ($mid, $res) {
+        $r = (array)$l['results'];
+        $r[$mid] = ['k' => txt($res['k'] ?? '', 8), 'w' => in_array($res['w'] ?? null, ['R', 'B'], true) ? $res['w'] : null,
+                    'r' => isset($res['r']) ? (int)$res['r'] : null, 't' => txt($res['t'] ?? '', 10), 'ts' => (int)($res['ts'] ?? 0), 'by' => txt($res['by'] ?? '')];
+        $l['results'] = (object)$r;
+    }, true);
+    out(['ok' => true]);
+
 case 'l_get':
     $r = withLive($in['lid'] ?? '', function (&$l) { return ['snap' => $l['snap'], 'updated' => $l['updated']]; });
     out(['ok' => true] + $r);

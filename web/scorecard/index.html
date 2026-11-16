@@ -134,7 +134,7 @@ window.wbuUpdStatus=(t,ok)=>{const e=$('updst');if(e)e.innerHTML=ok?esc(t):`<spa
 // ---------- Chat Supervisor <-> Punktrichter ----------
 function chatAll(){return get('wbuChat',[])}
 function chatAdd(m){const a=chatAll();if(a.some(x=>x.id===m.id))return;a.push(m);set('wbuChat',a.slice(-300))}
-window.wbuMsg=j=>{try{chatAdd(JSON.parse(j));refreshChat(true)}catch(e){}};
+window.wbuMsg=j=>{try{const m=JSON.parse(j);if(m.t==='cur'){S.jcur=m;showJCur();return}chatAdd(m);refreshChat(true)}catch(e){}};
 function chatJudges(){const s=new Set();chatAll().forEach(m=>m.judge&&s.add(m.judge));get('wbuInbox',[]).slice(-12).forEach(c=>c.judge&&s.add(c.judge));return[...s]}
 function convo(){return S.role==='sup'?chatAll().filter(m=>m.judge===S.chatWith):chatAll().filter(m=>m.judge===S.name)}
 function unread(j){const k=S.role==='sup'?j:'sup',other=S.role==='sup'?'judge':'sup';return chatAll().filter(m=>(S.role==='sup'?m.judge===j:m.judge===S.name)&&m.from===other&&m.ts>(S.seen[k]||0)).length}
@@ -265,8 +265,8 @@ function header(){
   const who=S.name?`${S.role==='sup'?'Supervisor':'Punktrichter'}<br><b style="color:var(--txt)">${esc(S.name)}</b><a href="#" onclick="logout();return false">Abmelden</a>`:'';
   return `<img class="toplogo" src="${LOGO}" alt="WBU World Boxing Union"><header><div class="htitle"><b>WBU Scorecard</b><span>World Boxing Union · 10-Point Must System</span></div><div class="who">${who}</div></header>`;
 }
-function logout(){if(NATIVE)WBU.stop();clearInterval(pollT);S.web=null;S.role=null;S.name='';S.view='start';S.openFight=null;render()}
-function render(){setTimeout(()=>{if(S.view==='start'&&WEB)loadLives();if(S.role==='judge')showJCur()},0);
+function logout(){clearInterval(nliveT);S.nlid='';if(NATIVE)WBU.stop();clearInterval(pollT);S.web=null;S.role=null;S.name='';S.view='start';S.openFight=null;render()}
+function render(){setTimeout(()=>{if(S.view==='start'&&(WEB||NATIVE))loadLives();if(S.role==='judge')showJCur()},0);
   const v={start:vStart,pick:vPick,judge:vJudge,sent:vSent,sup:vSup,fight:vFight,final:vFinal,report:vReport}[S.view];
   $('app').innerHTML=header()+v();
   if(S.view==='judge')initWheels();
@@ -288,8 +288,9 @@ function vStart(){
     <div id="supf" style="display:${S.role==='judge'?'none':'block'}">${(()=>{const e=get('wbuEvent',{});return `<label>Promoter <span class="muted">(nur Supervisor)</span></label><input id="evn" value="${esc(e.name||'')}" placeholder="Name des Promoters (gern auch Veranstaltung)">
     <label>Ort <span class="muted">(nur Supervisor)</span></label><input id="evo" value="${esc(e.ort||'')}" placeholder="z. B. Hamburg">
     <label>Datum <span class="muted">(nur Supervisor)</span></label><input id="evd" type="date" value="${toIso(e.date||today())}">
-    ${WEB?`<label>Turnier / Gala aus WBU Sports <span class="muted">(optional – Kämpfe und Namen werden übernommen)</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– ohne WBU Sports –</option></select>
-    <label>WBU-Supervisor-Passwort <span class="muted">(nur Supervisor)</span></label><input id="evpw" type="password" autocomplete="off" placeholder="Passwort">
+    <label>Turnier / Gala aus WBU Sports <span class="muted">(optional – Kämpfe und Namen werden übernommen${NATIVE?', Internet nötig':''})</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– ohne WBU Sports –</option></select>
+    ${NATIVE?`<div id="npw" style="display:${S.lid?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
+    ${WEB?`<label>WBU-Supervisor-Passwort <span class="muted">(nur Supervisor)</span></label><input id="evpw" type="password" autocomplete="off" placeholder="Passwort">
     <label>PIN für die Punktrichter <span class="muted">(optional, 4 Ziffern)</span></label><input id="evp" inputmode="numeric" maxlength="8" value="${esc(e.pin||'')}" placeholder="z. B. 2468">`:''}`})()}</div>
     <button class="btn" onclick="doLogin()">Los geht's</button>
     <div id="err" class="note warn"></div>
@@ -304,15 +305,19 @@ function vStart(){
 // Rolle wählen, ohne die Seite neu aufzubauen (Eingaben bleiben stehen)
 // ---- Live-Anbindung an WBU Sports (nur Web-Version) ----
 let LIVES=[];
-async function loadLives(){const sel=$('evl');if(!sel||!WEB)return;
-  try{LIVES=(await api('l_list')).live||[];
+const LIVE_API=window.WBU_WEB_API||'https://www.wbu-boxing.com/scorecard/api.php';
+async function lapi(a,body){const r=await fetch(LIVE_API+'?a='+a,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,...(body||{})}),cache:'no-store'});
+  let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.ok===false)throw new Error(j.error||('Verbindungsfehler '+r.status));return j}
+function liveLid(){return WEB?(S.web&&S.web.lid):S.nlid}
+async function loadLives(){const sel=$('evl');if(!sel)return;
+  try{LIVES=(await lapi('l_list')).live||[];
     sel.innerHTML='<option value="">– ohne WBU Sports –</option>'+LIVES.map(l=>`<option value="${l.id}" ${S.lid===l.id?'selected':''}>${esc(l.name)} · ${esc(l.ort||'')} · ${esc(fromIso(l.date)||l.date||'')}</option>`).join('')}catch(e){}}
-function pickLive(id){S.lid=id||'';const l=LIVES.find(x=>x.id===id);if(!l)return;
+function pickLive(id){S.lid=id||'';if($('npw'))$('npw').style.display=S.lid?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l)return;
   if($('evn'))$('evn').value=l.name;if($('evo'))$('evo').value=l.ort||'';if($('evd')&&l.date)$('evd').value=l.date}
 function liveRows(){return (S.live&&S.live.rows)||[]}
 // welcher WBU-Sports-Kampf gehört zu Scorecard-Kampf no? (automatisch der nächste offene)
 function liveFor(no){
-  if(!S.web||!S.web.lid||!S.live)return null;
+  if(!liveLid()||!S.live)return null;
   const meta=get('wbuMeta',{}),rows=liveRows();
   if(meta[no]&&meta[no].mid){return rows.find(r=>r.mid===meta[no].mid)||null}
   const used=new Set(Object.entries(meta).filter(([k,m])=>+k!==no&&m.mid).map(([k,m])=>m.mid));
@@ -323,7 +328,7 @@ function assignLive(no,mid,auto){const r=liveRows().find(x=>x.mid===mid);if(!r)r
   const m=get('wbuMeta',{})[no]||{};
   saveMeta(no,{mid,red:r.a,blue:r.b,title:r.kl+(r.rd?' · '+r.rd:''),rounds:r.rounds||m.rounds,dur:r.dur||m.dur,liveNo:r.no});
   if(!auto)render()}
-function liveCard(no){const r=liveFor(no);if(!S.web||!S.web.lid)return '';
+function liveCard(no){const r=liveFor(no);if(!liveLid())return '';
   const meta=get('wbuMeta',{}),used=new Set(Object.entries(meta).filter(([k,m])=>+k!==no&&m.mid).map(([k,m])=>m.mid));
   const opts=liveRows().filter(x=>!x.done&&!used.has(x.mid));
   return `<div class="card" style="border-color:var(--gold)"><div class="muted">Aus WBU Sports${S.live?'':' – wird geladen …'}</div>
@@ -333,7 +338,17 @@ function liveCard(no){const r=liveFor(no);if(!S.web||!S.web.lid)return '';
    ${opts.length>1?`<label>Anderen Kampf nehmen</label><select onchange="if(this.value)assignLive(${no},this.value)"><option value="">– Kampf wählen –</option>${opts.map(x=>`<option value="${x.mid}">Kampf ${x.no} · ${esc(x.a)} vs. ${esc(x.b)}</option>`).join('')}</select>`:''}</div>`}
 function curInfo(){const no=curNo(fights()),r=liveFor(no),m=get('wbuMeta',{})[no]||{};
   return r?{no:r.no,kl:r.kl,red:r.a,blue:r.b,rc:r.ac||'',bc:r.bc||''}:{no:0,kl:m.title||'',red:m.red||'',blue:m.blue||'',rc:'',bc:''}}
-function sendCur(){if(!WEB||S.role!=='sup'||!S.web)return;const c=curInfo(),js=JSON.stringify(c);if(js===S.lastCur)return;S.lastCur=js;webSend({t:'cur',id:'cur',...c})}
+function sendCur(){if(S.role!=='sup')return;const c=curInfo(),js=JSON.stringify(c);if(js===S.lastCur)return;
+  if(WEB&&S.web){S.lastCur=js;webSend({t:'cur',id:'cur',...c})}
+  else if(NATIVE&&S.nlid){S.lastCur=js;WBU.sendMsg('*',JSON.stringify({t:'cur',...c}))}}
+// App (Bluetooth): Kampfliste übers Internet holen, Ergebnisse übers Internet zurück (bei Funkloch später nachsenden)
+let nliveT=null;
+function startNativeLive(){clearInterval(nliveT);if(!S.nlid)return;nliveT=setInterval(nativeLive,4000);nativeLive()}
+async function nativeLive(){if(!S.nlid)return;
+  try{const j=await lapi('l_get',{lid:S.nlid});if(j.snap){const js=JSON.stringify(j.snap.rows||[]);if(js!==S.liveJs){S.liveJs=js;S.live=j.snap;softRender()}}
+    for(const it of get('wbuLiveOut',[])){await lapi('l_result',{lid:S.nlid,pass:S.npass||'',mid:it.mid,res:it.res});set('wbuLiveOut',get('wbuLiveOut',[]).filter(x=>x.mid!==it.mid))}
+    S.liveErr=''}catch(e){S.liveErr=e.message}
+  sendCur()}
 function showJCur(){const c=S.jcur||{},has=c.red||c.blue;const l=$('jcur');if(!l)return;
   l.style.display=has||c.kl?'block':'none';l.innerHTML=`${c.no?`<b>Kampf ${c.no}</b> · `:''}${esc(c.kl||'')}`;
   if($('jred'))$('jred').textContent=c.red||'Rote Ecke';if($('jblue'))$('jblue').textContent=c.blue||'Blaue Ecke'}
@@ -367,6 +382,11 @@ function doLogin(){
     const e=get('wbuEvent',{});set('wbuEvent',{...e,name:en,ort:eo,date:ed})}
   S.name=n;
   if(WEB){webLogin(n);return}
+  if(NATIVE&&S.role==='sup'&&S.lid&&!S.nlidOk){const pw=$('evpwn')?$('evpwn').value.trim():'';
+    if(!pw){$('err').textContent='Bitte das WBU-Supervisor-Passwort eingeben (für WBU Sports).';return}
+    lapi('auth',{pass:pw}).then(()=>{S.npass=pw;S.nlid=S.lid;S.nlidOk=true;doLogin();S.nlidOk=false;startNativeLive()})
+      .catch(err=>{$('err').textContent=/Passwort/.test(err.message)?err.message:'Keine Internetverbindung zu WBU Sports: '+err.message});return}
+  if(NATIVE&&S.role==='sup'&&!S.lid){S.nlid='';clearInterval(nliveT)}
   if(NATIVE){if(S.role==='judge')WBU.startJudge(n);else{const e=get('wbuEvent',{});WBU.startSupervisor(n,[e.name,e.ort].filter(Boolean).join(' · '))}}
   if(S.role==='judge'){newCard();S.view='judge'}else S.view='sup';
   render();
@@ -629,7 +649,8 @@ function setResult(maxR){
   const typ=RES.find(r=>r[0]===S.sel.k)[2];
   if((typ===1||typ===2)&&!S.sel.w){$('rerr').textContent='Bitte Sieger wählen.';return}
   saveMeta(S.openFight,{result:{k:S.sel.k,w:(typ===1||typ===2)?S.sel.w:null,r:typ>=2?(S.sel.r||maxR):null,t:typ>=2?(S.sel.t||''):null,by:S.name,ts:Date.now(),at:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}});
-  {const m=get('wbuMeta',{})[S.openFight]||{};if(WEB&&S.web&&S.web.lid&&m.mid)webSend({t:'res',id:'res-'+m.mid,mid:m.mid,res:m.result})}
+  {const m=get('wbuMeta',{})[S.openFight]||{};if(WEB&&S.web&&S.web.lid&&m.mid)webSend({t:'res',id:'res-'+m.mid,mid:m.mid,res:m.result});
+   if(NATIVE&&S.nlid&&m.mid){set('wbuLiveOut',get('wbuLiveOut',[]).filter(x=>x.mid!==m.mid).concat([{mid:m.mid,res:m.result}]));nativeLive()}}
   const wasMain=S.view==='sup';S.edit=false;S.sel={};S.selFor=null;if(!wasMain)S.view='fight';render();window.scrollTo(0,0);
 }
 function resLine(f){const r=f.meta.result,m=f.meta;
@@ -731,7 +752,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('8')||0;
+const WEB_VERSION=Number('9')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
