@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "files": {
+    "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
+    "scorecard/api.php": "dc9fd876be61ad63d10a05f50ddf5fd99f6c04444fbee17645a5f5644c9c7fc6",
+    "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
+    "scorecard/index.html": "0a15bd60dde3eab91474f3782530c097631899de780ba9b5efc4d07b8b9b0cb5",
+    "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
+    "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
+    "veranstalter/index.html": "3c5b862464c1a37b979d73cd58afe005e9ec276e0b907156d76c3b46a7e20324"
+  }
+}
