@@ -610,7 +610,7 @@ case 'c_register':   // Club / Trainer / Einzelsportler legt ein Konto an
     if ($club === '') $club = '–';
     $r = withClubs(function (&$c) use ($email, $pw, $club, $trainer, $in) {
         if (isset($c[$email])) fail('Für diese E-Mail gibt es schon ein Konto – bitte einloggen');
-        $rolle = in_array($in['rolle'] ?? '', ['club', 'trainer', 'einzel', 'sup', 'ref', 'sonst'], true) ? $in['rolle'] : 'club';
+        $rolle = in_array($in['rolle'] ?? '', ['club', 'trainer', 'einzel', 'veranstalter', 'sup', 'ref', 'sonst'], true) ? $in['rolle'] : 'club';
         $c[$email] = ['club' => $club, 'trainer' => $trainer, 'tel' => txt($in['tel'] ?? '', 40), 'rolle' => $rolle, 'pw' => password_hash($pw, PASSWORD_DEFAULT), 'created' => time(), 'tok' => []];
         $tok = newToken($c[$email]);
         return ['tok' => $tok, 'me' => clubPublic($email, $c[$email])];
