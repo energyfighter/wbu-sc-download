@@ -1,15 +1,15 @@
 {
-  "version": 5,
+  "version": 6,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "scorecard/api.php": "32d2c80a39fe035e7ffdf2e5d36733d6f482c4b96849cc367b925253a3ee684c",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "331c02a6e492b67248205b68aead66fda260d9edb138dd2cbf88c87e1639abad",
+    "scorecard/index.html": "3906d0e62d7433e0a9b7a815e18185080a36620a5ec51e3c9fb43a13c3a77d97",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "fc969fd12f8a9d61cc0251b85bae5d920bed951510a2481dec691c424fc0b748",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "8c7fabad10778507056bb152af2ef02d8241f0967fe71a8de9fc08d2dbdefb96",
+    "veranstalter/index.html": "63556bcacbeb8b256cbdfe56849a34c1d8e81b20499000adadd87ad59e807d75",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "9829c3f94440c6ae944a3437df7e707714611063891242d206d47662a2dd9611"
+    "anmeldung/index.html": "1d97aad9325dbd805788ece0f9aa4aab998eb7ced904be8091fa657242be017d"
   }
 }

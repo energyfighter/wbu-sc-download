@@ -67,6 +67,23 @@ tr:nth-child(even) td{background:rgba(255,255,255,.02)}
   .m{background:#fff;border:1px solid #999}.r{color:#b71c1c}.b{color:#0d47a1}
   #printhead{display:flex!important}
 }
+
+/* Fernseher-Anzeige */
+body.tvmode{background:#e9ebef;color:#1b1f2a;overflow:hidden}
+.tvtop{display:flex;align-items:center;gap:1.2vw;padding:.8vw 1.6vw;background:#d9dde4;border-bottom:3px solid #c3c8d1}
+.tvtop img{width:3.4vw;height:3.4vw}.tvtop h1{margin:0;font-size:1.6vw}.tvtop span{color:#555d6e;font-size:.95vw}.tvtop .uhr{font-size:1.6vw;font-weight:700}
+.tvgrid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-flow:column;grid-template-rows:repeat(6,1fr);gap:.6vw 1vw;padding:.9vw 1.3vw;height:calc(100vh - 5.2vw)}
+.tf{background:#f6f7f9;border:2px solid #cfd4dc;border-radius:12px;padding:.4vw .75vw;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden}
+.tf.now{border:4px solid #1a9e55;background:#eaf7ef}.tf.next{border:3px solid #e2a500}
+.tf .h{display:flex;justify-content:space-between;align-items:baseline}
+.tf .no{font-size:1.35vw;font-weight:800;line-height:1.2}.tf .rd{font-size:.8vw;color:#555d6e;font-weight:600}
+.tf .tag{font-size:.7vw;font-weight:800;padding:2px 8px;border-radius:6px;color:#fff;background:#1a9e55}.tf .tag.y{background:#e2a500;color:#2a1d00}
+.tf .kl{font-size:.85vw;line-height:1.35;flex:none;color:#3a4252;font-weight:600;margin:1px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tf .ec{display:grid;grid-template-columns:1fr 1fr;gap:.5vw}
+.tf .ec small{display:block;line-height:1.3;font-size:.65vw;font-weight:800;letter-spacing:.6px}
+.tf .r small,.tf .r b{color:#c62828}.tf .bl small,.tf .bl b{color:#1565c0}
+.tf .ec b{font-size:1.15vw;line-height:1.3;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tf .ec i{display:block;font-style:normal;font-size:.7vw;color:#6a7282;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #printhead{display:none;align-items:center;gap:12px;margin-bottom:10px}#printhead img{width:60px}
 </style>
 </head>
@@ -200,7 +217,7 @@ function vCard(ev){
       <div><label>Rundendauer</label><select id="nf_dur"><option>3 Min</option><option>2 Min</option></select></div>
       <div style="display:flex;align-items:flex-end"><button class="btn" style="width:100%" onclick="addFight()">+ Kampf hinzufügen</button></div>
     </div></div>
-  <div class="card"><div class="row" style="justify-content:space-between"><b>Fight Card – ${fs.length} Kämpfe</b><button class="btn sec sm noprint" onclick="print()">Drucken</button></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><b>Fight Card – ${fs.length} Kämpfe</b><div class="row noprint"><button class="btn sec sm" onclick="print()">Drucken</button><button class="btn sm" onclick="openTv()">📺 Fernseher-Anzeige</button></div></div>
   ${fs.length?`<table><tr><th>Nr.</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Klasse / Titel</th><th>Kampfart</th><th>Runden</th><th>Ergebnis</th><th class="noprint"></th></tr>
   ${fs.map((f,i)=>`<tr><td><b>${i+1}</b></td><td class="r">${esc(f.red)}</td><td class="b">${esc(f.blue)}</td><td>${esc(f.cls)}${f.title?`<div class="muted">${esc(f.title)}</div>`:''}</td>
     <td>${esc(f.kind)}</td><td>${f.rounds} × ${esc(f.dur)}</td><td>${f.result?`<span class="badge g">${esc(resLine(f.result,f.red,f.blue))}</span>`:'<span class="muted">offen</span>'}</td>
@@ -378,12 +395,12 @@ function vKl(ev){
   const kurz=rows.filter(x=>sch.rest[x.m.id]!=null&&sch.rest[x.m.id]<sch.minP).length;
   return `<div class="card"><div class="row" style="justify-content:space-between"><b>Kampfliste – ${rows.length} Kämpfe</b>
     <div class="row noprint"><span class="muted">Mindestpause:</span><select style="width:auto" onchange="upd(e=>e.pause=+this.value)">${[0,1,2,3,4,5,6,8,10,12,15].map(v=>`<option value="${v}" ${v===sch.minP?'selected':''}>${v} Kämpfe dazwischen</option>`).join('')}</select>
-    <button class="btn sec sm" onclick="print()">Drucken / PDF</button></div></div>
+    <button class="btn sec sm" onclick="print()">Drucken / PDF</button><button class="btn sm" onclick="openTv()">📺 Fernseher-Anzeige</button></div></div>
   ${rows.length?`<table><tr><th>Kampf</th><th>Kategorie</th><th>Runde</th><th>Rote Ecke</th><th>Blaue Ecke</th><th>Pause</th><th>Status</th><th>Ergebnis</th></tr>
   ${rows.map(x=>`<tr ${x.m.a&&x.m.b?`style="cursor:pointer" onclick="resultDlg('match','${x.m.id}','${x.c.id}')"`:''}><td><b>${x.no}</b></td><td>${esc(x.c.name)}</td><td>${roundName(x.r,x.c.bracket.length)}</td>
    <td class="r">${esc(pname(x.c,x.m.a)||'–')}</td><td class="b">${esc(pname(x.c,x.m.b)||'–')}</td><td>${ps(x)}</td><td>${st(x)}</td><td>${x.m.res?esc(resLine(x.m.res,pname(x.c,x.m.a),pname(x.c,x.m.b))):''}</td></tr>`).join('')}</table>`
   :'<p class="muted">Noch keine Kategorie ausgelost.</p>'}</div>
-  <p class="note noprint">Reihenfolge: zuerst die erste Runde aller Kategorien – Semi-Pro, dann K1, dann Master; jeweils jüngste Altersklasse zuerst, männlich vor weiblich, leichte vor schweren Gewichtsklassen. Danach die nächste Runde. Hat ein Sportler noch nicht genug Pause, wird ein Kampf aus einer anderen Kategorie vorgezogen. „Pause“ = Kämpfe seit dem letzten Kampf dieser Sportler; ⚠ heißt: kürzer ging es nicht.${kurz?` Zurzeit ${kurz}× kürzere Pause.`:''}</p>`;
+  <p class="note noprint">Reihenfolge: zuerst die erste Runde aller Kategorien – Semi-Pro, dann K1, dann Master; jeweils jüngste Altersklasse zuerst, männlich vor weiblich, leichte vor schweren Gewichtsklassen. Danach die nächste Runde. Hat ein Sportler noch nicht genug Pause, wird ein Kampf aus einer anderen Kategorie vorgezogen. „📺 Fernseher-Anzeige“ öffnet ein eigenes Fenster: auf den Fernseher ziehen und mit F11 auf Vollbild stellen – es aktualisiert sich von selbst. „Pause“ = Kämpfe seit dem letzten Kampf dieser Sportler; ⚠ heißt: kürzer ging es nicht.${kurz?` Zurzeit ${kurz}× kürzere Pause.`:''}</p>`;
 }
 
 // ===================== Ergebnisse =====================
@@ -466,6 +483,35 @@ function regsCsv(){const ev=cur(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const blob=new Blob(['﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Anmeldungen-${(ev.name||'Turnier').replace(/[^\wäöüÄÖÜß-]+/g,'_')}.csv`;a.click()}
 
+
+// ===================== Fernseher-Anzeige (eigenes Fenster, heller Hintergrund) =====================
+function openTv(){window.open(location.pathname+'?tv='+encodeURIComponent(S.ev),'wbutv','width=1280,height=720')}
+function tvRows(ev){
+  if(ev.type==='gala')return ev.fights.map((f,i)=>({no:i+1,rd:f.title||'',kl:[f.cls,f.kind].filter(Boolean).join(' · '),a:f.red,ac:'',b:f.blue,bc:'',done:!!f.result}));
+  const sch=schedule(ev),rows=[];
+  ev.cats.forEach(c=>{if(!c.bracket)return;c.bracket.forEach((col,r)=>col.forEach((m,i)=>{if(!sch.no[m.id])return;
+    const side=(pid,fi)=>{if(pid)return [pname(c,pid),pclub(c,pid)];const f=r>0&&c.bracket[r-1][fi];return [f&&sch.no[f.id]?'Sieger Kampf '+sch.no[f.id]:'–',''];};
+    const [a,ac]=side(m.a,2*i),[b,bc]=side(m.b,2*i+1);
+    rows.push({no:sch.no[m.id],rd:roundName(r,c.bracket.length),kl:c.name,a,ac,b,bc,done:!!m.w})}))});
+  return rows.sort((x,y)=>x.no-y.no);
+}
+function renderTv(id){
+  const ev=events().find(x=>x.id===id);
+  if(!ev){document.body.innerHTML='<p style="padding:40px;font-size:30px">Veranstaltung nicht gefunden.</p>';return}
+  const open=tvRows(ev).filter(r=>!r.done).slice(0,24),logo=document.querySelector('#top img').src;
+  const t=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('tv').innerHTML=`<div class="tvtop"><img src="${logo}"><div><h1>${esc(ev.name||'')}</h1><span>${esc([ev.ort,deDate(ev.date)].filter(Boolean).join(' · '))} · Kampfreihenfolge</span></div><div style="flex:1"></div><div class="uhr">${t}</div></div>
+  ${open.length?`<div class="tvgrid">${open.map((f,i)=>`<div class="tf ${i===0?'now':i<3?'next':''}"><div class="h"><span class="no">Kampf ${f.no}</span>${i===0?'<span class="tag">IM RING</span>':i<3?'<span class="tag y">BEREIT MACHEN</span>':`<span class="rd">${esc(f.rd)}</span>`}</div>
+   <div class="kl">${esc(f.kl)}</div><div class="ec"><div class="r"><small>ROTE ECKE</small><b>${esc(f.a)}</b><i>${esc(f.ac)||'&nbsp;'}</i></div><div class="bl"><small>BLAUE ECKE</small><b>${esc(f.b)}</b><i>${esc(f.bc)||'&nbsp;'}</i></div></div></div>`).join('')}</div>`
+   :'<div style="padding:80px;font-size:40px;font-weight:700;text-align:center">Alle Kämpfe beendet</div>'}`;
+}
+function startTv(id){
+  document.title='WBU Fernseher-Anzeige';document.body.className='tvmode';
+  document.body.innerHTML='<div id="tv"></div>'+document.body.innerHTML.replace(/id="app"/,'id="app" style="display:none"');
+  document.getElementById('top').style.display='none';
+  renderTv(id);window.addEventListener('storage',()=>renderTv(id));setInterval(()=>renderTv(id),3000);
+}
+
 // ===================== Sichern / Laden =====================
 function exportEvent(){
   const ev=cur(),blob=new Blob([JSON.stringify(ev,null,2)],{type:'application/json'});
@@ -489,7 +535,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('5')||0;
+const WEB_VERSION=Number('6')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
@@ -498,7 +544,8 @@ async function checkWebVersion(){
       d.textContent='Neue Version verfügbar – hier tippen zum Neuladen';d.onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setTimeout(checkWebVersion,3000);setInterval(checkWebVersion,5*60*1000);
 
-render();
+const TVID=new URLSearchParams(location.search).get('tv');
+if(TVID)startTv(TVID);else render();
 </script>
 </body>
 </html>
