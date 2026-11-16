@@ -217,9 +217,17 @@ function needDocs(){const t=S.t,d=t.docs||{},geb=$('f_geb')?.value,alter=geb?wbu
   return n}
 const DOCNAME={haft:'Haftungsausschluss / Teilnahmeerklärung',eltern:'Einverständniserklärung der Eltern (Sportler unter 18)',attest:'Sportärztliches Attest / Medical Check'};
 const FILES={};
+const attYear=()=>String(S.t.date||new Date().toISOString()).slice(0,4);
+function attErr(d){if(!d)return 'Bitte das Ausstellungsdatum des Attests eintragen.';if(d.slice(0,4)!==attYear())return 'Das sportärztliche Attest muss aus dem Jahr '+attYear()+' sein.';return ''}
+// Datei lesen: Fotos werden verkleinert, PDFs bleiben wie sie sind
+async function fileData(f){if(f.type.startsWith('image/')){const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(f)});
+    const sc=Math.min(1,2000/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.85)}
+  if(f.size>8e6)throw new Error('PDF zu groß (höchstens 8 MB)');return await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
 function docBox(){const n=needDocs();if(!n.length)return '';
-  return `<h2 style="font-size:16px;margin:16px 0 4px">Unterschriebene Unterlagen hochladen</h2><p class="muted" style="margin:0 0 6px">Formular herunterladen, ausdrucken, unterschreiben${n.includes('eltern')?' (Eltern!)':''} und hier als Foto oder PDF hochladen${n.includes('attest')?' – dazu ein Foto oder PDF des gültigen sportärztlichen Attests':''}.</p>
-   ${n.map(k=>`<label>${DOCNAME[k]} – Pflicht</label>
+  return `<h2 style="font-size:16px;margin:16px 0 4px">Unterschriebene Unterlagen hochladen</h2><p class="muted" style="margin:0 0 6px">Formular herunterladen, ausdrucken, unterschreiben${n.includes('eltern')?' (Eltern!)':''} und hier als Foto oder PDF hochladen${n.includes('attest')?' – dazu ein Foto oder PDF des sportärztlichen Attests aus dem Jahr '+attYear():''}.</p>
+   <p style="margin:0 0 6px"><b>Noch nicht alles da?</b> Der Sportler kann trotzdem eingetragen werden. Fehlende Unterlagen lädst du später unter „Meine Anmeldungen &amp; Bezahlung“ hoch – spätestens bis zum Anmeldeschluss. Danach gibt es eine Erinnerung mit ${S.t.grace||3} Tagen Nachfrist, dann wird der Sportler entfernt.</p>
+   ${n.map(k=>`<label>${DOCNAME[k]} – Pflicht</label>${k==='attest'?`<label style="margin-top:2px">Attest ausgestellt am (muss aus ${attYear()} sein)</label><input type="date" id="f_attest" value="${esc($('f_attest')?.value||'')}">`:''}
    <div class="upl"><input type="file" accept="image/*,application/pdf" onchange="pickFile('${k}',this)"><span id="fs_${k}" class="muted">${FILES[k]?'✅ '+esc(FILES[k].name):''}</span></div>
    ${k==='attest'?'':`<div class="chips" style="margin-top:4px"><a class="chip sm" style="text-decoration:none;color:var(--txt)" href="${docUrl(S.t.id,k)}" target="_blank">📄 Formular herunterladen</a></div>`}`).join('')}`}
 // Fotos werden verkleinert (schneller Upload), PDFs bleiben wie sie sind
@@ -285,6 +293,7 @@ function vMy(){
   const M=S.my;if(!M)return `<div class="card">${esc(S.myErr||'Lädt …')}</div>`;
   const cart=M.orders.find(o=>o.status==='cart'),rest=M.orders.filter(o=>o!==cart);
   return `${S.added?`<div class="card" style="border-color:var(--ok)"><b>✅ Eingetragen:</b> ${esc(S.added)}</div>`:''}
+  ${docCard(M)}
   <div class="card"><h2 style="margin-top:0">Offene Anmeldung</h2>
    ${cart?`<table class="l"><tr><th>Sportler</th><th>Kategorie</th><th>Startgeld</th><th></th></tr>${cart.items.map(x=>`<tr><td><b>${esc(x.vorname)} ${esc(x.name)}</b></td><td>${x.nr}</td><td>${euro(x.fee)}</td><td><a href="#" style="color:var(--red);font-weight:700" onclick="cartDel('${x.id}');return false">entfernen</a></td></tr>`).join('')}
      <tr><td colspan="2"><b>Summe</b></td><td colspan="2"><b style="font-size:18px">${euro(cart.total)}</b></td></tr></table>
@@ -295,6 +304,22 @@ function vMy(){
     <p style="margin:6px 0">${o.items.map(x=>`${esc(x.vorname)} ${esc(x.name)} (${x.nr})`).join(', ')}</p>
     <p style="margin:0">Summe <b>${euro(o.total)}</b>${o.paidAmt!=null&&o.status!=='paid'?` · eingegangen <b>${euro(o.paidAmt)}</b> – ${o.paidAmt<o.total?`<b style="color:var(--red)">es fehlen ${euro(o.total-o.paidAmt)}</b>`:'zu viel – der Veranstalter meldet sich'}`:''}</p>
     ${o.status==='open'?payBox(o,M.bank):''}</div>`).join('')}`}
+const DOCSHORT={haft:'Haftungsausschluss',eltern:'Einverständnis Eltern',attest:'Sportärztliches Attest'};
+function docCard(M){const rs=(M.regs||[]).filter(x=>(x.need||[]).length);if(!rs.length)return '';
+  const offen=rs.filter(x=>x.miss.length).length;
+  return `<div class="card" style="${offen?'border:2px solid var(--red)':''}"><h2 style="margin-top:0">Unterlagen ${offen?`– bei ${offen} Sportler${offen>1?'n':''} fehlt noch etwas`:'– alles vollständig ✅'}</h2>
+   ${offen?`<p style="margin:0 0 8px">Fehlende Unterlagen bitte hier hochladen – spätestens bis zum Anmeldeschluss ${deDate(M.schluss)}. Sonst kommt eine Erinnerung mit ${S.t.grace||3} Tagen Nachfrist; danach wird der Sportler entfernt. Das Attest muss aus dem Jahr ${M.year} sein.</p>`:''}
+   <table class="l"><tr><th>Sportler</th><th>Kategorie</th><th>Unterlagen</th></tr>${rs.map(x=>`<tr><td><b>${esc(x.vorname)} ${esc(x.name)}</b>${x.miss.length&&x.docDue?`<div style="color:var(--red);font-weight:700">Letzte Frist: ${new Date(x.docDue*1000).toLocaleDateString('de-DE')}</div>`:''}</td><td>${x.nr}</td><td>
+     ${x.need.map(k=>x.docs.includes(k)?`<div>✅ ${DOCSHORT[k]}${k==='attest'&&x.attestDate?' ('+deDate(x.attestDate)+')':''}</div>`
+       :`<div style="margin:4px 0"><b style="color:var(--red)">✗ ${DOCSHORT[k]} fehlt</b>
+         ${k==='attest'?`<div style="margin-top:3px">Ausgestellt am <input type="date" id="ad_${x.id}" style="width:auto;display:inline-block"></div>`:''}
+         <div class="upl" style="margin-top:3px"><input type="file" accept="image/*,application/pdf" onchange="myUp('${x.id}','${k}',this)"><span id="mu_${x.id}_${k}"></span></div>
+         ${k!=='attest'?`<a href="${docUrl(S.t.id,k)}" target="_blank" style="color:#000;font-weight:700;font-size:13px">📄 Formular herunterladen</a>`:''}</div>`).join('')}</td></tr>`).join('')}</table></div>`}
+async function myUp(rid,k,inp){const f=inp.files[0];if(!f)return;const st=$('mu_'+rid+'_'+k);
+  let datum='';if(k==='attest'){datum=$('ad_'+rid).value;const ae=attErr(datum);if(ae){st.textContent='⚠ '+ae;inp.value='';return}}
+  st.textContent='Wird hochgeladen …';
+  try{const data=await fileData(f);await api('t_mydoc',{tid:S.t.id,rid,kind:k,data,name:f.name,datum});await loadMy();render()}
+  catch(e){st.textContent='⚠ '+(e.message||'Fehler');inp.value=''}}
 async function checkout(oid){try{await api('t_checkout',{tid:S.t.id,oid});S.added='';await loadMy();render();scrollTo(0,0)}catch(e){alert(e.message)}}
 async function cartDel(rid){if(!confirm('Diesen Sportler aus der Anmeldung nehmen?'))return;try{await api('t_cartdel',{tid:S.t.id,rid});await loadMy();render()}catch(e){alert(e.message)}}
 
@@ -361,11 +386,11 @@ async function send(){
   if(!g('f_vorname')||!g('f_name'))return fail('Bitte Vor- und Nachnamen eintragen.');
   if(!/^\S+@\S+\.\S+$/.test(g('f_email')))return fail('Bitte eine gültige E-Mail-Adresse eintragen.');
   if(!$('f_ok').checked)return fail('Bitte das Einverständnis ankreuzen.');
-  const need=needDocs(),miss=need.filter(k=>!FILES[k]);
-  if(miss.length)return fail('Bitte noch hochladen: '+miss.map(k=>DOCNAME[k]).join(', ')+'.');
+  const need=needDocs();
+  if(FILES.attest&&need.includes('attest')){const ae=attErr(g('f_attest'));if(ae)return fail(ae);FILES.attest.datum=g('f_attest')}
   const reg={vorname:g('f_vorname'),name:g('f_name'),geb:g('f_geb'),sex:S.f.sex,verein:g('f_verein'),land:g('f_land'),trainer:g('f_trainer'),
     email:g('f_email'),tel:g('f_tel'),bem:g('f_bem'),betreuer:g('f_betreuer'),sp:S.f.sp,nr:r.nr,kg:S.f.sp==='SB'?'':g('f_kg'),klasse:r.k.name,website:g('f_website'),
-    cm:g('f_cm'),files:Object.fromEntries(need.concat(FILES.foto?['foto']:[]).map(k=>[k,FILES[k]]))};
+    cm:g('f_cm'),files:Object.fromEntries(need.filter(k=>FILES[k]).concat(FILES.foto?['foto']:[]).map(k=>[k,FILES[k]]))};
   $('sendbtn').disabled=true;$('sendbtn').textContent='Wird gesendet …';
   try{const j=await api('t_register',{tid:S.t.id,r:reg});S.pub=null;
     keep={verein:reg.verein,land:reg.land,trainer:reg.trainer,betreuer:reg.betreuer,email:reg.email,tel:reg.tel};
@@ -393,7 +418,7 @@ function render(keepInputs){
   const h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList();
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('22')||0;
+const WEB_VERSION=Number('23')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';

@@ -253,9 +253,29 @@ function regPaid($t, $x) {
     $o = $t['orders'][$x['oid']] ?? null;
     return $o && ostat($o) === 'paid';
 }
-/** Noch nicht verfallen (bezahlt, offen oder im Warenkorb) */
+/** Welche Pflicht-Unterlagen fehlen bei diesem Sportler noch? */
+function docsMiss($x) { return array_values(array_diff((array)($x['need'] ?? []), array_keys((array)($x['docs'] ?? [])))); }
+/** Attest muss aus dem Jahr der Veranstaltung sein */
+function attestOk($t, $d) {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$d)) fail('Bitte das Ausstellungsdatum des sportärztlichen Attests angeben');
+    $y = substr($t['date'] ?: date('Y-m-d'), 0, 4);
+    if (substr($d, 0, 4) !== $y) fail("Das sportärztliche Attest muss aus dem Jahr $y sein (ausgestellt am " . date('d.m.Y', strtotime($d)) . ')');
+    if (strtotime($d) > time() + 86400) fail('Das Ausstellungsdatum des Attests liegt in der Zukunft');
+    return $d;
+}
+/** Unterlage eines Sportlers speichern */
+function saveRegDoc($t, &$x, $k, $file) {
+    [$data, $ext] = decodeFile($file['data'], 8000000);
+    foreach (glob(docdir() . "/r_{$t['id']}_{$x['id']}_{$k}.*") as $old) @unlink($old);
+    file_put_contents(docdir() . "/r_{$t['id']}_{$x['id']}_{$k}.$ext", $data);
+    $x['docs'] = (array)($x['docs'] ?? []);
+    $x['docs'][$k] = ['name' => txt($file['name'] ?? $k, 120), 'ext' => $ext, 'at' => time()];
+    $x['frei'] = !docsMiss($x);
+}
+/** Noch nicht verfallen (bezahlt, offen oder im Warenkorb; Unterlagen da oder Nachfrist läuft noch) */
 function regAlive($t, $x) {
     if (!empty($x['storno'])) return false;
+    if (!empty($x['docDue']) && time() > $x['docDue'] && docsMiss($x)) return false;
     if (empty($x['oid'])) return true;
     $o = $t['orders'][$x['oid']] ?? null;
     return $o && ostat($o) !== 'storno';
@@ -522,10 +542,29 @@ case 'cron':   // vom Cronjob (über update.php): nach Anmeldeschluss Zahlungser
         $id = substr(basename($f, '.json'), 3);
         $t0 = json_decode((string)@file_get_contents($f), true);
         $base = is_array($t0) ? ($t0['schluss'] ?: $t0['date']) : '';
-        if (!$base || time() <= strtotime($base . ' 23:59:59') || empty($t0['orders'])) continue;
+        if (!$base || time() <= strtotime($base . ' 23:59:59') || (empty($t0['orders']) && empty($t0['regs']))) continue;
         $sent += withTurnier($id, function (&$t) {
             $n = 0; $grace = max(1, (int)($t['grace'] ?? 3));
-            foreach ($t['orders'] as $k => $o) {
+            // Unterlagen (Attest, Haftungsausschluss, Einverständnis) fehlen: Erinnerung mit Nachfrist, danach raus – wie beim Startgeld
+            $by = [];
+            foreach ($t['regs'] as $i => $x) {
+                if (!empty($x['docReminded']) || !regAlive($t, $x) || !docsMiss($x) || !filter_var($x['club'] ?? '', FILTER_VALIDATE_EMAIL)) continue;
+                $by[$x['club']][] = $i;
+            }
+            foreach ($by as $mail => $is) {
+                $due = strtotime(date('Y-m-d', time() + $grace * 86400) . ' 23:59:59'); $lines = [];
+                foreach ($is as $i) {
+                    $x = &$t['regs'][$i]; $x['docDue'] = $due; $x['docReminded'] = time();
+                    $lines[] = "- {$x['vorname']} {$x['name']} (Kategorie {$x['nr']}): fehlt " . implode(', ', array_map(function ($k) { return DOC_KINDS[$k]; }, docsMiss($x)));
+                    unset($x);
+                }
+                wbuMail($mail, "Letzte Erinnerung: Unterlagen bitte innerhalb von $grace Tagen hochladen – {$t['name']}",
+                    "Hallo,\n\nder Anmeldeschluss für {$t['name']} ist vorbei. Für diese Sportler fehlen noch Pflicht-Unterlagen:\n\n" . implode("\n", $lines) .
+                    "\n\nBitte lade sie innerhalb von $grace Tagen hoch – bis spätestens " . date('d.m.Y', $due) . ":\nwww.wbu-boxing.com/anmeldung/ → einloggen → Turnier → „Meine Anmeldungen & Bezahlung“ → Unterlagen.\n" .
+                    "Das sportärztliche Attest muss aus dem Jahr " . substr($t['date'], 0, 4) . " sein.\n\nFehlt danach noch etwas, wird der Sportler komplett aus dem Turnier entfernt.\n\nVielen Dank!");
+                $n++;
+            }
+            foreach (($t['orders'] ?? []) as $k => $o) {
                 $st = ostat($o);
                 if (!empty($o['reminded']) || $st === 'paid' || $st === 'storno') continue;
                 $total = orderTotal($t, $o['id']);
@@ -665,22 +704,17 @@ case 't_register':
         if (count($t['regs']) >= 3000) fail('Teilnehmerzahl erreicht', 403);
         $reg['id'] = bin2hex(random_bytes(6)); $reg['no'] = $t['nextNo']++; $reg['at'] = time(); $reg['paid'] = false;
         // Unterschriebene Erklärungen: Pflicht je nach Alter – erst damit ist der Sportler freigegeben
-        $need = needDocs($t, $reg); $reg['docs'] = [];
-        foreach ($need as $k) {
-            if (empty($files[$k]['data'])) fail('Bitte die unterschriebene ' . DOC_KINDS[$k] . ' hochladen');
-        }
-        foreach ($need as $k) {
-            [$data, $ext] = decodeFile($files[$k]['data'], 8000000);
-            file_put_contents(docdir() . "/r_{$t['id']}_{$reg['id']}_{$k}.$ext", $data);
-            $reg['docs'][$k] = ['name' => txt($files[$k]['name'] ?? $k, 120), 'ext' => $ext];
-        }
+        // Pflicht-Unterlagen: können gleich oder später (unter „Meine Anmeldungen“) hochgeladen werden – wie beim Startgeld
+        $need = needDocs($t, $reg); $reg['docs'] = []; $reg['need'] = $need;
+        if (in_array('attest', $need, true) && !empty($files['attest']['data'])) $reg['attestDate'] = attestOk($t, $files['attest']['datum'] ?? '');
+        foreach ($need as $k) if (!empty($files[$k]['data'])) saveRegDoc($t, $reg, $k, $files[$k]);
         if (!empty($files['foto']['data'])) {      // Foto des Sportlers (freiwillig)
             [$data, $ext] = decodeFile($files['foto']['data'], 6000000);
             if ($ext !== 'jpg' && $ext !== 'png') fail('Das Foto muss ein Bild (JPG/PNG) sein');
             file_put_contents(docdir() . "/r_{$t['id']}_{$reg['id']}_foto.$ext", $data);
             $reg['foto'] = $ext;
         }
-        $reg['need'] = $need; $reg['frei'] = true;
+        $reg['frei'] = !docsMiss($reg);
         // Warenkorb des Vereins für dieses Turnier (ein Zahlungscode für alle Sportler darin)
         if (!empty($t['fee'])) {
             $t['orders'] = $t['orders'] ?? [];
@@ -729,8 +763,28 @@ case 't_my':        // Verein: eigene Anmeldungen, Warenkorb, Zahlungen
         $os = [];
         foreach (($t['orders'] ?? []) as $o) if ($o['club'] === $club['email']) $os[] = orderView($t, $o);
         usort($os, function ($a, $b) { return $b['created'] - $a['created']; });
-        return ['orders' => $os, 'bank' => ['inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic']], 'schluss' => $t['schluss'] ?: $t['date']];
+        $mine = [];
+        foreach ($t['regs'] as $x) if (($x['club'] ?? '') === $club['email'] && regAlive($t, $x))
+            $mine[] = ['id' => $x['id'], 'vorname' => $x['vorname'], 'name' => $x['name'], 'nr' => $x['nr'], 'need' => $x['need'] ?? [], 'docs' => array_keys((array)($x['docs'] ?? [])),
+                       'miss' => docsMiss($x), 'docDue' => $x['docDue'] ?? null, 'attestDate' => $x['attestDate'] ?? null];
+        return ['regs' => $mine, 'year' => substr($t['date'] ?: date('Y-m-d'), 0, 4), 'orders' => $os, 'bank' => ['inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic']], 'schluss' => $t['schluss'] ?: $t['date']];
     });
+    out(['ok' => true] + $r);
+
+case 't_mydoc':     // Verein: fehlende Unterlage eines eigenen Sportlers nachreichen
+    $club = needLogin($in['tok'] ?? '');
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($club, $in) {
+        $k = (string)($in['kind'] ?? '');
+        foreach ($t['regs'] as &$x) if ($x['id'] === ($in['rid'] ?? '') && ($x['club'] ?? '') === $club['email']) {
+            if (!regAlive($t, $x)) fail('Dieser Sportler ist nicht mehr angemeldet (Frist abgelaufen)');
+            if (!in_array($k, (array)($x['need'] ?? []), true)) fail('Diese Unterlage wird für diesen Sportler nicht gebraucht');
+            if (empty($in['data'])) fail('Bitte eine Datei wählen');
+            if ($k === 'attest') $x['attestDate'] = attestOk($t, $in['datum'] ?? '');
+            saveRegDoc($t, $x, $k, ['data' => $in['data'], 'name' => $in['name'] ?? $k]);
+            return ['miss' => docsMiss($x)];
+        }
+        fail('Nicht gefunden', 404);
+    }, true);
     out(['ok' => true] + $r);
 
 case 't_checkout':  // Verein: Anmeldung abschließen -> Summe steht fest, jetzt überweisen
