@@ -37,6 +37,7 @@ input,select,textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px
 .pay{display:grid;grid-template-columns:auto 1fr;gap:6px 14px}.pay span{color:var(--mut)}
 .chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px}.chk input{width:22px;height:22px;flex:none;margin-top:1px}
 .hp{position:absolute;left:-9999px}
+.cnt{background:#111;color:#fff;border-radius:12px;padding:12px 14px;margin:0 0 12px;font-size:17px}.cnt b{color:var(--gold);font-size:22px}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}.tab{padding:9px 14px;border-radius:10px;border:2px solid var(--line);background:var(--card);font-weight:700;cursor:pointer}.tab.on{background:#000;color:#fff;border-color:#000}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}.tile{background:#111;color:#fff;border-radius:12px;padding:10px;text-align:center}.tile b{display:block;font-size:24px;color:var(--gold)}.tile span{font-size:12px}
 .katbtn{display:inline-block;background:#111;color:var(--gold);border-radius:10px;padding:8px 12px;margin:0 6px 6px 0;font-weight:800;cursor:pointer;font-size:14px}
@@ -237,6 +238,7 @@ function vForm(){
   const t=S.t,f=S.f,v=(id,d)=>esc(($(id)&&$(id).value)??d??'');
   return `<a href="#" style="color:#000;font-weight:700" onclick="S.view='list';history.replaceState(null,'','?');loadList();return false">‹ Alle Turniere</a>
   <h1>${esc(t.name)}</h1>
+  <div class="cnt">Aktuell angemeldet: <b>${t.pers??t.anz}</b> Teilnehmer · <b>${t.anz}</b> Starts · <b>${t.clubs??'–'}</b> Clubs</div>
   <div class="tabs">${[['anm','Anmeldung'],['tn','Teilnehmer'],['kat','Kategorien'],['clubs','Clubs & Trainer']].map(([k,n])=>`<div class="tab ${S.tab===k?'on':''}" onclick="setTab('${k}')">${n}</div>`).join('')}</div>
   ${S.tab==='anm'?`  <div class="card"><div class="pay">
     <span>Datum</span><b>${esc(deDate(t.date))}</b><span>Ort</span><b>${esc(t.ort||'–')}</b>
@@ -270,7 +272,8 @@ function vForm(){
     <button class="btn full" id="sendbtn" onclick="send()">Verbindlich anmelden</button></div>`}`;
 }
 // ===================== Teilnehmer / Kategorien / Clubs (nur mit Login) =====================
-async function setTab(k){S.tab=k;render();if(k!=='anm'&&!S.pub){try{S.pub=await api('t_public',{tid:S.t.id})}catch(e){S.pubErr=e.message}render()}}
+async function refreshCount(){try{const t=(await api('t_get',{tid:S.t.id})).turnier;S.t.anz=t.anz;S.t.pers=t.pers;S.t.clubs=t.clubs}catch(e){}}
+async function setTab(k){S.tab=k;render();await refreshCount();if(k!=='anm'&&!S.pub){try{S.pub=await api('t_public',{tid:S.t.id})}catch(e){S.pubErr=e.message}render()}}
 const ringOf=x=>(S.t.rings||1)>1?((x.sp==='MB'||x.sp==='SB')?'Arena 1 / Ring 1':'Arena 2 / Ring 2'):'';
 function gewOf(x){const k=wbuKlasse(x.nr);return k&&k.gew?k.gew+' kg':'–'}
 function stats(rs){const p={};rs.forEach(x=>p[x.pid]=x);const ps=Object.values(p);
@@ -362,7 +365,7 @@ function render(keepInputs){
   const h=S.view==='login'?vLogin():S.view==='form'?vForm():S.view==='ok'?vOk():vList();
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('14')||0;
+const WEB_VERSION=Number('15')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';

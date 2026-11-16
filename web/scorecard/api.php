@@ -107,10 +107,14 @@ function withTurnier($id, $fn, $write = false) {
 function tKeyOk($t, $key) { return is_string($key) && $key !== '' && hash_equals($t['key'], $key); }
 // Öffentliche Angaben (ohne Schlüssel und ohne Anmeldedaten)
 function tPublic($t) {
-    $cnt = 0; foreach ($t['regs'] as $r) if (empty($r['storno'])) $cnt++;
+    $cnt = 0; $pers = []; $clubs = [];
+    foreach ($t['regs'] as $r) if (empty($r['storno'])) {
+        $cnt++; $pers[mb_strtolower($r['vorname'] . '|' . $r['name'] . '|' . $r['geb'])] = 1;
+        if (trim($r['verein']) !== '') $clubs[mb_strtolower(trim($r['verein']))] = 1;
+    }
     return ['id' => $t['id'], 'name' => $t['name'], 'ort' => $t['ort'], 'date' => $t['date'], 'promoter' => $t['promoter'],
             'schluss' => $t['schluss'], 'fee' => $t['fee'], 'inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic'],
-            'info' => $t['info'], 'sports' => $t['sports'], 'open' => $t['open'], 'anz' => $cnt, 'docs' => $t['docs'] ?? new stdClass(),
+            'info' => $t['info'], 'sports' => $t['sports'], 'open' => $t['open'], 'anz' => $cnt, 'pers' => count($pers), 'clubs' => count($clubs), 'docs' => $t['docs'] ?? new stdClass(),
             'feeMore' => $t['feeMore'] ?? 0, 'attest' => !empty($t['attest']), 'rings' => $t['rings'] ?? 1, 'locked' => !empty($t['listpw'])];
 }
 function tMeta(&$t, $m) {
