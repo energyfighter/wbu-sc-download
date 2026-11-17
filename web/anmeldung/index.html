@@ -1512,7 +1512,24 @@ function vLogin(){if(S.lmode==='forgot')return vForgot();const reg=S.lmode==='re
   ${reg?'<label>Passwort wiederholen</label><input id="l_pw2" type="password" autocomplete="new-password">':''}
   <p id="lerr" class="err">${esc(S.err||'')}</p>
   <button class="btn full" onclick="doLogin()">${reg?'Konto anlegen':'Einloggen'}</button>
-  <p class="muted" style="margin-bottom:0">${reg?'Das Konto gilt für alle WBU-Turniere. Mit E-Mail und Passwort kannst du dich jederzeit wieder einloggen.':`<a href="#" style="color:#000;font-weight:700" onclick="S.lmode='forgot';S.fstep=1;render();return false">Passwort vergessen?</a>`}</p></div>`}
+  <p class="muted" style="margin-bottom:0">${reg?'Das Konto gilt für alle WBU-Turniere. Mit E-Mail und Passwort kannst du dich jederzeit wieder einloggen.':`<a href="#" style="color:#000;font-weight:700" onclick="S.lmode='forgot';S.fstep=1;render();return false">Passwort vergessen?</a>`}</p></div>${praesBox()}`}
+// ---- Präsentation „Was ist WBU Sports?“ zum Durchklicken (Folien als Bilder) ----
+const PRAES_N=31,praesSrc=i=>`../veranstalter/docs/praes-${String(i).padStart(2,'0')}.jpg`;
+function praesBox(){const i=S.ps||0;
+  return `<div class="card praes" style="width:min(1180px,96vw);position:relative;left:50%;transform:translateX(-50%);margin-top:22px">
+   <h2 style="margin:0 0 4px">Was ist WBU Sports?</h2><p class="muted" style="margin:0 0 12px">Das System für Turniere und Profi-Galas – Seite für Seite durchklicken: mit den Pfeilen, per Wischen am Handy oder mit den Pfeiltasten.</p>
+   <div style="position:relative;background:#15171c;border-radius:12px;overflow:hidden" id="ps_box">
+    <img id="ps_img" src="${praesSrc(i)}" alt="Präsentation Seite ${i+1}" style="display:block;width:100%;aspect-ratio:16/9;object-fit:contain">
+    <button onclick="praesGo(-1)" aria-label="Zurück" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:54px;height:54px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:30px;cursor:pointer;${i?'':'opacity:.25'}">‹</button>
+    <button onclick="praesGo(1)" aria-label="Weiter" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:54px;height:54px;border-radius:50%;border:0;background:#d0021b;color:#fff;font-size:30px;cursor:pointer;${i<PRAES_N-1?'':'opacity:.25'}">›</button></div>
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap">
+    <b>Seite ${i+1} von ${PRAES_N}</b>
+    <div style="display:flex;gap:4px;flex-wrap:wrap">${Array.from({length:PRAES_N},(_,k)=>`<span onclick="S.ps=${k};render()" style="width:12px;height:12px;border-radius:50%;cursor:pointer;background:${k===i?'#d0021b':'#c3c7cf'}"></span>`).join('')}</div>
+    <a href="../veranstalter/docs/WBU-Sports-Praesentation.pdf" target="_blank" style="color:#000;font-weight:700">📄 Als PDF herunterladen</a></div></div>`}
+function praesGo(d){S.ps=Math.max(0,Math.min(PRAES_N-1,(S.ps||0)+d));render();const n=S.ps+d;if(n>=0&&n<PRAES_N)new Image().src=praesSrc(n)}
+document.addEventListener('keydown',e=>{if(S.view!=='login'||/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||''))return;if(e.key==='ArrowRight')praesGo(1);if(e.key==='ArrowLeft')praesGo(-1)});
+{let x0=null;document.addEventListener('touchstart',e=>{if(e.target.closest&&e.target.closest('#ps_box'))x0=e.touches[0].clientX},{passive:true});
+ document.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)praesGo(dx<0?1:-1)})}
 async function doLogin(){const g=id=>($(id)?.value||'').trim(),err=m=>{$('lerr').textContent=m};
   try{let j;
     if(S.lmode==='reg'){if(!S.rolle)return err('Bitte auswählen, wer du bist.');if(g('l_pw')!==g('l_pw2'))return err('Die Passwörter sind nicht gleich.');
@@ -1798,7 +1815,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('63')||0;
+const WEB_VERSION=Number('64')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
