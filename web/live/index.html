@@ -238,7 +238,7 @@ function startPlatz(){const rg=+(Q.get('ring')||1),KEY=Q.get('platz');let sn=nul
       Object.keys(pend).forEach(m=>{const r=(sn&&sn.rows||[]).find(x=>x.mid===m);if(!r||r.done)delete pend[m]});
       const L=rows(),f=st&&L.find(r=>r.mid===st.mid),o=L.find(r=>!r.done&&r.ready!==false);
       if(sn&&(!st||!f||f.done)&&o&&(!st||st.mid!==o.mid))await put(fresh(o))}catch(e){}busy=false;draw()}
-  window.pzDo=act=>{if(!st)return;const n=now();let s=st;if(act==='start')s=clkStart(st,n);else if(act==='stop')s=clkStop(st,n);else if(act==='reset')s=clkResetRound(st,n);else if(act==='next')s=clkNextRound(st,n);else if(act.startsWith('med'))s=clkMed(st,n,act.slice(3));if(!mute)clkAudio();put(s)};
+  window.pzDo=act=>{if(!st)return;if(act==='start'&&!(sn&&sn.arzt)){alert('Start nicht möglich: In der Leitstelle (WBU Sports, Leitstand) ist noch kein Ringarzt eingetragen.');return}const n=now();let s=st;if(act==='start')s=clkStart(st,n);else if(act==='stop')s=clkStop(st,n);else if(act==='reset')s=clkResetRound(st,n);else if(act==='next')s=clkNextRound(st,n);else if(act.startsWith('med'))s=clkMed(st,n,act.slice(3));if(!mute)clkAudio();put(s)};
   window.pzPick=mid=>{const f=rows().find(r=>r.mid===mid);if(f)put(fresh(f))};
   window.pzMute=()=>{mute=!mute;localStorage.setItem('wbuMute',mute?'1':'0');if(!mute)clkAudio();draw()};
   window.pzRes=(mid,w,k)=>{const f=rows().find(r=>r.mid===mid);if(!f)return;$('pzd').innerHTML=`<div class="dlgb"><div class="dlg"><h2 style="margin-top:0">Ergebnis Kampf ${f.no}</h2>

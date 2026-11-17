@@ -288,7 +288,7 @@ function vStart(){
     <div id="supf" style="display:${S.role==='judge'?'none':'block'}">${(()=>{const e=get('wbuEvent',{});return `<label>Promoter <span class="muted">(nur Supervisor)</span></label><input id="evn" value="${esc(e.name||'')}" placeholder="Name des Promoters (gern auch Veranstaltung)">
     <label>Ort <span class="muted">(nur Supervisor)</span></label><input id="evo" name="veranstaltungsort" autocomplete="address-level2" value="${esc(e.ort||'')}" placeholder="z. B. Hamburg">
     <label>Datum <span class="muted">(nur Supervisor)</span></label><input id="evd" type="date" value="${toIso(e.date||today())}">
-    <label>Ringarzt <span class="muted">(nur Supervisor – gilt für alle Kämpfe)</span></label><input id="eva" autocomplete="off" value="${esc(e.arzt||'')}" placeholder="Name des Ringarztes">
+    <label>Ringarzt <span class="muted">(Pflicht für Supervisor – gilt für alle Kämpfe)</span></label><input id="eva" autocomplete="off" value="${esc(e.arzt||'')}" placeholder="Name des Ringarztes">
     <label>Turnier / Gala aus WBU Sports <span class="muted">(optional – Kämpfe und Namen werden übernommen${NATIVE?', Internet nötig':''})</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– ohne WBU Sports –</option></select>
     ${NATIVE?`<div id="npw" style="display:${S.lid?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
     ${WEB?`<label>WBU-Supervisor-Passwort <span class="muted">(nur Supervisor)</span></label><input type="text" name="username" autocomplete="username" value="WBU-Supervisor" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><input id="evpw" name="password" type="password" autocomplete="current-password" placeholder="Passwort">
@@ -385,6 +385,7 @@ function doLogin(){
   if(S.role==='sup'){const en=$('evn').value.trim(),eo=$('evo').value.trim();
     const ed=fromIso($('evd').value);
     if(!en||!eo||!ed){$('err').textContent='Bitte Promoter, Ort und Datum eintragen.';return}
+    if($('eva')&&$('eva').value.trim().length<3){$('err').textContent='Bitte den Namen des Ringarztes eintragen – ohne Ringarzt kann die Veranstaltung nicht starten.';return}
     const e=get('wbuEvent',{});set('wbuEvent',{...e,name:en,ort:eo,date:ed,arzt:($('eva')?$('eva').value.trim():e.arzt||'')})}
   S.name=n;
   if(WEB){webLogin(n);return}
@@ -760,7 +761,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('59')||0;
+const WEB_VERSION=Number('60')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
