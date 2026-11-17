@@ -1409,7 +1409,7 @@ function akkHTML(d){const einzel=d.mode!=='a4';const dat=d.date?new Date(d.date+
     <div class="ph" style="${p.img?kopfStyle(p.img,p.kopf):''}">${p.img?'':'Foto'}</div>
     <div class="ro" style="background:${R[1]}">${R[0]}</div>
     <div class="nm">${akkEsc(p.name)}</div><div class="vr">${akkEsc(p.verein||'')}</div>${p.klasse?`<div class="kl">${akkEsc(p.klasse)}</div>`:''}
-    <div class="qr">${akkQr(d.checkUrl+p.code)}</div>
+    <div class="bt"><div class="lo">${d.kcw&&typeof urkKcw==='function'?urkKcw():''}${(d.logos||[]).map(l=>`<img src="${l}">`).join('')}</div><div class="qr">${akkQr(d.checkUrl+p.code)}</div></div>
     <div class="ft" style="background:${R[1]}">AKKREDITIERUNG<br>FREIER EINTRITT</div></div>`};
   const pages=[];const per=einzel?1:9;for(let i=0;i<d.list.length;i+=per)pages.push(d.list.slice(i,i+per));
   return `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Akkreditierung – ${akkEsc(d.name)}</title><style>
@@ -1420,10 +1420,11 @@ ${einzel?`.pg{width:54mm;height:85.6mm;padding:0;display:block;margin:0 auto 6mm
 .c{position:relative;width:54mm;height:85.6mm;border:.2mm dashed #999;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;background:#fff}
 .fl{display:flex;flex-direction:column;height:1.8mm;width:100%;flex:none}.fl i{flex:1}.fl i:nth-child(1){background:#000}.fl i:nth-child(2){background:#d00}.fl i:nth-child(3){background:#f2c200}
 .hd{display:flex;align-items:center;gap:1.5mm;padding:1.2mm 2mm 0;width:100%;text-align:left}.hd img{width:8mm;height:8mm;flex:none}.hd>div{min-width:0}.hd b{display:block;font-size:2.1mm;line-height:1.15;max-height:4.9mm;overflow:hidden}.hd span{display:block;font-size:1.9mm;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ph{width:26mm;height:32.5mm;border-radius:1.5mm;border:.4mm solid #000;flex:none;margin-top:1.6mm;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:2.5mm;color:#666}
-.ro{color:#fff;font-weight:900;font-size:2.9mm;letter-spacing:.35mm;padding:.5mm 2.5mm;border-radius:1mm;margin-top:1.4mm}
-.nm{font-weight:900;font-size:3.5mm;line-height:1.08;margin:1mm 2mm 0;max-height:7.6mm;overflow:hidden}.vr{font-size:2.3mm;font-weight:700;margin:.5mm 2mm 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50mm}.kl{font-size:1.9mm;margin:.3mm 2mm 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50mm}
-.qr{width:12mm;height:12mm;flex:none;margin-top:auto}.qr svg{width:100%;height:100%;display:block}
+.ph{width:30mm;height:37.5mm;border-radius:1.5mm;border:.4mm solid #000;flex:none;margin-top:1.6mm;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:2.5mm;color:#666}
+.ro{color:#fff;font-weight:900;font-size:3.2mm;letter-spacing:.4mm;padding:.5mm 3mm;border-radius:1mm;margin-top:1.3mm}
+.nm{font-weight:900;font-size:4.5mm;line-height:1.05;margin:.9mm 2mm 0;max-height:9.5mm;overflow:hidden}.vr{font-size:2.7mm;font-weight:700;margin:.5mm 2mm 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50mm}.kl{font-size:1.9mm;margin:.3mm 2mm 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50mm}
+.bt{margin-top:auto;width:100%;display:flex;align-items:flex-end;justify-content:space-between;padding:0 2.2mm;gap:2mm}.lo{flex:1;min-width:0;display:flex;align-items:center;gap:1.5mm;height:12mm}.lo svg,.lo img{height:11mm;width:auto;max-width:16mm;object-fit:contain;display:block}.lo svg{width:11mm}
+.qr{width:12mm;height:12mm;flex:none}.qr svg{width:100%;height:100%;display:block}
 .ft{color:#fff;font-weight:800;font-size:1.9mm;letter-spacing:.25mm;line-height:1.25;padding:.7mm 0;width:100%;flex:none;margin-top:.8mm}
 </style></head><body>${pages.map(p=>`<section class="pg">${p.map(card).join('')}</section>`).join('')}</body></html>`}
 
