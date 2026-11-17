@@ -1,14 +1,14 @@
 {
-  "version": 66,
+  "version": 67,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "scorecard/api.php": "a3185b18aaec94b7ed7781e4ee952a571a8a900a433b1754a570889cdbc76c66",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "df693fa54a487c2d925a38f40bb888480d78a03206d38c54e854ccb6e400d324",
+    "scorecard/index.html": "7e848c0ffb397632efcea0541e9bda4c7f30c24c868bacd0ca4aef0f7798267d",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "462dd27277cb117a1de8fb7fbcdbae89c34e2224defacca74390071ceeed42d9",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "02fbfb39868de1272f56fc5c5d269345dd50f3a16eb26219f50bebff4f299021",
+    "veranstalter/index.html": "182d31fff23062e64352dbf8f0a5573161cd22f9f70e6dc9c4808bacfbf92214",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
     "veranstalter/docs/Ablaufplan-WBU-2027.pdf": "6c3b939cdb704f45dd8a46dbd4df184ff6322595180b8d2dbf6418a2fe888ba3",
@@ -49,7 +49,7 @@
     "veranstalter/docs/praes-30.jpg": "93a5fd26c6de3b009a82c935ab0fbd39321ddb274e6996c6d576b36296e7997c",
     "veranstalter/docs/praes-31.jpg": "917d32edf92b941d61ef6ebd0465510af6758505386c284a78bfa0a5944f1052",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "acb8f8b60d4e2384015215f98291322dbc6a59627cf81896519706f6b1d0a4cb",
+    "anmeldung/index.html": "79906b1e51be9e382033105117a9e07024e7070fe4b8a97088f77666fd33dca3",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "live/index.html": "aed7b3dd25a7d8fbf82ddb552b6734e26ef5b0fcf6045a73fa6ab34f10d4eb2b"
   }
