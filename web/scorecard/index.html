@@ -285,6 +285,7 @@ function vStart(){
     </div>
     <label>Vor- und Nachname (Pflicht)</label>
     <input id="nm" value="${esc(S.name)}" placeholder="z. B. Max Mustermann" autocomplete="name">
+    ${WEB?`<div id="jpf" style="display:${S.role==='judge'?'block':'none'}"><label>PIN vom Supervisor</label><input id="jpin" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="4 Ziffern" style="font-size:24px;letter-spacing:6px;text-align:center"></div>`:''}
     <div id="supf" style="display:${S.role==='judge'?'none':'block'}">${(()=>{const e=get('wbuEvent',{});return `<label>Promoter <span class="muted">(nur Supervisor)</span></label><input id="evn" value="${esc(e.name||'')}" placeholder="Name des Promoters (gern auch Veranstaltung)">
     <label>Ort <span class="muted">(nur Supervisor)</span></label><input id="evo" name="veranstaltungsort" autocomplete="address-level2" value="${esc(e.ort||'')}" placeholder="z. B. Hamburg">
     <label>Datum <span class="muted">(nur Supervisor)</span></label><input id="evd" type="date" value="${toIso(e.date||today())}">
@@ -292,13 +293,13 @@ function vStart(){
     <label>Turnier / Gala aus WBU Sports <span class="muted">(optional – Kämpfe und Namen werden übernommen${NATIVE?', Internet nötig':''})</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– ohne WBU Sports –</option></select>
     ${NATIVE?`<div id="npw" style="display:${S.lid?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
     ${WEB?`<label>WBU-Supervisor-Passwort <span class="muted">(nur Supervisor)</span></label><input type="text" name="username" autocomplete="username" value="WBU-Supervisor" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><input id="evpw" name="password" type="password" autocomplete="current-password" placeholder="Passwort">
-    <label>PIN für die Punktrichter <span class="muted">(optional, 4 Ziffern)</span></label><input id="evp" inputmode="numeric" maxlength="8" value="${esc(e.pin||'')}" placeholder="z. B. 2468">`:''}`})()}</div>
+    <label>PIN für die Punktrichter <span class="muted">(Pflicht, 4 Ziffern – die Punktrichter kommen nur damit rein)</span></label><input id="evp" inputmode="numeric" maxlength="8" value="${esc(e.pin||'')}" placeholder="z. B. 2468">`:''}`})()}</div>
     <button class="btn" onclick="doLogin()">Los geht's</button>
     <div id="err" class="note warn"></div>
   </div>
   <div class="card" style="font-size:14px;line-height:1.5">
     <b>So geht's</b>
-    <p style="margin:8px 0 4px"><b style="color:var(--gold)">Punktrichter:</b> Mit Vor- und Nachnamen anmelden. ${WEB?'Danach die Veranstaltung antippen (ggf. PIN vom Supervisor eingeben) – die Wertungen gehen über das Internet zum Supervisor.':'Bluetooth einschalten – die App verbindet sich automatisch mit dem Supervisor.'} Jede Runde werten und je nach Ansage des Supervisors <i>Runde senden</i> oder am Ende <i>Kampf abschließen</i>. Runden lassen sich jederzeit antippen und korrigieren.</p>
+    <p style="margin:8px 0 4px"><b style="color:var(--gold)">Punktrichter:</b> Mit Vor- und Nachnamen anmelden. ${WEB?'Dazu die PIN vom Supervisor eintippen – dann geht es direkt zur Scorecard. Die Wertungen gehen über das Internet zum Supervisor.':'Bluetooth einschalten – die App verbindet sich automatisch mit dem Supervisor.'} Jede Runde werten und je nach Ansage des Supervisors <i>Runde senden</i> oder am Ende <i>Kampf abschließen</i>. Runden lassen sich jederzeit antippen und korrigieren.</p>
     <p style="margin:4px 0 0"><b style="color:var(--gold)">Supervisor:</b> Mit Namen, Promoter, Ort und Datum anmelden. Beim Kampf Ringrichter und Zeitnehmer eintragen, die Wertungen kommen automatisch an. Ergebnis festlegen und bestätigen – am Ende <i>Veranstaltung abschließen &amp; PDF erstellen</i>.</p>
   </div>
   ${NATIVE?`<div class="note">WBU-SC Version ${esc(WBU.appVersion())}</div>`:''}`;
@@ -358,11 +359,13 @@ async function nativeLive(){if(!S.nlid)return;
 function showJCur(){const c=S.jcur||{},has=c.red||c.blue;const l=$('jcur');if(!l)return;
   l.style.display=has||c.kl?'block':'none';l.innerHTML=`${c.no?`<b>Kampf ${c.no}</b> · `:''}${esc(c.kl||'')}`;
   if($('jred'))$('jred').textContent=c.red||'Rote Ecke';if($('jblue'))$('jblue').textContent=c.blue||'Blaue Ecke'}
-function pickRole(r){S.role=r;document.querySelectorAll('.role .chip').forEach((c,i)=>c.classList.toggle('on',(i===0&&r==='judge')||(i===1&&r==='sup')));$('supf').style.display=r==='judge'?'none':'block';$('err').textContent=''}
+function pickRole(r){S.role=r;document.querySelectorAll('.role .chip').forEach((c,i)=>c.classList.toggle('on',(i===0&&r==='judge')||(i===1&&r==='sup')));$('supf').style.display=r==='judge'?'none':'block';if($('jpf'))$('jpf').style.display=r==='judge'?'block':'none';$('err').textContent=''}
 async function webLogin(n){
-  if(S.role==='judge'){S.view='pick';render();return}
+  if(S.role==='judge'){const pin=($('jpin')?$('jpin').value:'').replace(/\D/g,'');if(pin.length<4){$('err').textContent='Bitte die PIN vom Supervisor eingeben (4 Ziffern).';return}
+    try{const j=await api('join',{pin});await joinEvent({id:j.id,name:j.name},pin)}catch(err){$('err').textContent=err.message}return}
   const e=get('wbuEvent',{}),pin=($('evp')?$('evp').value:'').replace(/\D/g,'');
   const pass=$('evpw')?$('evpw').value.trim():'';
+  if(pin.length<4){$('err').textContent='Bitte eine PIN mit 4 Ziffern für die Punktrichter festlegen.';return}
   if(!pass){$('err').textContent='Bitte das WBU-Supervisor-Passwort eingeben.';return}
   // Passwort immer auf dem Server prüfen – auch wenn die Veranstaltung schon existiert
   try{await api('auth',{pass})}
@@ -761,7 +764,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('60')||0;
+const WEB_VERSION=Number('61')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

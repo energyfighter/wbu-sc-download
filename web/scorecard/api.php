@@ -475,6 +475,15 @@ case 'events':
     usort($list, function ($x, $y) { return $y['created'] - $x['created']; });
     out(['ok' => true, 'events' => $list]);
 
+case 'join':     // Punktrichter: nur mit der PIN vom Supervisor – kommt direkt in die richtige Veranstaltung (keine Liste)
+    $pin = preg_replace('/\D/', '', (string)($in['pin'] ?? ''));
+    if (strlen($pin) < 4) fail('Bitte die PIN vom Supervisor eingeben (4 Ziffern)');
+    $best = null;
+    foreach (glob("$DIR/ev_*.json") as $f) { $o = json_decode((string)@file_get_contents($f), true);
+        if (is_array($o) && time() - ($o['created'] ?? 0) <= 48 * 3600 && ($o['pin'] ?? '') === $pin && (!$best || $o['created'] > $best['created'])) $best = $o; }
+    if (!$best) fail('Keine Veranstaltung mit dieser PIN gefunden – bitte die PIN beim Supervisor erfragen');
+    out(['ok' => true, 'id' => $best['id'], 'name' => $best['name'], 'ort' => $best['ort'], 'date' => $best['date']]);
+
 case 'auth':
     // Passwort prüfen, wenn eine bestehende Veranstaltung weitergeführt wird
     if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches Supervisor-Passwort', 403);
@@ -485,6 +494,9 @@ case 'create':
     $id = bin2hex(random_bytes(8));
     $key = bin2hex(random_bytes(12));
     $pin = preg_replace('/\D/', '', (string)($in['pin'] ?? ''));
+    if (strlen($pin) < 4) fail('Bitte eine PIN mit 4 Ziffern für die Punktrichter festlegen');
+    foreach (glob("$DIR/ev_*.json") as $f) { $o = json_decode((string)@file_get_contents($f), true);   // PIN darf gerade nicht doppelt vergeben sein
+        if (is_array($o) && time() - ($o['created'] ?? 0) <= 48 * 3600 && ($o['pin'] ?? '') === mb_substr($pin, 0, 8)) fail('Diese PIN ist gerade schon bei einer anderen Veranstaltung vergeben – bitte eine andere PIN wählen'); }
     $ev = ['id' => $id, 'key' => $key, 'name' => txt($in['name'] ?? ''), 'ort' => txt($in['ort'] ?? ''),
            'date' => txt($in['date'] ?? '', 20), 'sup' => txt($in['sup'] ?? ''), 'pin' => mb_substr($pin, 0, 8),
            'created' => time(), 'cards' => new stdClass(), 'msgs' => [], 'seen' => new stdClass(),
