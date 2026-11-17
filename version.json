@@ -1,6 +1,6 @@
 {
-  "versionCode": 85,
-  "versionName": "1.85",
+  "versionCode": 87,
+  "versionName": "1.87",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Gala: Land, Alter und Gewicht der Kämpfer kommen aus WBU Sports und stehen im Ergebnis und im PDF."
+  "notes": "Neu: Supervisor kann sich per Bluetooth mit dem Tablet (WBU Sports) verbinden – ohne Internet."
 }
