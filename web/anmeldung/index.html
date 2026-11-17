@@ -1665,15 +1665,16 @@ function vMy(){
       :`<p style="margin:10px 0 0">📄 <b>Rechnung:</b> wird automatisch am <b>${new Date(M.rechnungAb*1000).toLocaleDateString('de-DE')}</b> erstellt (Tag nach der Veranstaltung) und kann dann hier heruntergeladen werden.</p>`):''}</div>`).join('')}`}
 // ---- Trainer & Betreuer (Akkreditierung, frei) ----
 const staffFoto=x=>`${API}?a=t_staffdoc&tid=${encodeURIComponent(S.t.id)}&sid=${x.id}&tok=${encodeURIComponent(AUTH.tok)}`;
-function staffCard(M){const L=M.staff||[],max=M.staffMax||0;
+function staffCard(M){const L=M.staff||[],mx=M.staffMax||{trainer:0,betreuer:0},cnt=r=>L.filter(x=>x.rolle===r).length,frei={trainer:mx.trainer-cnt('trainer'),betreuer:mx.betreuer-cnt('betreuer')};
+  const opts=['trainer','betreuer'].filter(r=>frei[r]>0);
   return `<div class="card"><h2 style="margin-top:0">🪪 Trainer &amp; Betreuer (Akkreditierung)</h2>
-   <p style="margin:0 0 8px">Pro angefangene 5 Sportler sind <b>2 Trainer/Betreuer</b> frei, höchstens <b>4 pro Team</b>. Jeder bekommt eine Akkreditierungskarte (freier Eintritt). Nicht angemeldete Betreuer zahlen Eintritt. Foto freiwillig – ohne Foto bleibt das Bildfeld auf der Karte leer.</p>
-   <p style="margin:0 0 8px"><b>Frei für euer Team: ${max}</b> · angemeldet: <b>${L.length}</b></p>
+   <p style="margin:0 0 8px">Laut Ausschreibung frei: <b>1 Trainer</b> und <b>2 Betreuer pro angefangene 5 Sportler, höchstens 4 Betreuer</b> pro Team – auch für Einzelsportler. Jeder bekommt eine Akkreditierungskarte (freier Eintritt). Nicht angemeldete Betreuer zahlen Eintritt. Foto freiwillig – ohne Foto bleibt das Bildfeld auf der Karte leer.</p>
+   <p style="margin:0 0 8px">Trainer: <b>${cnt('trainer')} von ${mx.trainer}</b> · Betreuer: <b>${cnt('betreuer')} von ${mx.betreuer}</b></p>
    ${L.length?`<table class="l">${L.map(x=>`<tr><td style="width:40px">${x.foto?`<div style="width:36px;height:45px;border-radius:5px;${kopfStyle(staffFoto(x),x.kopf)}"></div>`:'<div class="nofoto" style="width:36px;height:45px">–</div>'}</td><td><b>${esc(x.name)}</b><div class="muted">${x.rolle==='trainer'?'Trainer':'Betreuer'}</div></td><td style="text-align:right"><a href="#" style="color:var(--red);font-weight:700" onclick="staffDel('${x.id}');return false">entfernen</a></td></tr>`).join('')}</table>`:''}
-   ${L.length<max?`<div class="g2" style="margin-top:10px"><div><label>Vor- und Nachname</label><input id="st_name" placeholder="z. B. Peter Muster"></div><div><label>Rolle</label><select id="st_rolle"><option value="trainer">Trainer</option><option value="betreuer" selected>Betreuer</option></select></div></div>
+   ${opts.length?`<div class="g2" style="margin-top:10px"><div><label>Vor- und Nachname</label><input id="st_name" placeholder="z. B. Peter Muster"></div><div><label>Rolle</label><select id="st_rolle">${opts.map(r=>`<option value="${r}">${r==='trainer'?'Trainer':'Betreuer'} (noch ${frei[r]} frei)</option>`).join('')}</select></div></div>
      <label>Foto (freiwillig)</label><div class="upl"><input type="file" accept="image/*" onchange="staffPick(this)"><span id="st_fs" class="muted"></span></div>
      <button class="btn" style="margin-top:10px" onclick="staffAdd()">+ Hinzufügen</button><span id="st_err" style="color:var(--red);font-weight:700;margin-left:10px"></span>`
-     :max?'<p class="muted" style="margin:6px 0 0">Alle freien Plätze sind belegt.</p>':'<p class="muted" style="margin:6px 0 0">Erst Sportler anmelden – dann können Trainer und Betreuer eingetragen werden.</p>'}</div>`}
+     :mx.trainer?'<p class="muted" style="margin:6px 0 0">Alle freien Plätze sind belegt.</p>':'<p class="muted" style="margin:6px 0 0">Erst Sportler anmelden – dann können Trainer und Betreuer eingetragen werden.</p>'}</div>`}
 let STF=null;
 async function staffPick(inp){const f=inp.files[0];if(!f)return;$('st_fs').textContent='Wird vorbereitet …';try{const data=await fileData(f);STF={data,kopf:null};$('st_fs').textContent='✅ '+f.name;
   kopfDlg(data,null,k=>{STF.kopf=k;$('st_fs').innerHTML=`<span style="display:inline-block;width:28px;height:35px;border-radius:4px;vertical-align:middle;${kopfStyle(data,k)}"></span> ✅ Kopf ausgewählt`})}catch(e){STF=null;$('st_fs').textContent='⚠ '+e.message}}
@@ -1795,7 +1796,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('58')||0;
+const WEB_VERSION=Number('59')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';

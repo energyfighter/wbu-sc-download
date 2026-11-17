@@ -288,6 +288,7 @@ function vStart(){
     <div id="supf" style="display:${S.role==='judge'?'none':'block'}">${(()=>{const e=get('wbuEvent',{});return `<label>Promoter <span class="muted">(nur Supervisor)</span></label><input id="evn" value="${esc(e.name||'')}" placeholder="Name des Promoters (gern auch Veranstaltung)">
     <label>Ort <span class="muted">(nur Supervisor)</span></label><input id="evo" name="veranstaltungsort" autocomplete="address-level2" value="${esc(e.ort||'')}" placeholder="z. B. Hamburg">
     <label>Datum <span class="muted">(nur Supervisor)</span></label><input id="evd" type="date" value="${toIso(e.date||today())}">
+    <label>Ringarzt <span class="muted">(nur Supervisor – gilt für alle Kämpfe)</span></label><input id="eva" autocomplete="off" value="${esc(e.arzt||'')}" placeholder="Name des Ringarztes">
     <label>Turnier / Gala aus WBU Sports <span class="muted">(optional – Kämpfe und Namen werden übernommen${NATIVE?', Internet nötig':''})</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– ohne WBU Sports –</option></select>
     ${NATIVE?`<div id="npw" style="display:${S.lid?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
     ${WEB?`<label>WBU-Supervisor-Passwort <span class="muted">(nur Supervisor)</span></label><input type="text" name="username" autocomplete="username" value="WBU-Supervisor" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><input id="evpw" name="password" type="password" autocomplete="current-password" placeholder="Passwort">
@@ -313,7 +314,7 @@ async function loadLives(){const sel=$('evl');if(!sel)return;
   try{LIVES=(await lapi('l_list')).live||[];
     sel.innerHTML='<option value="">– ohne WBU Sports –</option>'+LIVES.map(l=>`<option value="${l.id}" ${S.lid===l.id?'selected':''}>${esc(l.name)} · ${esc(l.ort||'')} · ${esc(fromIso(l.date)||l.date||'')}</option>`).join('')}catch(e){}}
 function pickLive(id){S.lid=id||'';if($('npw'))$('npw').style.display=S.lid?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l)return;
-  if($('evn'))$('evn').value=l.name;if($('evo'))$('evo').value=l.ort||'';if($('evd')&&l.date)$('evd').value=l.date}
+  if($('evn'))$('evn').value=l.name;if($('evo'))$('evo').value=l.ort||'';if($('eva')&&l.arzt&&!$('eva').value)$('eva').value=l.arzt;if($('evd')&&l.date)$('evd').value=l.date}
 function myRing(){return +get('wbuRing',1)}
 function liveRows(){const r=(S.live&&S.live.rows)||[];return (S.live&&S.live.rings||1)>1?r.filter(x=>(x.ring||1)===myRing()):r}
 // welcher WBU-Sports-Kampf gehört zu Scorecard-Kampf no? (automatisch der nächste offene)
@@ -384,7 +385,7 @@ function doLogin(){
   if(S.role==='sup'){const en=$('evn').value.trim(),eo=$('evo').value.trim();
     const ed=fromIso($('evd').value);
     if(!en||!eo||!ed){$('err').textContent='Bitte Promoter, Ort und Datum eintragen.';return}
-    const e=get('wbuEvent',{});set('wbuEvent',{...e,name:en,ort:eo,date:ed})}
+    const e=get('wbuEvent',{});set('wbuEvent',{...e,name:en,ort:eo,date:ed,arzt:($('eva')?$('eva').value.trim():e.arzt||'')})}
   S.name=n;
   if(WEB){webLogin(n);return}
   if(NATIVE&&S.role==='sup'&&S.lid&&!S.nlidOk){const pw=$('evpwn')?$('evpwn').value.trim():'';
@@ -540,10 +541,11 @@ function editEvent(){const e=get('wbuEvent',{});
   sheet(`<h2>Promoter, Ort, Datum</h2>
   <label>Promoter</label><input id="xe1" value="${esc(e.name||'')}">
   <label>Ort</label><input id="xe2" value="${esc(e.ort||'')}">
+  <label>Ringarzt</label><input id="xe4" value="${esc(e.arzt||'')}">
   <label>Datum</label><input id="xe3" type="date" value="${toIso(e.date||today())}">
-  <button class="btn" onclick="const e=get('wbuEvent',{});set('wbuEvent',{...e,name:$('xe1').value.trim(),ort:$('xe2').value.trim(),date:fromIso($('xe3').value)||e.date||today()});closeSheet();render()">Speichern</button>
+  <button class="btn" onclick="const e=get('wbuEvent',{});set('wbuEvent',{...e,name:$('xe1').value.trim(),ort:$('xe2').value.trim(),arzt:$('xe4').value.trim(),date:fromIso($('xe3').value)||e.date||today()});closeSheet();render()">Speichern</button>
   <button class="btn sec" onclick="closeSheet()">Abbrechen</button>`)}
-function officials(m){const e=get('wbuEvent',{});return{ref:m.ref??e.ref??'',time:m.time??e.time??''}}
+function officials(m){const e=get('wbuEvent',{});return{ref:m.ref??e.ref??'',time:m.time??e.time??'',arzt:e.arzt||''}}
 // Ringrichter: bleibt für die nächsten Kämpfe stehen; alle eingegebenen Namen werden zum Antippen gespeichert
 function setRef(no,v){v=String(v||'').trim();saveMeta(no,{ref:v});const e=get('wbuEvent',{});e.ref=v;e.refs=e.refs||[];if(v&&!e.refs.includes(v))e.refs.push(v);set('wbuEvent',e)}
 function delRef(v){const e=get('wbuEvent',{});e.refs=(e.refs||[]).filter(x=>x!==v);set('wbuEvent',e);render()}
@@ -674,7 +676,7 @@ function vFinal(){
     <div style="font-size:13px;color:#555">${[m.type,m.rounds?m.rounds+' Runden':'',m.dur,m.title].filter(Boolean).map(esc).join(' · ')}</div>
     <div class="res">${esc(resLine(f))}</div>
     <div class="scroll"><table>${head}${rows}</table></div>
-    <p style="font-size:13px;margin-top:12px">Supervisor: <b>${esc(m.result.by)}</b> · ${m.result.at} Uhr<br>Punktrichter: ${cs.map(c=>esc(c.judge)).join(', ')}<br>Ringrichter: ${esc(officials(m).ref||'–')} · Zeitnehmer: ${esc(officials(m).time||'–')}</p>
+    <p style="font-size:13px;margin-top:12px">Supervisor: <b>${esc(m.result.by)}</b> · ${m.result.at} Uhr<br>Punktrichter: ${cs.map(c=>esc(c.judge)).join(', ')}<br>Ringrichter: ${esc(officials(m).ref||'–')} · Zeitnehmer: ${esc(officials(m).time||'–')}<br>Ringarzt: ${esc(officials(m).arzt||'–')}</p>
   </div>
   <button class="btn" onclick="copyCard()">Als Text kopieren</button>
   <button class="btn sec" onclick="S.edit=true;S.sel={...curFight().meta.result};S.view='fight';render()">Ergebnis ändern</button>
@@ -682,7 +684,7 @@ function vFinal(){
 }
 function copyCard(){
   const f=curFight(),m=f.meta;let t=`WBU SCORECARD – Kampf ${f.no} – ${evDate()}\nROT: ${m.red||'-'}\nBLAU: ${m.blue||'-'}\nERGEBNIS: ${resLine(f)}\n`;
-  f.cards.forEach(c=>{const[a,b]=totals(c.rounds);t+=`${c.judge}: ${a}-${b}\n`});t+=`Supervisor: ${m.result.by}`;
+  f.cards.forEach(c=>{const[a,b]=totals(c.rounds);t+=`${c.judge}: ${a}-${b}\n`});t+=`Supervisor: ${m.result.by}\nRingrichter: ${officials(m).ref||'-'}\nZeitnehmer: ${officials(m).time||'-'}\nRingarzt: ${officials(m).arzt||'-'}`;
   navigator.clipboard.writeText(t).then(()=>$('cp').textContent='Kopiert.',()=>$('cp').textContent='Kopieren nicht möglich.');
 }
 
@@ -695,7 +697,7 @@ function fightBlock(f){
   const info=[m.type,m.rounds?m.rounds+' Runden':'',m.dur,m.title].filter(Boolean).map(esc).join(' · ');
   return `<div class="final" style="margin-bottom:12px"><b style="font-size:17px">Kampf ${f.no}</b>${info?`<div style="font-size:13px;color:#555">${info}</div>`:''}
     <p style="margin:6px 0"><b style="color:#b71c1c">ROT:</b> ${esc(m.red||'–')} &nbsp; <b style="color:#0d47a1">BLAU:</b> ${esc(m.blue||'–')}</p>
-    <div style="font-size:12px;color:#555">Ringrichter: ${esc(officials(m).ref||'–')} · Zeitnehmer: ${esc(officials(m).time||'–')} · Punktrichter: ${cs.map(c=>esc(c.judge)).join(', ')}</div>
+    <div style="font-size:12px;color:#555">Ringrichter: ${esc(officials(m).ref||'–')} · Zeitnehmer: ${esc(officials(m).time||'–')} · Ringarzt: ${esc(officials(m).arzt||'–')} · Punktrichter: ${cs.map(c=>esc(c.judge)).join(', ')}</div>
     <div class="res" style="font-size:16px">${m.result?esc(resLine(f)):'Ergebnis nicht bestätigt'}</div>
     <div class="scroll"><table>${head}${rows}</table></div></div>`;
 }
@@ -729,7 +731,7 @@ async function makePdf(){
     d.setFont('helvetica','normal');d.setFontSize(9);d.setTextColor(90);
     d.text(T([m.type,m.rounds?m.rounds+' Runden':'',m.dur,m.title].filter(Boolean).join('  ·  ')),M+24,y);y+=6;
     d.setFontSize(10);d.setTextColor(183,28,28);d.text(T('ROT: '+(m.red||'-')),M,y);d.setTextColor(13,71,161);d.text(T('BLAU: '+(m.blue||'-')),M+W/2,y);y+=5;
-    d.setFontSize(8.5);d.setTextColor(90);d.text(T(`Ringrichter: ${officials(m).ref||'-'}   ·   Zeitnehmer: ${officials(m).time||'-'}`),M,y);y+=6;
+    d.setFontSize(8.5);d.setTextColor(90);d.text(T(`Ringrichter: ${officials(m).ref||'-'}   ·   Zeitnehmer: ${officials(m).time||'-'}   ·   Ringarzt: ${officials(m).arzt||'-'}`),M,y);y+=6;
     d.setFillColor(238,243,252);d.rect(M,y-4,W,7,'F');d.setTextColor(0);d.setFont('helvetica','bold');d.setFontSize(11);
     d.text(T(m.result?resLine(f):'Ergebnis nicht bestätigt'),M+2,y+1);y+=8;
     const cw=(W-12)/(cs.length*2);d.setFontSize(9);d.setTextColor(80);
@@ -758,7 +760,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('58')||0;
+const WEB_VERSION=Number('59')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

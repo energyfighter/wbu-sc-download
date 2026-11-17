@@ -355,8 +355,8 @@ function kopfOk($k) { if (!is_array($k) || count($k) !== 4) return null; $k = ar
 /** Prüfcode für den QR-Code der Akkreditierungskarte */
 function akkSig($tid, $kind, $id) { global $CFG; $sec = (is_array($CFG) && !empty($CFG['update_key'])) ? $CFG['update_key'] : SUP_PASS_SHA256;
     return substr(hash_hmac('sha256', "akk|$tid|$kind|$id", $sec), 0, 10); }
-/** erlaubte Zahl Trainer/Betreuer: 2 pro angefangene 5 Sportler, höchstens 4 */
-function staffMax($n) { return $n > 0 ? min(4, 2 * (int)ceil($n / 5)) : 0; }
+/** frei laut Ausschreibung: ab 1 Sportler 1 Trainer; Betreuer 2 pro angefangene 5 Sportler, höchstens 4 */
+function staffMax($n) { return ['trainer' => $n > 0 ? 1 : 0, 'betreuer' => $n > 0 ? min(4, 2 * (int)ceil($n / 5)) : 0]; }
 function myAthletes($t, $email) { $n = 0; foreach ($t['regs'] as $x) if (($x['club'] ?? '') === $email && regAlive($t, $x)) $n++; return $n; }
 function regIn($t, $x) { return regAlive($t, $x); }
 /** Ist die Zahlung vollständig da? */
@@ -959,9 +959,11 @@ case 't_staff_add':  // Verein/Trainer: Trainer oder Betreuer fürs Turnier anme
     if (mb_strlen($name) < 3) fail('Bitte Vor- und Nachnamen angeben');
     $r = withTurnier($in['tid'] ?? '', function (&$t) use ($club, $name, $rolle, $in) {
         $mine = array_values(array_filter($t['staff'] ?? [], fn($x) => $x['club'] === $club['email']));
-        $max = staffMax(myAthletes($t, $club['email']));
-        if ($max === 0) fail('Bitte zuerst Sportler anmelden – pro angefangene 5 Sportler sind 2 Trainer/Betreuer frei (höchstens 4).');
-        if (count($mine) >= $max) fail("Es sind schon $max Trainer/Betreuer angemeldet – mehr sind laut Ausschreibung nicht frei (2 pro 5 Sportler, höchstens 4). Weitere zahlen Eintritt.");
+        $n = myAthletes($t, $club['email']); $max = staffMax($n)[$rolle];
+        if ($n === 0) fail('Bitte zuerst Sportler anmelden – dann sind 1 Trainer und 2 Betreuer frei (ab 6 Sportlern bis zu 4 Betreuer).');
+        $has = count(array_filter($mine, fn($x) => $x['rolle'] === $rolle));
+        if ($has >= $max) fail($rolle === 'trainer' ? 'Es ist schon ein Trainer angemeldet – pro Team ist 1 Trainer frei.'
+            : "Es sind schon $max Betreuer angemeldet – laut Ausschreibung sind 2 Betreuer pro angefangene 5 Sportler frei, höchstens 4 pro Team. Weitere zahlen Eintritt.");
         foreach ($mine as $x) if (mb_strtolower($x['name']) === mb_strtolower($name)) fail('Diese Person ist schon angemeldet');
         $s = ['id' => bin2hex(random_bytes(6)), 'club' => $club['email'], 'verein' => $club['club'] ?: $club['trainer'], 'name' => $name, 'rolle' => $rolle, 'at' => time()];
         if (!empty($in['foto'])) { [$data, $ext] = decodeFile($in['foto'], 6000000); if ($ext !== 'jpg' && $ext !== 'png') fail('Das Foto muss ein Bild sein (JPG/PNG)');
@@ -1233,7 +1235,7 @@ case 'l_list':
         $evDay = strtotime((string)($sn['date'] ?? '')) ?: 0;
         if (time() - ($l['updated'] ?? 0) > 3 * 86400 && !($evDay && $evDay >= strtotime('today') - 86400)) continue;
         $open = 0; foreach (($sn['rows'] ?? []) as $x) if (empty($x['done'])) $open++;
-        $list[] = ['id' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $sn['date'] ?? '',
+        $list[] = ['id' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $sn['date'] ?? '', 'arzt' => $sn['arzt'] ?? '',
                    'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'rings' => $sn['rings'] ?? 1, 'ringName' => $sn['ringName'] ?? 'Ring'];
     }
     usort($list, function ($x, $y) { return $y['updated'] - $x['updated']; });
