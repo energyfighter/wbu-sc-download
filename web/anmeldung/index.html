@@ -1402,28 +1402,28 @@ function akkQr(text){const q=new WBUQR(-1,0);q.addData(text);q.make();const n=q.
   for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))p+=`M${c},${r}h1v1h-1z`;
   return `<svg viewBox="-2 -2 ${n+4} ${n+4}" shape-rendering="crispEdges"><rect x="-2" y="-2" width="${n+4}" height="${n+4}" fill="#fff"/><path d="${p}" fill="#000"/></svg>`}
 const AKK_ROLLE={sportler:['SPORTLER','#d0021b'],trainer:['TRAINER','#0047bb'],betreuer:['BETREUER','#1e8e3e']};
-// d={name,date,ort,logo,checkUrl, list:[{name,verein,rolle,klasse,img,kopf,code}]}
+// d={name,date,ort,logo,checkUrl, list:[{name,verein,rolle,klasse,img,kopf,code}]} – Karte hochkant 54 × 85,6 mm, 9 pro A4
 function akkHTML(d){const dat=d.date?new Date(d.date+'T12:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
   const card=p=>{const R=AKK_ROLLE[p.rolle]||AKK_ROLLE.betreuer;return `<div class="c"><div class="fl"><i></i><i></i><i></i></div>
     <div class="hd"><img src="${d.logo}"><div><b>${akkEsc(d.name)}</b><span>${akkEsc(dat)}${d.ort?' · '+akkEsc(String(d.ort).split(',')[0]):''}</span></div></div>
-    <div class="bd"><div class="ph" style="${p.img?kopfStyle(p.img,p.kopf):''}">${p.img?'':'Foto'}</div>
-     <div class="tx"><div class="ro" style="background:${R[1]}">${R[0]}</div><div class="nm">${akkEsc(p.name)}</div><div class="vr">${akkEsc(p.verein||'')}</div>${p.klasse?`<div class="kl">${akkEsc(p.klasse)}</div>`:''}</div>
-     <div class="qr">${akkQr(d.checkUrl+p.code)}</div></div>
-    <div class="ft" style="background:${R[1]}">AKKREDITIERUNG · FREIER EINTRITT</div></div>`};
-  const pages=[];for(let i=0;i<d.list.length;i+=10)pages.push(d.list.slice(i,i+10));
+    <div class="ph" style="${p.img?kopfStyle(p.img,p.kopf):''}">${p.img?'':'Foto'}</div>
+    <div class="ro" style="background:${R[1]}">${R[0]}</div>
+    <div class="nm">${akkEsc(p.name)}</div><div class="vr">${akkEsc(p.verein||'')}</div>${p.klasse?`<div class="kl">${akkEsc(p.klasse)}</div>`:''}
+    <div class="qr">${akkQr(d.checkUrl+p.code)}</div>
+    <div class="ft" style="background:${R[1]}">AKKREDITIERUNG<br>FREIER EINTRITT</div></div>`};
+  const pages=[];for(let i=0;i<d.list.length;i+=9)pages.push(d.list.slice(i,i+9));
   return `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Akkreditierung – ${akkEsc(d.name)}</title><style>
 @page{size:A4;margin:0}*{box-sizing:border-box;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:'Inter','Segoe UI',Arial,sans-serif;color:#000;background:#888}
-.pg{width:210mm;height:297mm;background:#fff;margin:0 auto 8mm;padding:13.5mm 19.4mm;display:grid;grid-template-columns:85.6mm 85.6mm;grid-auto-rows:54mm;gap:0;page-break-after:always}
+.pg{width:210mm;height:297mm;background:#fff;margin:0 auto 8mm;padding:20mm 24mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;page-break-after:always}
 @media print{body{background:#fff}.pg{margin:0}}
-.c{position:relative;width:85.6mm;height:54mm;border:.2mm dashed #999;overflow:hidden;display:flex;flex-direction:column;background:#fff}
-.fl{display:flex;flex-direction:column;height:1.8mm}.fl i{flex:1}.fl i:nth-child(1){background:#000}.fl i:nth-child(2){background:#d00}.fl i:nth-child(3){background:#f2c200}
-.hd{display:flex;align-items:center;gap:2mm;padding:1.2mm 2.5mm 0}.hd img{width:9mm;height:9mm}.hd b{display:block;font-size:2.6mm;line-height:1.15;max-height:6mm;overflow:hidden}.hd span{display:block;font-size:2.3mm;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hd>div{min-width:0}
-.bd{flex:1;display:flex;gap:2.2mm;padding:1.2mm 2.5mm 1mm;align-items:flex-start}
-.ph{width:21mm;height:26.25mm;border-radius:1.5mm;border:.4mm solid #000;flex:none;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:2.5mm;color:#666}
-.tx{flex:1;min-width:0}.ro{display:inline-block;color:#fff;font-weight:900;font-size:3mm;letter-spacing:.3mm;padding:.6mm 2mm;border-radius:1mm}
-.nm{font-weight:900;font-size:3.9mm;line-height:1.1;margin-top:1.2mm;word-break:break-word}.vr{font-size:2.6mm;font-weight:700;margin-top:.8mm}.kl{font-size:2.3mm;margin-top:.6mm}
-.qr{width:15mm;height:15mm;flex:none;align-self:flex-end}.qr svg{width:100%;height:100%;display:block}
-.ft{color:#fff;font-weight:800;font-size:2.2mm;letter-spacing:.3mm;text-align:center;padding:.8mm 0}
+.c{position:relative;width:54mm;height:85.6mm;border:.2mm dashed #999;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;background:#fff}
+.fl{display:flex;flex-direction:column;height:1.8mm;width:100%;flex:none}.fl i{flex:1}.fl i:nth-child(1){background:#000}.fl i:nth-child(2){background:#d00}.fl i:nth-child(3){background:#f2c200}
+.hd{display:flex;align-items:center;gap:1.5mm;padding:1.2mm 2mm 0;width:100%;text-align:left}.hd img{width:8mm;height:8mm;flex:none}.hd>div{min-width:0}.hd b{display:block;font-size:2.1mm;line-height:1.15;max-height:4.9mm;overflow:hidden}.hd span{display:block;font-size:1.9mm;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph{width:26mm;height:32.5mm;border-radius:1.5mm;border:.4mm solid #000;flex:none;margin-top:1.6mm;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:2.5mm;color:#666}
+.ro{color:#fff;font-weight:900;font-size:2.9mm;letter-spacing:.35mm;padding:.5mm 2.5mm;border-radius:1mm;margin-top:1.4mm}
+.nm{font-weight:900;font-size:3.5mm;line-height:1.08;margin:1mm 2mm 0;max-height:7.6mm;overflow:hidden}.vr{font-size:2.3mm;font-weight:700;margin:.5mm 2mm 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50mm}.kl{font-size:1.9mm;margin:.3mm 2mm 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50mm}
+.qr{width:12mm;height:12mm;flex:none;margin-top:auto}.qr svg{width:100%;height:100%;display:block}
+.ft{color:#fff;font-weight:800;font-size:1.9mm;letter-spacing:.25mm;line-height:1.25;padding:.7mm 0;width:100%;flex:none;margin-top:.8mm}
 </style></head><body>${pages.map(p=>`<section class="pg">${p.map(card).join('')}</section>`).join('')}</body></html>`}
 
 const API=window.WBU_API||'../scorecard/api.php';
@@ -1795,7 +1795,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('57')||0;
+const WEB_VERSION=Number('58')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
