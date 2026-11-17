@@ -273,10 +273,10 @@ function invoicePdf($t, $o, $inv) {
     $rtxt($R + 2, $y + 8, '-----------'); $y -= 18;
     $txt(348, $y, 'Summe:'); $rtxt($R, $y, euroR($sum)); $y -= 70;
     if ($y < 300) { $newPage(); $y = $PH - 90; }
-    $txt($L, $y, 'Ohne Mehrwertsteuer (§ 19 UStG). Betrag am ' . date('d.m.Y', $inv['paid']) . ' per Überweisung bezahlt – vielen Dank!', 'Helvetica-Bold', 10.5);
+    $txt($L, $y, 'Ohne Mehrwertsteuer (§ 19 UStG). Der Rechnungsbetrag ist bereits vollständig bezahlt – vielen Dank!', 'Helvetica-Bold', 10.5);
     $y -= 12;
     $c .= "q 159 0 0 63 $L " . ($y - 63) . " cm /Im2 Do Q\n"; $y -= 63 + 20;
-    $txt($L, $y, 'Zahlung erfolgte per Überweisung auf folgendes Konto:'); $y -= 23;
+    $txt($L, $y, 'Zahlung erfolgt am ' . date('d.m.Y', $inv['paid']) . ' per Überweisung auf folgendes Konto:'); $y -= 23;
     $txt($L, $y, 'Torsten Knille'); $y -= 25;
     foreach (['IBAN:  DE18 1001 0178 0614 8617 07', 'BIC: REVODEB2'] as $b) { $c .= "0 0 0 rg " . ($L + 4) . ' ' . ($y + 2.5) . " 3 3 re f\n"; $txt($L + 14, $y, $b, 'Helvetica', 10.5); $y -= 23; }
     $txt($L, $y, 'Revolut Bank UAB, Zweigniederlassung Deutschland', 'Helvetica-Bold', 10.5); $y -= 13;
@@ -308,6 +308,15 @@ function invoicePdf($t, $o, $inv) {
 }
 /** Rechnung ab dem Tag nach der Veranstaltung (Datum 00:00) */
 function invoiceFrom($t) { return strtotime(($t['date'] ?: date('Y-m-d')) . ' 00:00:00') + 86400; }
+/** Kürzel aus dem Turniernamen: „WBU DM 2027 – …“ -> WBU-DM27 */
+function invPrefix($t) {
+    $n = trim(explode(' – ', explode(' - ', $t['name'] ?? 'WBU')[0])[0]);
+    $n = preg_replace_callback('/\b(19|20)(\d\d)\b/', function ($m) { return $m[2]; }, $n);
+    $w = preg_split('/\s+/', strtoupper(preg_replace('/[^A-Za-z0-9 ]/', '', iconv('UTF-8', 'ASCII//TRANSLIT', $n))));
+    $w = array_values(array_filter($w, 'strlen'));
+    if (count($w) >= 2 && preg_match('/^\d+$/', end($w))) { $y = array_pop($w); $w[count($w) - 1] .= $y; }
+    return substr(implode('-', $w), 0, 24) ?: 'WBU';
+}
 function nextInvoiceNo($ts) {
     $f = $GLOBALS['DIR'] . '/rechnung_nr.json'; $h = fopen($f, 'c+'); flock($h, LOCK_EX);
     $n = (int)stream_get_contents($h) + 1; ftruncate($h, 0); rewind($h); fwrite($h, (string)$n); flock($h, LOCK_UN); fclose($h);
@@ -930,7 +939,8 @@ case 't_invoice':   // Rechnung herunterladen: Verein (eigene, bezahlte Bestellu
             foreach ($t['regs'] as $x) if (($x['oid'] ?? '') === $o['id'] && empty($x['storno']))
                 $items[] = ['text' => 'Startgeld ' . trim(explode(' – ', $t['name'])[0]) . ': ' . $x['vorname'] . ' ' . $x['name'] . ' (Kat. ' . $x['nr'] . ')', 'fee' => (float)$x['fee']];
             $cl = json_decode((string)@file_get_contents(clubsFile()), true) ?: [];
-            $o['inv'] = ['no' => nextInvoiceNo($ts), 'date' => $ts, 'paid' => ((int)($o['paid'] ?? 0) > 1e9 ? (int)$o['paid'] : time()), 'items' => $items, 'name' => $cl[$o['club']]['trainer'] ?? ''];
+            $t['invSeq'] = (int)($t['invSeq'] ?? 0) + 1;
+            $o['inv'] = ['no' => invPrefix($t) . '-' . sprintf('%04d', $t['invSeq']), 'date' => $ts, 'paid' => ((int)($o['paid'] ?? 0) > 1e9 ? (int)$o['paid'] : time()), 'items' => $items, 'name' => $cl[$o['club']]['trainer'] ?? ''];
         }
         return ['inv' => $o['inv'], 'o' => $o, 't' => $t];
     }, true);
