@@ -68,7 +68,7 @@ const S={tab:'live',snap:null,err:'',ring:+(Q.get('ring')||0)};
 const uhr=()=>new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 const big=()=>innerWidth>=1100;
 
-function head(sn){return `${TV?'':`<div class="wnav" style="padding:6px 14px"><a href="https://www.wbu-boxing.com/">← WBU Startseite</a><a href="../anmeldung/">WBU Sports</a><a class="on" href="../live/">WBU Live</a></div>`}<div class="top">${TV?`<img src="${LOGO}">`:`<a href="https://www.wbu-boxing.com/" title="Zur WBU-Startseite"><img src="${LOGO}"></a>`}<div><h1>${esc(sn?sn.name:'WBU Live')}</h1><span>${sn?esc([sn.ort,deDate(sn.date)].filter(Boolean).join(' · '))+((sn.rings||1)>1?' · Ring '+S.ring:'')+' · Kampfreihenfolge':'World Boxing Union · Turniere und Galas live'}</span></div><div class="sp"></div><div class="uhr">${uhr()}</div></div>`}
+function head(sn){return `${TV?'':`<div class="wnav" style="padding:6px 14px"><a href="https://www.wbu-boxing.com/">← WBU Startseite</a><a href="../anmeldung/">WBU Sports</a><a class="on" href="../live/">WBU Live</a></div>`}<div class="top">${TV?`<img src="${LOGO}">`:`<a href="https://www.wbu-boxing.com/" title="Zur WBU-Startseite"><img src="${LOGO}"></a>`}<div><h1>${esc(sn?sn.name:'WBU Live')}</h1><span>${sn?esc([sn.ort,deDate(sn.date)].filter(Boolean).join(' · '))+((sn.rings||1)>1?' · '+esc(sn.ringName||'Ring')+' '+S.ring:'')+' · Kampfreihenfolge':'World Boxing Union · Turniere und Galas live'}</span></div><div class="sp"></div><div class="uhr">${uhr()}</div></div>`}
 function card(f,i,showRes){
   const tag=showRes?`<span class="rd">${esc(f.rd)}</span>`:i===0?'<span class="tag">IM RING</span>':i<3?'<span class="tag y">BEREIT MACHEN</span>':`<span class="rd">${esc(f.rd)}</span>`;
   return `<div class="f ${showRes?'':i===0?'now':i<3?'next':''}"><div class="h"><span class="no">Kampf ${f.no}</span>${tag}</div><div class="kl">${esc(f.kl)}</div>
@@ -83,7 +83,7 @@ function vList(list){
 function vLive(sn){
   const rings=sn.rings||1;if(rings>1&&!S.ring)S.ring=1;
   const all=sn.rows||[],rows=rings>1?all.filter(r=>(r.ring||1)===S.ring):all,open=rows.filter(r=>!r.done),done=rows.filter(r=>r.done);
-  const ringBar=rings>1&&!TV?`<div class="btnbar">${Array.from({length:rings},(_,i)=>`<button class="btn ${S.ring===i+1?'on':''}" onclick="S.ring=${i+1};draw()">Ring ${i+1}</button>`).join('')}</div>`:'';
+  const ringBar=rings>1&&!TV?`<div class="btnbar">${Array.from({length:rings},(_,i)=>`<button class="btn ${S.ring===i+1?'on':''}" onclick="S.ring=${i+1};draw()">${esc(sn.ringName||'Ring')} ${i+1}</button>`).join('')}</div>`:'';
   const bar=TV?'':ringBar+`<div class="btnbar"><button class="btn ${S.tab==='live'?'on':''}" onclick="S.tab='live';draw()">Nächste Kämpfe</button><button class="btn ${S.tab==='done'?'on':''}" onclick="S.tab='done';draw()">Bisherige Kämpfe (${done.length})</button>${sn.places&&sn.places.length?`<button class="btn ${S.tab==='pl'?'on':''}" onclick="S.tab='pl';draw()">Platzierungen</button>`:''}</div>`;
   let body;
   if(S.tab==='done'&&!TV)body=done.length?`<div class="grid ${big()?'wide':''}">${done.slice().reverse().map((f,i)=>card(f,i,true)).join('')}</div>`:'<div class="empty">Noch keine Kämpfe beendet.</div>';
@@ -152,7 +152,7 @@ function clkView(st,now,logo,title){
   if(!st)return `<div class="wt"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">WBU Time<small>${title||''}</small></div></div><div class="main" style="grid-template-columns:1fr"><div class="box"><div class="lab">KEIN KAMPF AKTIV</div></div></div></div>`;
   const v=clkAt(st,now),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const cls=v.phase==='pause'?'pause':v.phase==='done'?'done':v.rem<=10000&&v.phase==='round'?'last':'';
-  return `<div class="wt ${v.medOn?'withmed':''}"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${st.no?'Kampf '+E(st.no):'WBU Time'}${st.ring?' · Ring '+E(st.ring):''}<small>${E(st.kl||title||'')}</small></div></div>
+  return `<div class="wt ${v.medOn?'withmed':''}"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${st.no?'Kampf '+E(st.no):'WBU Time'}${st.ring?' · '+(/^\d+$/.test(String(st.ring))?'Ring '+E(st.ring):E(st.ring)):''}<small>${E(st.kl||title||'')}</small></div></div>
    <div class="ec"><div class="r"><small>ROTE ECKE</small>${E(st.red)||'&nbsp;'}</div><div class="b"><small>BLAUE ECKE</small>${E(st.blue)||'&nbsp;'}</div></div>
    <div class="main"><div class="box rd"><div class="lab">${v.phase==='pause'?'GLEICH RUNDE':'RUNDE'}</div><div class="big">${v.phase==='pause'?v.round+1:v.round}</div><div class="of">von ${st.rounds}</div></div>
      <div class="box tm ${cls}"><div class="lab">${v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'?'BEREIT':'ZEIT'}</div>
@@ -196,7 +196,7 @@ function clkSignals(prev,v){if(!prev||!v)return;
 const ZEIT=Q.get('zeit');
 if(ZEIT&&LID){const rg=+(Q.get('ring')||1);let st=null,off=0,prev=null,snd=false,name='';
   document.head.insertAdjacentHTML('beforeend','<style>'+CLK_CSS+'.snd{position:fixed;top:14px;right:14px;z-index:6;font-size:18px;font-weight:800;padding:10px 16px;border-radius:10px;border:2px solid #000;background:#fff;cursor:pointer}</style>');
-  document.title='WBU Time – Ring '+rg;
+  document.title='WBU Time – '+rg;
   const sb=document.body.appendChild(Object.assign(document.createElement('button'),{className:'snd',textContent:'🔇 Mute – Ton einschalten'}));
   sb.onclick=()=>{snd=!snd;if(snd)clkAudio();sb.textContent=snd?'🔊 Ton an – hier tippen für Mute':'🔇 Mute – Ton einschalten';sb.style.opacity=snd?.4:1};
   const poll=async()=>{try{const t=Date.now(),j=await api('l_clockget',{lid:LID,ring:rg});off=j.srv-(t+Date.now())/2;st=j.st;name=j.name}catch(e){}};

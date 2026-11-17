@@ -334,7 +334,7 @@ function liveCard(no){const r=liveFor(no);if(!liveLid())return '';
   const opts=liveRows().filter(x=>!x.done&&!used.has(x.mid));
   const rg=(S.live&&S.live.rings)||1;
   return `<div class="card" style="border-color:var(--gold)"><div class="muted">Aus WBU Sports${S.live?'':' – wird geladen …'}</div>
-   ${rg>1?`<label>Mein Ring</label><div class="chips">${Array.from({length:rg},(_,i)=>`<div class="chip ${myRing()===i+1?'on':''}" onclick="setRing(${i+1})">Ring ${i+1}</div>`).join('')}</div>`:''}
+   ${rg>1?`<label>Mein ${esc((S.live&&S.live.ringName)||'Ring')}</label><div class="chips">${Array.from({length:rg},(_,i)=>`<div class="chip ${myRing()===i+1?'on':''}" onclick="setRing(${i+1})">${esc((S.live&&S.live.ringName)||'Ring')} ${i+1}</div>`).join('')}</div>`:''}
    ${r?`<div style="font-size:18px;font-weight:800;margin-top:2px">Kampf ${r.no} · ${esc(r.kl)}</div><div class="muted">${esc(r.rd||'')}</div>
    <div class="row2" style="margin-top:6px"><div><div class="muted" style="color:#ff8a8a">ROTE ECKE</div><b style="color:#ff8a8a;font-size:17px">${esc(r.a)}</b><div class="muted">${esc(r.ac||'')}</div></div>
    <div><div class="muted" style="color:#8dbcff">BLAUE ECKE</div><b style="color:#8dbcff;font-size:17px">${esc(r.b)}</b><div class="muted">${esc(r.bc||'')}</div></div></div>`:'<b>Keine offenen Kämpfe in WBU Sports.</b>'}
@@ -758,7 +758,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('38')||0;
+const WEB_VERSION=Number('39')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
