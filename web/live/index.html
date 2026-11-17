@@ -105,7 +105,87 @@ async function load(){
   const y=scrollY;draw();scrollTo(0,y);
 }
 addEventListener('resize',draw);
-load();setInterval(load,5000);
+// ===================== WBU Time: Rundenuhr, Pausen, Medical Timeout, Signale =====================
+// Zustand st: {rounds, rSec, pSec, phase:'idle'|'round'|'pause'|'done', round, run, t0, rem, med:{run,t0,acc}, red, blue, kl, no, ring}
+// t0/rem: zum Zeitpunkt t0 (ms) waren noch rem ms übrig. Läuft die Uhr, rechnen alle Geräte daraus die aktuelle Zeit selbst aus.
+function clkDur(d){const m=String(d||'').replace(',','.').match(/[\d.]+/);return Math.round((m?parseFloat(m[0]):2)*60)}
+function clkNew(o){return {rounds:o.rounds||3,rSec:o.rSec||120,pSec:o.pSec||60,phase:'idle',round:1,run:false,t0:0,rem:(o.rSec||120)*1000,
+  med:{run:false,t0:0,acc:0},red:o.red||'',blue:o.blue||'',kl:o.kl||'',no:o.no||'',mid:o.mid||'',ring:o.ring||1}}
+function clkAt(st,now){
+  if(!st)return null;let ph=st.phase,rd=st.round,r=st.rem;
+  if(st.run&&ph!=='idle'&&ph!=='done'){r=st.rem-(now-st.t0);
+    while(r<=0){if(ph==='round'){if(rd>=st.rounds){ph='done';r=0;break}ph='pause';r+=st.pSec*1000}else if(ph==='pause'){ph='round';rd++;r+=st.rSec*1000}else break}}
+  const m=st.med||{};const med=(m.acc||0)+(m.run?now-m.t0:0);
+  return {phase:ph,round:rd,rem:Math.max(0,r),run:st.run&&ph!=='done'&&ph!=='idle',med,medOn:!!m.run||med>0,medRun:!!m.run}}
+// Aktionen (geben neuen Zustand zurück)
+function clkFreeze(st,now){const v=clkAt(st,now);return Object.assign({},st,{phase:v.phase,round:v.round,rem:v.rem,t0:now})}
+function clkStart(st,now){let s=clkFreeze(st,now);if(s.phase==='idle'||s.phase==='done')s=Object.assign(s,{phase:'round',round:s.phase==='done'?1:s.round,rem:s.rSec*1000});return Object.assign(s,{run:true,t0:now})}
+function clkStop(st,now){return Object.assign(clkFreeze(st,now),{run:false})}
+function clkResetRound(st,now){const s=clkFreeze(st,now);return Object.assign(s,{run:false,phase:s.phase==='idle'?'idle':'round',rem:s.rSec*1000})}
+function clkNextRound(st,now){const s=clkFreeze(st,now);const rd=s.phase==='pause'?s.round+1:Math.min(s.rounds,s.round+(s.phase==='round'?1:0));
+  return Object.assign(s,{phase:'round',round:Math.min(s.rounds,rd),rem:s.rSec*1000,run:false})}
+function clkMed(st,now,act){const m=Object.assign({run:false,t0:0,acc:0},st.med||{});let s=Object.assign({},st);
+  if(act==='start'&&!m.run){if(s.run)s=clkStop(s,now);m.run=true;m.t0=now}
+  else if(act==='stop'&&m.run){m.acc+=now-m.t0;m.run=false}
+  else if(act==='reset'){m.run=false;m.acc=0;m.t0=0}
+  s.med=m;return s}
+function clkFmt(ms){const s=Math.ceil(ms/1000),m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0')}
+function clkFmtUp(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0')}
+// ---------- Anzeige 16:9 (heller Hintergrund, schwarze Schrift, rote/blaue Ecke) ----------
+const CLK_CSS=`.wt{position:fixed;inset:0;background:#e9ebef;color:#000;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:flex;flex-direction:column;padding:2.2vw 3vw;gap:1.6vw;box-sizing:border-box}
+.wt *{box-sizing:border-box}.wt .hd{display:flex;align-items:center;gap:1.6vw}.wt .hd img{width:6vw;height:6vw}
+.wt .hd .t{font-size:2.1vw;font-weight:800;line-height:1.15}.wt .hd .t small{display:block;font-size:1.35vw;font-weight:600}
+.wt .ec{display:grid;grid-template-columns:1fr 1fr;gap:1.6vw}.wt .ec div{border-radius:1.2vw;padding:1vw 1.6vw;color:#fff;font-size:2.6vw;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wt .ec .r{background:#d0021b}.wt .ec div small,.wt .ec .r small,.wt .ec .b small{color:#fff}.wt .ec .b{background:#0047bb;text-align:right}.wt .ec small{display:block;font-size:1.1vw;font-weight:700;letter-spacing:.15em;opacity:.95}
+.wt .main{flex:1;display:grid;grid-template-columns:1fr 1.6fr;gap:1.6vw;min-height:0}
+.wt .box{background:#fff;border:.35vw solid #000;border-radius:1.6vw;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
+.wt .lab{font-size:2.4vw;font-weight:800;letter-spacing:.2em}.wt .big{font-weight:900;line-height:.95;font-variant-numeric:tabular-nums}
+.wt .rd .big{font-size:17vw}.wt .rd .of{font-size:3vw;font-weight:800}.wt .tm .big{font-size:20vw}
+.wt .tm.pause{border-color:#0047bb}.wt .tm.pause .lab{color:#0047bb}.wt .tm.last .big{color:#d0021b}.wt .tm.done .big{font-size:9vw}
+.wt .tm .st{font-size:2vw;font-weight:800;color:#d0021b;min-height:2.4vw}
+.wt .med{display:flex;align-items:center;justify-content:space-between;background:#fff;border:.35vw solid #d0021b;border-radius:1.6vw;padding:.6vw 2.4vw}
+.wt .med .lab{color:#d0021b}.wt .med .big{font-size:8vw;color:#d0021b}
+.wt.withmed .rd .big{font-size:12vw}.wt.withmed .tm .big{font-size:14vw}`;
+function clkView(st,now,logo,title){
+  if(!st)return `<div class="wt"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">WBU Time<small>${title||''}</small></div></div><div class="main" style="grid-template-columns:1fr"><div class="box"><div class="lab">KEIN KAMPF AKTIV</div></div></div></div>`;
+  const v=clkAt(st,now),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const cls=v.phase==='pause'?'pause':v.phase==='done'?'done':v.rem<=10000&&v.phase==='round'?'last':'';
+  return `<div class="wt ${v.medOn?'withmed':''}"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${st.no?'Kampf '+E(st.no):'WBU Time'}${st.ring?' · Ring '+E(st.ring):''}<small>${E(st.kl||title||'')}</small></div></div>
+   <div class="ec"><div class="r"><small>ROTE ECKE</small>${E(st.red)||'&nbsp;'}</div><div class="b"><small>BLAUE ECKE</small>${E(st.blue)||'&nbsp;'}</div></div>
+   <div class="main"><div class="box rd"><div class="lab">${v.phase==='pause'?'GLEICH RUNDE':'RUNDE'}</div><div class="big">${v.phase==='pause'?v.round+1:v.round}</div><div class="of">von ${st.rounds}</div></div>
+     <div class="box tm ${cls}"><div class="lab">${v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'?'BEREIT':'ZEIT'}</div>
+       <div class="big">${v.phase==='done'?'ENDE':clkFmt(v.rem)}</div><div class="st">${!v.run&&v.phase!=='idle'&&v.phase!=='done'?'ZEIT GESTOPPT':''}</div></div></div>
+   ${v.medOn?`<div class="med"><div class="lab">⛑ MEDICAL TIMEOUT</div><div class="big">${clkFmtUp(v.med)}</div></div>`:''}</div>`}
+// ---------- Signale (werden im Browser erzeugt, keine Tondateien nötig) ----------
+let CLK_AC=null;
+function clkAudio(){try{CLK_AC=CLK_AC||new (window.AudioContext||window.webkitAudioContext)();if(CLK_AC.state==='suspended')CLK_AC.resume()}catch(e){}return CLK_AC}
+function clkKnock3(){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.02;
+  for(let i=0;i<3;i++){const s=t+i*.32;
+    const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(190,s);o.frequency.exponentialRampToValueAtTime(70,s+.12);
+    g.gain.setValueAtTime(1,s);g.gain.exponentialRampToValueAtTime(.001,s+.16);o.connect(g).connect(ac.destination);o.start(s);o.stop(s+.18);
+    const n=ac.createBufferSource(),b=ac.createBuffer(1,ac.sampleRate*.06,ac.sampleRate),d=b.getChannelData(0);for(let k=0;k<d.length;k++)d[k]=(Math.random()*2-1)*Math.pow(1-k/d.length,3);
+    const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=1500;f.Q.value=1.2;const g2=ac.createGain();g2.gain.value=.9;n.buffer=b;n.connect(f).connect(g2).connect(ac.destination);n.start(s)}}
+function clkBell(times){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.02;
+  for(let k=0;k<(times||1);k++){const s=t+k*.55;[[1,1],[2.76,.5],[5.4,.28],[8.93,.15]].forEach(([m,a])=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=980*m;
+    g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.45*a,s+.005);g.gain.exponentialRampToValueAtTime(.0008,s+2.4/Math.sqrt(m));o.connect(g).connect(ac.destination);o.start(s);o.stop(s+2.5)})}}
+// erkennt die Momente für die Signale (10 Sek. vorher klopfen, Glocke bei Runden-/Pausenende)
+function clkSignals(prev,v){if(!prev||!v)return;
+  if(v.run&&prev.phase===v.phase&&prev.round===v.round&&prev.rem>10000&&v.rem<=10000&&v.rem>7000&&(v.phase==='round'||v.phase==='pause'))clkKnock3();
+  if(!prev.run&&v.run&&prev.phase==='idle'&&v.phase==='round')clkBell(1);
+  const pk=prev.phase+prev.round,vk=v.phase+v.round;
+  if(pk!==vk&&prev.run&&((prev.phase==='round'&&(v.phase==='pause'||v.phase==='done'))||(prev.phase==='pause'&&v.phase==='round')))clkBell(v.phase==='done'?3:1)}
+
+// ---------- WBU Time: Rundenuhr für den Fernseher (?l=…&zeit=1&ring=1) ----------
+const ZEIT=Q.get('zeit');
+if(ZEIT&&LID){const rg=+(Q.get('ring')||1);let st=null,off=0,prev=null,snd=false,name='';
+  document.head.insertAdjacentHTML('beforeend','<style>'+CLK_CSS+'.snd{position:fixed;top:14px;right:14px;z-index:6;font-size:18px;font-weight:800;padding:10px 16px;border-radius:10px;border:2px solid #000;background:#fff;cursor:pointer}</style>');
+  document.title='WBU Time – Ring '+rg;
+  const sb=document.body.appendChild(Object.assign(document.createElement('button'),{className:'snd',textContent:'🔇 Ton einschalten'}));
+  sb.onclick=()=>{snd=!snd;if(snd){clkAudio();clkBell(1)}sb.textContent=snd?'🔊 Ton an':'🔇 Ton einschalten';sb.style.opacity=snd?.35:1};
+  const poll=async()=>{try{const t=Date.now(),j=await api('l_clockget',{lid:LID,ring:rg});off=j.srv-(t+Date.now())/2;st=j.st;name=j.name}catch(e){}};
+  poll();setInterval(poll,1000);
+  setInterval(()=>{const n=Date.now()+off,v=st&&clkAt(st,n);$('app').innerHTML=clkView(st,n,LOGO,name);if(snd)clkSignals(prev,v);prev=v},200);
+}else{load();setInterval(load,5000)}
 </script>
 </body>
 </html>

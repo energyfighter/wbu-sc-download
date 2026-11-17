@@ -320,7 +320,9 @@ function vMy(){
   ${rest.map(o=>`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:17px">Anmeldung ${esc(o.code)}</b><span class="badge" style="background:${ST[o.status][1]};color:${o.status==='open'?'#2a1d00':'#fff'};border:0">${ST[o.status][0]}</span></div>
     <p style="margin:6px 0">${o.items.map(x=>`${esc(x.vorname)} ${esc(x.name)} (${x.nr})`).join(', ')}</p>
     <p style="margin:0">Summe <b>${euro(o.total)}</b>${o.paidAmt!=null&&o.status!=='paid'?` · eingegangen <b>${euro(o.paidAmt)}</b> – ${o.paidAmt<o.total?`<b style="color:var(--red)">es fehlen ${euro(o.total-o.paidAmt)}</b>`:'zu viel – der Veranstalter meldet sich'}`:''}</p>
-    ${o.status==='open'?payBox(o,M.bank):''}</div>`).join('')}`}
+    ${o.status==='open'?payBox(o,M.bank):''}
+    ${o.status==='paid'?(Date.now()/1000>=M.rechnungAb?`<a class="btn" style="text-decoration:none;display:inline-block;margin-top:10px" target="_blank" href="${API}?a=t_invoice&tid=${encodeURIComponent(S.t.id)}&oid=${o.id}&tok=${encodeURIComponent(AUTH.tok)}">📄 Rechnung herunterladen (PDF)</a>`
+      :`<p style="margin:10px 0 0">📄 <b>Rechnung:</b> wird automatisch am <b>${new Date(M.rechnungAb*1000).toLocaleDateString('de-DE')}</b> erstellt (Tag nach der Veranstaltung) und kann dann hier heruntergeladen werden.</p>`):''}</div>`).join('')}`}
 const DOCSHORT={haft:'Teilnahmeerklärung',eltern:'Einverständnis Eltern',attest:'Sportärztliches Attest'};
 function docCard(M){const rs=(M.regs||[]).filter(x=>(x.need||[]).length);if(!rs.length)return '';
   const offen=rs.filter(x=>x.miss.length).length;
@@ -436,7 +438,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('33')||0;
+const WEB_VERSION=Number('34')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
