@@ -1,6 +1,6 @@
 {
-  "versionCode": 27,
-  "versionName": "1.27",
+  "versionCode": 77,
+  "versionName": "1.77",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Ring-Auswahl (Ring 1 / Ring 2) für Turniere aus WBU Sports."
+  "notes": "Ringarzt einmal beim Anmelden eintragen – gilt für alle Kämpfe und steht im Bericht/PDF."
 }
