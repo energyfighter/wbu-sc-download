@@ -183,14 +183,29 @@ function clkStrike(ac,s,dur){const out=clkOut(ac);
     const d=dur*(m<1.1?1:m<3?.7:.45);g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.42*a,s+.002);g.gain.exponentialRampToValueAtTime(.0006,s+d);o.connect(g).connect(out);o.start(s);o.stop(s+d+.05)});
   const n=ac.createBufferSource(),f=ac.createBiquadFilter(),ng=ac.createGain();n.buffer=clkNoise(ac,.05);f.type='highpass';f.frequency.value=3000;
   ng.gain.setValueAtTime(.9,s);ng.gain.exponentialRampToValueAtTime(.001,s+.04);n.connect(f).connect(ng).connect(out);n.start(s)}
-function clkBell(times){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.03;const n=times||1;
-  for(let k=0;k<n;k++)clkStrike(ac,t+k*.45,n>1&&k<n-1?.75:1.3)}
+// weitere Klänge, damit Ringe nebeneinander verschiedene Signale haben (Hammer bleibt überall gleich)
+function clkPartials(ac,s,f0,parts,dur,amp){const out=clkOut(ac);parts.forEach(([m,a,dm])=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f0*m;const d=dur*(dm||1);
+  g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(amp*a,s+.003);g.gain.exponentialRampToValueAtTime(.0006,s+d);o.connect(g).connect(out);o.start(s);o.stop(s+d+.05)})}
+function clkClick(ac,s,freq,amp){const out=clkOut(ac),n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();n.buffer=clkNoise(ac,.05);f.type='bandpass';f.frequency.value=freq;f.Q.value=.7;
+  g.gain.setValueAtTime(amp,s);g.gain.exponentialRampToValueAtTime(.001,s+.04);n.connect(f).connect(g).connect(out);n.start(s)}
+const CLK_SOUNDS={
+  glocke:{name:'Ringglocke (hell)',hit:(ac,s,d)=>clkStrike(ac,s,d)},
+  gong:{name:'Hammer auf Metallglocke (tiefer)',hit:(ac,s,d)=>{clkClick(ac,s,1800,.9);clkPartials(ac,s,520,[[1,1,1],[1.008,.6,1],[2.32,.6,.7],[3.17,.45,.55],[4.6,.3,.4],[6.1,.2,.3]],d*1.1,.5)}},
+  amboss:{name:'Hammer auf Metall (Amboss)',hit:(ac,s,d)=>{clkClick(ac,s,3500,1.2);clkPartials(ac,s,1650,[[1,1,.5],[1.42,.8,.45],[2.05,.7,.35],[2.81,.5,.3],[3.6,.35,.25]],Math.min(d,.9),.5)}},
+  doppel:{name:'Doppelglocke (ding-dong)',hit:(ac,s,d)=>{clkPartials(ac,s,880,[[1,1,1],[2.76,.45,.5],[5.4,.2,.3]],d*.8,.45);clkPartials(ac,s+.28,660,[[1,1,1],[2.76,.45,.5],[5.4,.2,.3]],d*.9,.45)}},
+  fanfare:{name:'Fanfare / Tröte',hit:(ac,s,d)=>{const out=clkOut(ac);[[392,0,.16],[523,.18,.5]].forEach(([f,st,len])=>{[1,1.005,2,3].forEach((m,i)=>{const o=ac.createOscillator(),g=ac.createGain(),lp=ac.createBiquadFilter();
+      o.type='sawtooth';o.frequency.value=f*m;lp.type='lowpass';lp.frequency.value=2600;const a=[.22,.18,.08,.04][i],t0=s+st;
+      g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(a,t0+.03);g.gain.setValueAtTime(a,t0+len-.06);g.gain.linearRampToValueAtTime(0,t0+len);o.connect(lp).connect(g).connect(out);o.start(t0);o.stop(t0+len+.02)})})}},
+  pfeife:{name:'Schiedsrichterpfiff',hit:(ac,s,d)=>{const out=clkOut(ac),o=ac.createOscillator(),g=ac.createGain(),l=ac.createOscillator(),lg=ac.createGain();o.type='sine';o.frequency.value=2900;l.frequency.value=32;lg.gain.value=180;
+      l.connect(lg).connect(o.frequency);g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.5,s+.02);g.gain.setValueAtTime(.5,s+.5);g.gain.linearRampToValueAtTime(0,s+.6);o.connect(g).connect(out);o.start(s);l.start(s);o.stop(s+.65);l.stop(s+.65)}}};
+function clkBell(times,snd){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.03;const n=times||1,S=CLK_SOUNDS[snd]||CLK_SOUNDS.glocke,gap=snd==='fanfare'?.8:snd==='doppel'?.75:snd==='pfeife'?.75:.45;
+  for(let k=0;k<n;k++)S.hit(ac,t+k*gap,n>1&&k<n-1?.75:1.3)}
 // erkennt die Momente für die Signale (10 Sek. vorher klopfen, Glocke bei Runden-/Pausenende)
-function clkSignals(prev,v){if(!prev||!v)return;
+function clkSignals(prev,v,snd){if(!prev||!v)return;
   if(v.run&&prev.phase===v.phase&&prev.round===v.round&&prev.rem>10000&&v.rem<=10000&&v.rem>7000&&(v.phase==='round'||v.phase==='pause'))clkKnock3();
-  if(!prev.run&&v.run&&prev.phase==='idle'&&v.phase==='round')clkBell(1);
+  if(!prev.run&&v.run&&prev.phase==='idle'&&v.phase==='round')clkBell(1,snd);
   const pk=prev.phase+prev.round,vk=v.phase+v.round;
-  if(pk!==vk&&prev.run&&((prev.phase==='round'&&(v.phase==='pause'||v.phase==='done'))||(prev.phase==='pause'&&v.phase==='round')))clkBell(v.phase==='done'?3:1)}
+  if(pk!==vk&&prev.run&&((prev.phase==='round'&&(v.phase==='pause'||v.phase==='done'))||(prev.phase==='pause'&&v.phase==='round')))clkBell(v.phase==='done'?3:1,snd)}
 
 // ---------- WBU Time: Rundenuhr für den Fernseher (?l=…&zeit=1&ring=1) ----------
 const ZEIT=Q.get('zeit');
@@ -201,7 +216,7 @@ if(ZEIT&&LID){const rg=+(Q.get('ring')||1);let st=null,off=0,prev=null,snd=false
   sb.onclick=()=>{snd=!snd;if(snd)clkAudio();sb.textContent=snd?'🔊 Ton an – hier tippen für Mute':'🔇 Mute – Ton einschalten';sb.style.opacity=snd?.4:1};
   const poll=async()=>{try{const t=Date.now(),j=await api('l_clockget',{lid:LID,ring:rg});off=j.srv-(t+Date.now())/2;st=j.st;name=j.name}catch(e){}};
   poll();setInterval(poll,1000);
-  setInterval(()=>{const n=Date.now()+off,v=st&&clkAt(st,n);$('app').innerHTML=clkView(st,n,LOGO,name);if(snd)clkSignals(prev,v);prev=v},200);
+  setInterval(()=>{const n=Date.now()+off,v=st&&clkAt(st,n);$('app').innerHTML=clkView(st,n,LOGO,name);if(snd)clkSignals(prev,v,st&&st.snd);prev=v},200);
 }else{load();setInterval(load,5000)}
 </script>
 </body>
