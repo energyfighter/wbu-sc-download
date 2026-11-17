@@ -149,8 +149,7 @@ async function setRole(k){try{const j=await api('c_setrole',{rolle:k});saveAuth(
 // ---------- Öffentliche Turnierseite (ohne Login): Plakat, Eckdaten, Ausschreibung zum Lesen, dann zur Anmeldung ----------
 const pubDoc=(tid,k)=>`${API}?a=t_docget&tid=${encodeURIComponent(tid)}&kind=${k}`;
 async function openInfo(id){S.view='info';S.info=null;render();
-  try{S.info=(await api('t_info',{tid:id})).t}catch(e){S.info={err:e.message}}render();if(S.info&&S.info.docs){if(S.info.docs.aus)pdfShow('pdf_aus',pubDoc(id,'aus'));if(S.info.docs.plakat&&S.info.docs.plakat.ext==='pdf')pdfShow('pdf_plakat',pubDoc(id,'plakat'),1)}}
-let PDFJS=null;
+  try{S.info=(await api('t_info',{tid:id})).t}catch(e){S.info={err:e.message}}render();if(S.info&&S.info.docs){if(S.info.docs.aus)pdfShow('pdf_aus',pubDoc(id,'aus'));
 async function pdfShow(el,url,maxPages){const box=$(el);if(!box)return;box.innerHTML='<p>Wird geladen …</p>';
   try{PDFJS=PDFJS||await import('../veranstalter/pdf.min.js');PDFJS.GlobalWorkerOptions.workerSrc='../veranstalter/pdf.worker.min.js';
     const pdf=await PDFJS.getDocument({url}).promise;box.innerHTML='';const W=box.clientWidth||800;
@@ -164,8 +163,8 @@ function vInfo(){const t=S.info;if(!t)return '<div class="card">Lädt …</div>'
     <ol style="margin:0 0 12px;padding-left:22px;line-height:1.7"><li><b>Konto anlegen</b> (Verein, Trainer oder Einzelsportler) – einmalig, mit eigenem Passwort.</li><li><b>Sportler eintragen</b> – Sportart, Gewicht, Foto; die Kategorie wählt das System.</li>
      <li><b>Unterlagen hochladen</b> – Teilnahmeerklärung${t.attest?' und sportärztliches Attest':''} (gleich oder später).</li><li><b>Startgeld überweisen</b> – mit dem angezeigten Zahlungscode, bis zum Anmeldeschluss ${deDate(t.schluss)}.</li></ol>
     ${t.open?`<div class="g2"><button class="btn full" onclick="S.view='login';S.lmode='reg';render();scrollTo(0,0)">Jetzt registrieren &amp; anmelden ›</button><button class="btn sec full" onclick="S.view='login';S.lmode='login';render();scrollTo(0,0)">Ich habe schon ein Konto – einloggen</button></div>`:'<p><b>Die Anmeldung ist geschlossen.</b></p>'}</div>`;
-  return `<div style="display:grid;grid-template-columns:${d.plakat?'minmax(260px,1fr) 1.3fr':'1fr'};gap:16px;align-items:start">
-   ${d.plakat?`<div class="card" style="padding:8px">${d.plakat.ext==='pdf'?'<div id="pdf_plakat"></div>':`<img src="${pubDoc(t.id,'plakat')}" alt="Plakat" style="width:100%;border-radius:8px;display:block">`}</div>`:''}
+  return `<div style="display:grid;grid-template-columns:1fr;gap:16px;align-items:start">
+
    <div><div class="card"><h1 style="margin:0 0 8px">${esc(t.name)}</h1>
      <table class="l"><tr><td>Datum</td><td><b>${deDate(t.date)}</b></td></tr><tr><td>Ort</td><td><b>${esc(t.ort||'')}</b></td></tr>${t.promoter?`<tr><td>Veranstalter</td><td><b>${esc(t.promoter)}</b></td></tr>`:''}
       <tr><td>Anmeldeschluss</td><td><b>${deDate(t.schluss)}</b></td></tr><tr><td>Startgeld</td><td><b>${euro(t.fee)}${t.feeMore?' · jeder weitere Start '+euro(t.feeMore):''}</b></td></tr>
@@ -469,7 +468,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('48')||0;
+const WEB_VERSION=Number('49')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
