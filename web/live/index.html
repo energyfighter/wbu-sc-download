@@ -120,14 +120,14 @@ function clkAt(st,now){
   if(st.run&&ph!=='idle'&&ph!=='done'){r=st.rem-(now-st.t0);
     while(r<=0){if(ph==='round'){if(rd>=st.rounds){ph='done';r=0;break}ph='pause';r+=st.pSec*1000}else if(ph==='pause'){ph='round';rd++;r+=st.rSec*1000}else break}}
   const m=st.med||{};const med=Math.min(600000,(m.acc||0)+(m.run?now-m.t0:0));
-  return {phase:ph,round:rd,rem:Math.max(0,r),run:st.run&&ph!=='done'&&ph!=='idle',med,medOn:!!m.run||med>0,medRun:!!m.run}}
+  return {phase:ph,round:rd,rem:Math.max(0,r),run:st.run&&ph!=='done'&&ph!=='idle',med,medOn:!!m.run||(!!m.end&&med>0&&now-m.end<10000),medRun:!!m.run,medLast:m.run?0:med}}
 // Aktionen (geben neuen Zustand zurück)
 function clkFreeze(st,now){const v=clkAt(st,now);return Object.assign({},st,{phase:v.phase,round:v.round,rem:v.rem,t0:now})}
-function clkStart(st,now){let s=clkFreeze(st,now);if(s.phase==='idle'||s.phase==='done')s=Object.assign(s,{phase:'round',round:s.phase==='done'?1:s.round,rem:s.rSec*1000});return Object.assign(s,{run:true,t0:now})}
-function clkStop(st,now){return Object.assign(clkFreeze(st,now),{run:false})}
-function clkResetRound(st,now){const s=clkFreeze(st,now);return Object.assign(s,{run:false,phase:s.phase==='idle'?'idle':'round',rem:s.rSec*1000})}
+function clkStart(st,now){let s=clkFreeze(st,now);const m=s.med||{};if(m.run)s.med={run:false,t0:0,acc:Math.min(600000,(m.acc||0)+now-m.t0),end:now};if(s.phase==='idle'||s.phase==='done')s=Object.assign(s,{phase:'round',round:s.phase==='done'?1:s.round,rem:s.rSec*1000});return Object.assign(s,{run:true,t0:now})}
+function clkStop(st,now){const s=Object.assign(clkFreeze(st,now),{run:false});if(st.run&&s.phase==='round')s.med={run:true,t0:now,acc:0,end:0};return s}
+function clkResetRound(st,now){const s=clkFreeze(st,now);return Object.assign(s,{med:{run:false,t0:0,acc:0},run:false,phase:s.phase==='idle'?'idle':'round',rem:s.rSec*1000})}
 function clkNextRound(st,now){const s=clkFreeze(st,now);const rd=s.phase==='pause'?s.round+1:Math.min(s.rounds,s.round+(s.phase==='round'?1:0));
-  return Object.assign(s,{phase:'round',round:Math.min(s.rounds,rd),rem:s.rSec*1000,run:false})}
+  return Object.assign(s,{phase:'round',round:Math.min(s.rounds,rd),rem:s.rSec*1000,run:false,med:{run:false,t0:0,acc:0}})}
 function clkMed(st,now,act){const m=Object.assign({run:false,t0:0,acc:0},st.med||{});let s=Object.assign({},st);
   if(act==='start'&&!m.run){if(s.run)s=clkStop(s,now);m.run=true;m.t0=now}
   else if(act==='stop'&&m.run){m.acc+=now-m.t0;m.run=false}
@@ -161,7 +161,7 @@ function clkView(st,now,logo,title){
    <div class="main"><div class="box rd"><div class="lab">${v.phase==='pause'?'GLEICH RUNDE':'RUNDE'}</div><div class="big">${v.phase==='pause'?v.round+1:v.round}</div><div class="of">von ${st.rounds}</div></div>
      <div class="box tm ${cls}"><div class="lab">${v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'?'BEREIT':'ZEIT'}</div>
        <div class="big">${v.phase==='done'?'ENDE':clkFmt(v.rem)}</div><div class="st">${!v.run&&v.phase!=='idle'&&v.phase!=='done'?'ZEIT GESTOPPT':''}</div></div></div>
-   ${v.medOn?`<div class="med"><div class="lab">⏱ TIMEOUT${v.med>=600000?' – 10 MIN ERREICHT':''}</div><div class="big">${clkFmtUp(v.med)}</div></div>`:''}</div>`}
+   ${v.medOn?`<div class="med"><div class="lab">⏱ TIMEOUT${v.med>=600000?' – 10 MIN ERREICHT':v.medRun?'':' – BEENDET'}</div><div class="big">${clkFmtUp(v.med)}</div></div>`:''}</div>`}
 // ---------- Signale (werden im Browser erzeugt, keine Tondateien nötig) ----------
 let CLK_AC=null,CLK_OUT=null,KNOCK_VOL=4;
 function clkAudio(){try{if(!CLK_AC){CLK_AC=new (window.AudioContext||window.webkitAudioContext)();CLK_OUT=null}if(CLK_AC.state==='suspended')CLK_AC.resume()}catch(e){}return CLK_AC}
@@ -249,7 +249,11 @@ function startPlatz(){const rg=+(Q.get('ring')||1),KEY=Q.get('platz');let sn=nul
       <div style="margin-top:10px"><button class="go" ${w&&k?'':'disabled style="opacity:.4"'} onclick="pzSend('${mid}','${w}','${k}')">Ergebnis senden</button><button onclick="$('pzd').innerHTML=''">Abbrechen</button></div></div></div>`};
   window.pzSend=async(mid,w,k)=>{const r=+($('pzr')||{}).value||null,res={k,w,r:['KO','TKO','RTD','DQ'].includes(k)?r:null,t:'',ts:Date.now(),by:'Bedienplatz '+rg};
     try{await api('l_result',{lid:LID,key:KEY,mid,res});pend[mid]=k;$('pzd').innerHTML='';const o=rows().find(x=>!x.done&&x.ready!==false);if(o)await put(fresh(o));draw()}catch(e){alert(e.message)}};
-  window.pzDq=w=>{if(!st||!st.mid)return;const nm=w==='R'?st.red:st.blue;if(!confirm(nm+' disqualifizieren (Wiegen nicht bestanden)? Der Gegner gewinnt und kommt weiter.'))return;
+  const kgs=x=>String((+x).toFixed(1)).replace('.',',');
+  window.pzW=(w,val)=>{const f=rows().find(r=>st&&r.mid===st.mid),kg=parseFloat(String(val).replace(',','.'));if(!f||!kg||f.max==null)return;const nm=w==='R'?f.a:f.b;
+    if(kg<=f.max+1e-9){alert('✓ '+nm+': '+kgs(kg)+' kg – Gewicht in Ordnung (max. '+kgs(f.max)+' kg)');return}
+    if(confirm('ÜBERGEWICHT: '+nm+' wiegt '+kgs(kg)+' kg – erlaubt sind höchstens '+kgs(f.max)+' kg ('+f.gew+' kg + '+kgs(f.tol)+' kg Toleranz).\n\nJetzt disqualifizieren?'))pzDq(w,true)};
+  window.pzDq=(w,ok)=>{if(!st||!st.mid)return;const nm=w==='R'?st.red:st.blue;if(!ok&&!confirm(nm+' disqualifizieren (Wiegen nicht bestanden)? Der Gegner gewinnt und kommt weiter.'))return;
     api('l_result',{lid:LID,key:KEY,mid:st.mid,res:{k:'DQ',w:w==='R'?'B':'R',r:null,t:'Wiegen',ts:Date.now(),by:'Bedienplatz '+rg}}).then(()=>{pend[st.mid]='DQ';const o=rows().find(x=>!x.done&&x.ready!==false);if(o)put(fresh(o))}).catch(e=>alert(e.message))};
   function draw(){if(!sn){$('app').innerHTML='<div class="pz"><h2>Bedienplatz wird geladen …</h2><p>Live muss in WBU Sports eingeschaltet sein.</p></div>';return}
     const L=rows(),cur=st&&L.find(r=>r.mid===st.mid),open=L.filter(r=>!r.done),nxt=open.filter(r=>!cur||r.mid!==cur.mid).slice(0,6),done=L.filter(r=>r.done).reverse(),v=st&&clkAt(st,now());
@@ -260,9 +264,11 @@ function startPlatz(){const rg=+(Q.get('ring')||1),KEY=Q.get('platz');let sn=nul
        <div id="pzm" style="display:${v.medOn?'flex':'none'};justify-content:space-between;border:3px solid #d0021b;border-radius:12px;padding:2px 14px;margin-top:6px;color:#d0021b;background:#fff"><b style="font-size:22px">⏱ TIMEOUT</b><b style="font-size:34px" id="pzmt">${clkFmtUp(v.med)}</b></div>
        <div style="margin-top:8px">${v.run?`<button class="stop" onclick="pzDo('stop')">⏸ STOPP</button>`:`<button class="go" onclick="pzDo('start')">▶ ${st.phase==='idle'?'START':st.phase==='done'?'NEU':'WEITER'}</button>`}
         <button onclick="pzDo('reset')">↺ Runde neu</button><button onclick="pzDo('next')">⏭ Nächste Runde</button>
-        <b style="color:#d0021b;margin-left:10px">⏱ Timeout:</b>${v.medRun?`<button onclick="pzDo('medstop')">Stopp</button>`:`<button onclick="pzDo('medstart')">Start</button>`}<button onclick="pzDo('medreset')">Reset</button>
+        <span style="font-size:14px;margin-left:8px">⏱ STOPP = Timeout-Uhr läuft automatisch · WEITER = sie hält an</span>
         <b style="margin-left:10px">⚖ DQ:</b><button style="color:#d0021b;border-color:#d0021b" onclick="pzDq('R')">Rot</button><button style="color:#0047bb;border-color:#0047bb" onclick="pzDq('B')">Blau</button></div>`:''}
      <h3 style="margin:14px 0 4px">IM RING</h3>${cur&&!cur.done?`<div class="bx" style="text-align:left;padding:10px"><b>Kampf ${cur.no}</b> · ${esc(cur.kl)} ${esc(cur.rd||'')}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px"><div class="r">${esc(cur.a)}</div><div class="b">${esc(cur.b)}</div></div>
+       ${cur.max!=null?`<div style="margin-top:8px;border:2px dashed #000;border-radius:10px;padding:6px 10px"><b>⚖ Wiegen (mit Ausrüstung):</b> ${esc(cur.gew)} kg + ${kgs(cur.tol)} kg Toleranz = <b style="font-size:20px">max. ${kgs(cur.max)} kg</b><br>
+         <b style="color:#d0021b">Rot</b> <input style="width:90px;font-size:16px;padding:6px;border:2px solid #d0021b;border-radius:8px" placeholder="kg" onchange="pzW('R',this.value)"> <b style="color:#0047bb">Blau</b> <input style="width:90px;font-size:16px;padding:6px;border:2px solid #0047bb;border-radius:8px" placeholder="kg" onchange="pzW('B',this.value)"></div>`:''}
        <div style="margin-top:8px"><button class="go" onclick="pzRes('${cur.mid}')">Ergebnis eintragen</button>${nxt[0]?`<button onclick="pzPick('${nxt[0].mid}')">Nächsten Kampf aufrufen ›</button>`:''}</div></div>`:'<p>Keine offenen Kämpfe.</p>'}
      <h3 style="margin:14px 0 4px">ALS NÄCHSTES</h3><table>${nxt.map((r,i)=>`<tr><td style="width:50px"><b>${r.no}</b></td><td><b style="color:#d0021b">${esc(r.a)}</b> – <b style="color:#0047bb">${esc(r.b)}</b><div style="font-size:13px">${esc(r.kl)}${i<2?' · <b>BEREIT MACHEN</b>':''}</div></td><td style="text-align:right"><button onclick="pzPick('${r.mid}')">aufrufen</button></td></tr>`).join('')||'<tr><td>–</td></tr>'}</table>
      <details style="margin-top:10px"><summary style="font-weight:800;cursor:pointer">Bisherige Kämpfe (${done.length})</summary><table>${done.map(r=>`<tr><td style="width:50px"><b>${r.no}</b></td><td>${esc(r.a)} – ${esc(r.b)}<div style="font-size:13px">${esc(typeof r.res==='string'?r.res:'')}</div></td></tr>`).join('')}</table></details>
