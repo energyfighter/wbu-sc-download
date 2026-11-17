@@ -170,7 +170,7 @@ function liveRows($lid) {
 
 // ---- Unterlagen (Ausschreibung, Formulare, unterschriebene Erklärungen) ----
 const DOC_KINDS = ['aus' => 'Ausschreibung', 'ablauf' => 'Ablaufplan', 'haft' => 'Teilnahmeerklärung & Haftungsausschluss', 'eltern' => 'Einverständniserklärung der Eltern',
-                   'attest' => 'Sportärztliches Attest / Medical Check'];
+                   'attest' => 'Sportärztliches Attest / Medical Check', 'plakat' => 'Plakat'];
 function docdir() {
     global $DIR; $d = "$DIR/docs";
     if (!is_dir($d)) @mkdir($d, 0755, true);
@@ -592,9 +592,9 @@ case 't_doc':   // Veranstalter lädt Ausschreibung / Ablaufplan / Formulare hoc
     }, true);
     out(['ok' => true] + $r);
 
-case 't_docget':   // mit Login: Ausschreibung / Formulare herunterladen
-    needLogin((string)($_GET['tok'] ?? $in['tok'] ?? ''));
+case 't_docget':   // Plakat, Ausschreibung und Ablaufplan öffentlich; Formulare mit Login
     $tid = (string)($_GET['tid'] ?? $in['tid'] ?? ''); $kind = (string)($_GET['kind'] ?? $in['kind'] ?? '');
+    if (!in_array($kind, ['plakat', 'aus', 'ablauf'], true)) needLogin((string)($_GET['tok'] ?? $in['tok'] ?? ''));
     if (!isset(DOC_KINDS[$kind])) fail('Unbekannte Unterlage');
     $t = json_decode((string)@file_get_contents(tufile($tid)), true);
     $d = $t['docs'][$kind] ?? null;
@@ -791,6 +791,13 @@ case 'c_setrole':   // eigenes Konto: Rolle ändern (z. B. Verein -> Veranstalte
     if (empty($me['email']) || strpos($me['email'], '@') === false) fail('Nicht möglich', 403);
     withClubs(function (&$c) use ($me, $rolle) { $c[$me['email']]['rolle'] = $rolle; }, true);
     out(['ok' => true, 'me' => clubByToken($in['tok'] ?? '')]);
+
+case 't_info':      // öffentlich (ohne Login): Turnierseite zum Informieren – Plakat, Ausschreibung, Eckdaten
+    $t = json_decode((string)@file_get_contents(tufile($in['tid'] ?? ($_GET['tid'] ?? ''))), true);
+    if (!is_array($t)) fail('Turnier nicht gefunden', 404);
+    $p = tPublic($t); unset($p['iban'], $p['bic'], $p['inhaber']);
+    $p['docs'] = array_intersect_key((array)($t['docs'] ?? []), ['plakat' => 1, 'aus' => 1, 'ablauf' => 1, 'haft' => 1]);
+    out(['ok' => true, 't' => $p]);
 
 case 't_list':
     needLogin($in['tok'] ?? '');
@@ -1116,7 +1123,7 @@ case 'l_list':
         $sn = $l['snap'];
         $open = 0; foreach (($sn['rows'] ?? []) as $x) if (empty($x['done'])) $open++;
         $list[] = ['id' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $sn['date'] ?? '',
-                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'rings' => $sn['rings'] ?? 1];
+                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'rings' => $sn['rings'] ?? 1, 'ringName' => $sn['ringName'] ?? 'Ring'];
     }
     usort($list, function ($x, $y) { return $y['updated'] - $x['updated']; });
     out(['ok' => true, 'live' => $list]);
