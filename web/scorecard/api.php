@@ -1119,8 +1119,10 @@ case 'l_list':
     foreach (glob("$DIR/lv_*.json") as $f) {
         $l = json_decode(@file_get_contents($f), true);
         if (!is_array($l) || empty($l['snap'])) continue;
-        if (time() - ($l['updated'] ?? 0) > 3 * 86400) continue;
         $sn = $l['snap'];
+        // sichtbar: kürzlich bearbeitet ODER Veranstaltungstag ist heute/noch nicht vorbei (Galas/Turniere früh angelegt)
+        $evDay = strtotime((string)($sn['date'] ?? '')) ?: 0;
+        if (time() - ($l['updated'] ?? 0) > 3 * 86400 && !($evDay && $evDay >= strtotime('today') - 86400)) continue;
         $open = 0; foreach (($sn['rows'] ?? []) as $x) if (empty($x['done'])) $open++;
         $list[] = ['id' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $sn['date'] ?? '',
                    'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'rings' => $sn['rings'] ?? 1, 'ringName' => $sn['ringName'] ?? 'Ring'];
