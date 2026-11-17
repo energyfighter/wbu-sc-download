@@ -68,7 +68,7 @@ const S={tab:'live',snap:null,err:'',ring:+(Q.get('ring')||0)};
 const uhr=()=>new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 const big=()=>innerWidth>=1100;
 
-function head(sn){return `${TV?'':`<div class="wnav" style="padding:6px 14px"><a href="https://www.wbu-boxing.com/">← WBU Startseite</a><a href="../anmeldung/">WBU Sports</a><a class="${ZEIT?'':'on'}" href="../live/">WBU Live</a><a class="${ZEIT?'on':''}" href="../live/?zeit=1">WBU Time</a></div>`}<div class="top">${TV?`<img src="${LOGO}">`:`<a href="https://www.wbu-boxing.com/" title="Zur WBU-Startseite"><img src="${LOGO}"></a>`}<div><h1>${esc(sn?sn.name:'WBU Live')}</h1><span>${sn?esc([sn.ort,deDate(sn.date)].filter(Boolean).join(' · '))+((sn.rings||1)>1?' · '+esc(sn.ringName||'Ring')+' '+S.ring:'')+' · Kampfreihenfolge':'World Boxing Union · Turniere und Galas live'}</span></div><div class="sp"></div><div class="uhr">${uhr()}</div></div>`}
+function head(sn){return `${TV?'':`<div class="wnav" style="padding:6px 14px"><a href="https://www.wbu-boxing.com/">← WBU Startseite</a><a href="../anmeldung/">WBU Sports</a><a class="${ZEIT?'':'on'}" href="../live/">WBU Live</a><a href="../live/?zeit=1&ring=1">WBU Time 1</a><a href="../live/?zeit=1&ring=2">WBU Time 2</a></div>`}<div class="top">${TV?`<img src="${LOGO}">`:`<a href="https://www.wbu-boxing.com/" title="Zur WBU-Startseite"><img src="${LOGO}"></a>`}<div><h1>${esc(sn?sn.name:'WBU Live')}</h1><span>${sn?esc([sn.ort,deDate(sn.date)].filter(Boolean).join(' · '))+((sn.rings||1)>1?' · '+esc(sn.ringName||'Ring')+' '+S.ring:'')+' · Kampfreihenfolge':'World Boxing Union · Turniere und Galas live'}</span></div><div class="sp"></div><div class="uhr">${uhr()}</div></div>`}
 function card(f,i,showRes){
   const tag=showRes?`<span class="rd">${esc(f.rd)}</span>`:i===0?'<span class="tag">IM RING</span>':i<3?'<span class="tag y">BEREIT MACHEN</span>':`<span class="rd">${esc(f.rd)}</span>`;
   return `<div class="f ${showRes?'':i===0?'now':i<3?'next':''}"><div class="h"><span class="no">Kampf ${f.no}</span>${tag}</div><div class="kl">${esc(f.kl)}</div>
@@ -77,9 +77,6 @@ function card(f,i,showRes){
 
 const timeBtns=(id,rings,nm)=>Array.from({length:Math.max(1,rings||1)},(_,i)=>`<a href="?l=${id}&zeit=1&ring=${i+1}" style="display:inline-block;margin:4px 6px 0 0;padding:12px 18px;border:3px solid #000;border-radius:12px;background:#fff;color:#000;font-weight:800;font-size:20px;text-decoration:none">⏱ WBU Time ${(rings||1)>1?esc(nm||'Ring')+' '+(i+1):''}</a>`).join('');
 function vList(list){
-  if(ZEIT)return head(null)+`<div class="wrap"><h2>WBU Time – welcher ${'Ring'} soll auf diesem Fernseher laufen?</h2>${S.err?`<p>${esc(S.err)}</p>`:''}
-   ${list.length?list.map(e=>`<div class="ev" style="cursor:default"><b>${esc(e.name)}</b><div class="mut">${esc([e.ort,deDate(e.date)].filter(Boolean).join(' · '))}</div><div style="margin-top:8px">${timeBtns(e.id,e.rings,e.ringName)}</div></div>`).join('')
-   :'<p class="mut">Zurzeit läuft keine Veranstaltung live.</p>'}</div>`;
   return head(null)+`<div class="wrap"><h2>Laufende Veranstaltungen</h2>${S.err?`<p>${esc(S.err)}</p>`:''}
   ${list.length?list.map(e=>`<a class="ev" href="?l=${e.id}"><span class="live">LIVE</span><b>${esc(e.name)}</b><div class="mut">${esc([e.ort,deDate(e.date)].filter(Boolean).join(' · '))} · ${e.offen?e.offen+' Kämpfe offen':'alle Kämpfe beendet'}</div></a>`).join('')
   :'<p class="mut">Zurzeit läuft keine Veranstaltung live.</p>'}</div>`}
@@ -88,7 +85,7 @@ function vLive(sn){
   const rings=sn.rings||1;if(rings>1&&!S.ring)S.ring=1;
   const all=sn.rows||[],rows=rings>1?all.filter(r=>(r.ring||1)===S.ring):all,open=rows.filter(r=>!r.done),done=rows.filter(r=>r.done);
   const ringBar=rings>1&&!TV?`<div class="btnbar">${Array.from({length:rings},(_,i)=>`<button class="btn ${S.ring===i+1?'on':''}" onclick="S.ring=${i+1};draw()">${esc(sn.ringName||'Ring')} ${i+1}</button>`).join('')}</div>`:'';
-  const bar=TV?'':ringBar+`<div class="btnbar"><a class="btn" style="text-decoration:none" href="?l=${LID}&zeit=1&ring=${S.ring||1}">⏱ WBU Time${rings>1?' '+esc(sn.ringName||'Ring')+' '+(S.ring||1):''}</a></div><div class="btnbar"><button class="btn ${S.tab==='live'?'on':''}" onclick="S.tab='live';draw()">Nächste Kämpfe</button><button class="btn ${S.tab==='done'?'on':''}" onclick="S.tab='done';draw()">Bisherige Kämpfe (${done.length})</button>${sn.places&&sn.places.length?`<button class="btn ${S.tab==='pl'?'on':''}" onclick="S.tab='pl';draw()">Platzierungen</button>`:''}</div>`;
+  const bar=TV?'':ringBar+`<div class="btnbar"><button class="btn ${S.tab==='live'?'on':''}" onclick="S.tab='live';draw()">Nächste Kämpfe</button><button class="btn ${S.tab==='done'?'on':''}" onclick="S.tab='done';draw()">Bisherige Kämpfe (${done.length})</button>${sn.places&&sn.places.length?`<button class="btn ${S.tab==='pl'?'on':''}" onclick="S.tab='pl';draw()">Platzierungen</button>`:''}</div>`;
   let body;
   if(S.tab==='done'&&!TV)body=done.length?`<div class="grid ${big()?'wide':''}">${done.slice().reverse().map((f,i)=>card(f,i,true)).join('')}</div>`:'<div class="empty">Noch keine Kämpfe beendet.</div>';
   else if(S.tab==='pl'&&!TV)body=`<div style="padding:12px"><table><tr><th>Kategorie</th><th>1.</th><th>2.</th><th>3.</th><th>3.</th></tr>${sn.places.map(p=>{const n=x=>x?`<b>${esc(x.n)}</b><br><span class="mut">${esc(x.c)}</span>`:'<span class="mut">–</span>';
@@ -212,12 +209,14 @@ function clkSignals(prev,v,snd){if(!prev||!v)return;
   if(pk!==vk&&prev.run&&((prev.phase==='round'&&(v.phase==='pause'||v.phase==='done'))||(prev.phase==='pause'&&v.phase==='round')))clkBell(v.phase==='done'?3:1,snd)}
 
 // ---------- WBU Time: Rundenuhr für den Fernseher (?l=…&zeit=1&ring=1) ----------
-if(ZEIT&&LID){const rg=+(Q.get('ring')||1);let st=null,off=0,prev=null,snd=false,name='';
+if(ZEIT){const rg=+(Q.get('ring')||1);let st=null,off=0,prev=null,snd=false,name='',lid=LID;
   document.head.insertAdjacentHTML('beforeend','<style>'+CLK_CSS+'.snd{position:fixed;top:14px;right:14px;z-index:6;font-size:18px;font-weight:800;padding:10px 16px;border-radius:10px;border:2px solid #000;background:#fff;cursor:pointer}</style>');
   document.title='WBU Time – '+rg;
   const sb=document.body.appendChild(Object.assign(document.createElement('button'),{className:'snd',textContent:'🔇 Mute – Ton einschalten'}));
   sb.onclick=()=>{snd=!snd;if(snd)clkAudio();sb.textContent=snd?'🔊 Ton an – hier tippen für Mute':'🔇 Mute – Ton einschalten';sb.style.opacity=snd?.4:1};
-  const poll=async()=>{try{const t=Date.now(),j=await api('l_clockget',{lid:LID,ring:rg});off=j.srv-(t+Date.now())/2;st=j.st;name=j.name}catch(e){}};
+  // ohne ?l=… (Menü „WBU Time 1/2“): automatisch die aktuell laufende Veranstaltung
+  const poll=async()=>{try{if(!LID){const L=(await api('l_list',{})).live||[];lid=L[0]?L[0].id:null}if(!lid){st=null;name='Zurzeit läuft keine Veranstaltung live';return}
+    const t=Date.now(),j=await api('l_clockget',{lid,ring:rg});off=j.srv-(t+Date.now())/2;st=j.st;name=j.name}catch(e){}};
   poll();setInterval(poll,1000);
   setInterval(()=>{const n=Date.now()+off,v=st&&clkAt(st,n);$('app').innerHTML=clkView(st,n,LOGO,name);if(snd)clkSignals(prev,v,st&&st.snd);prev=v},200);
 }else if(Q.get('platz')&&LID){startPlatz()}else{load();setInterval(load,5000)}
