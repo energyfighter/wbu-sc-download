@@ -1073,7 +1073,9 @@ case 'l_pull':
 
 case 'l_result':
     // Ergebnis von der Android-App (Supervisor per Bluetooth): mit WBU-Passwort
-    if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
+    // … oder vom Bedienplatz (zweiter PC am Ring) mit dem Schlüssel aus dem Bedienplatz-Link
+    $byKey = !empty($in['key']) && !empty($in['lid']) && tKeyOk(json_decode((string)@file_get_contents(lvfile($in['lid'])), true) ?: [], $in['key']);
+    if (!$byKey && !hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
     $mid = txt($in['mid'] ?? '', 40); $res = is_array($in['res'] ?? null) ? $in['res'] : null;
     if ($mid === '' || !$res) fail('Ergebnis fehlt');
     withLive($in['lid'] ?? '', function (&$l) use ($mid, $res) {

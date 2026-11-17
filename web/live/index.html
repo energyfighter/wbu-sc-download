@@ -217,7 +217,58 @@ if(ZEIT&&LID){const rg=+(Q.get('ring')||1);let st=null,off=0,prev=null,snd=false
   const poll=async()=>{try{const t=Date.now(),j=await api('l_clockget',{lid:LID,ring:rg});off=j.srv-(t+Date.now())/2;st=j.st;name=j.name}catch(e){}};
   poll();setInterval(poll,1000);
   setInterval(()=>{const n=Date.now()+off,v=st&&clkAt(st,n);$('app').innerHTML=clkView(st,n,LOGO,name);if(snd)clkSignals(prev,v,st&&st.snd);prev=v},200);
-}else{load();setInterval(load,5000)}
+}else if(Q.get('platz')&&LID){startPlatz()}else{load();setInterval(load,5000)}
+// ---------- Bedienplatz: ein Ring an einem zweiten PC – ohne Login (Schlüssel im Link) ----------
+function startPlatz(){const rg=+(Q.get('ring')||1),KEY=Q.get('platz');let sn=null,st=null,off=0,prev=null,mute=localStorage.getItem('wbuMute')==='1',pend={},busy=false;
+  const RESL=[['UD','Punktsieg einstimmig'],['SD','Punktsieg geteilt'],['MD','Punktsieg Mehrheit'],['KO','K.O.'],['TKO','T.K.O.'],['RTD','Aufgabe in der Ecke (RTD)'],['DQ','Disqualifikation'],['WO','Kampflos (W.O.)']];
+  document.head.insertAdjacentHTML('beforeend',`<style>body{background:#e9ebef}.pz{max-width:1100px;margin:0 auto;padding:14px;font-family:system-ui,Arial,sans-serif;color:#000}
+   .pz .bx{background:#fff;border:3px solid #000;border-radius:14px;text-align:center;padding:6px}.pz button{font-size:16px;font-weight:800;padding:9px 14px;border-radius:10px;border:2px solid #000;background:#fff;cursor:pointer;margin:2px}
+   .pz .go{background:#1e8e3e;color:#fff;border-color:#1e8e3e}.pz .stop{background:#d0021b;color:#fff;border-color:#d0021b}.pz .r{background:#d0021b;color:#fff;border-radius:10px;padding:8px 12px;font-weight:800;font-size:20px}
+   .pz .b{background:#0047bb;color:#fff;border-radius:10px;padding:8px 12px;font-weight:800;font-size:20px;text-align:right}.pz table{width:100%;border-collapse:collapse}.pz td{padding:6px;border-bottom:1px solid #ccc}
+   .pz select{font-size:16px;padding:6px;border-radius:8px;border:2px solid #000}.pz .dlgb{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
+   .pz .dlg{background:#fff;border-radius:14px;padding:18px;max-width:520px;width:94%}</style>`);
+  const rows=()=>((sn&&sn.rows)||[]).filter(r=>(sn.rings||1)<2||(r.ring||1)===rg).map(r=>pend[r.mid]?Object.assign({},r,{done:true,res:pend[r.mid]}):r);
+  const fresh=f=>clkNew({rounds:+f.rounds||3,rSec:clkDur(f.dur),red:f.a,blue:f.b,kl:f.kl+(f.rd?' · '+f.rd:''),no:f.no,mid:f.mid,ring:(sn.ringName||'Ring')+' '+rg});
+  const put=async s=>{st=Object.assign({},s,{snd:st&&st.snd||s.snd});try{await api('l_clock',{lid:LID,key:KEY,ring:rg,st:Object.assign({},st,{t0:st.t0?st.t0-off:0,med:Object.assign({},st.med,{t0:st.med&&st.med.t0?st.med.t0-off:0})}),now:Date.now()})}catch(e){}draw()};
+  const now=()=>Date.now()+off;
+  async function poll(){if(busy)return;busy=true;try{const t=Date.now(),[a,b]=await Promise.all([api('l_get',{lid:LID}),api('l_clockget',{lid:LID,ring:rg})]);
+      off=b.srv-(t+Date.now())/2;sn=a.snap;st=b.st;
+      Object.keys(pend).forEach(m=>{const r=(sn&&sn.rows||[]).find(x=>x.mid===m);if(!r||r.done)delete pend[m]});
+      const L=rows(),f=st&&L.find(r=>r.mid===st.mid),o=L.find(r=>!r.done&&r.ready!==false);
+      if(sn&&(!st||!f||f.done)&&o&&(!st||st.mid!==o.mid))await put(fresh(o))}catch(e){}busy=false;draw()}
+  window.pzDo=act=>{if(!st)return;const n=now();let s=st;if(act==='start')s=clkStart(st,n);else if(act==='stop')s=clkStop(st,n);else if(act==='reset')s=clkResetRound(st,n);else if(act==='next')s=clkNextRound(st,n);else if(act.startsWith('med'))s=clkMed(st,n,act.slice(3));if(!mute)clkAudio();put(s)};
+  window.pzPick=mid=>{const f=rows().find(r=>r.mid===mid);if(f)put(fresh(f))};
+  window.pzMute=()=>{mute=!mute;localStorage.setItem('wbuMute',mute?'1':'0');if(!mute)clkAudio();draw()};
+  window.pzRes=(mid,w,k)=>{const f=rows().find(r=>r.mid===mid);if(!f)return;$('pzd').innerHTML=`<div class="dlgb"><div class="dlg"><h2 style="margin-top:0">Ergebnis Kampf ${f.no}</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="r" onclick="pzRes('${mid}','R','${k||''}')" style="cursor:pointer;outline:${w==='R'?'5px solid #000':'none'}">${esc(f.a)}</div><div class="b" onclick="pzRes('${mid}','B','${k||''}')" style="cursor:pointer;outline:${w==='B'?'5px solid #000':'none'}">${esc(f.b)}</div></div>
+      <p style="margin:8px 0 4px"><b>Sieger antippen, dann die Art:</b></p><div>${RESL.map(([c,l])=>`<button style="${k===c?'background:#000;color:#fff':''}" onclick="pzRes('${mid}','${w||''}','${c}')">${l}</button>`).join('')}</div>
+      <p style="margin:8px 0 4px"><b>Runde</b> (bei K.O./T.K.O./RTD/DQ): <select id="pzr">${[1,2,3,4,5,6,7,8,9,10,11,12].map(x=>`<option>${x}</option>`).join('')}</select></p>
+      <div style="margin-top:10px"><button class="go" ${w&&k?'':'disabled style="opacity:.4"'} onclick="pzSend('${mid}','${w}','${k}')">Ergebnis senden</button><button onclick="$('pzd').innerHTML=''">Abbrechen</button></div></div></div>`};
+  window.pzSend=async(mid,w,k)=>{const r=+($('pzr')||{}).value||null,res={k,w,r:['KO','TKO','RTD','DQ'].includes(k)?r:null,t:'',ts:Date.now(),by:'Bedienplatz '+rg};
+    try{await api('l_result',{lid:LID,key:KEY,mid,res});pend[mid]=k;$('pzd').innerHTML='';const o=rows().find(x=>!x.done&&x.ready!==false);if(o)await put(fresh(o));draw()}catch(e){alert(e.message)}};
+  window.pzDq=w=>{if(!st||!st.mid)return;const nm=w==='R'?st.red:st.blue;if(!confirm(nm+' disqualifizieren (Wiegen nicht bestanden)? Der Gegner gewinnt und kommt weiter.'))return;
+    api('l_result',{lid:LID,key:KEY,mid:st.mid,res:{k:'DQ',w:w==='R'?'B':'R',r:null,t:'Wiegen',ts:Date.now(),by:'Bedienplatz '+rg}}).then(()=>{pend[st.mid]='DQ';const o=rows().find(x=>!x.done&&x.ready!==false);if(o)put(fresh(o))}).catch(e=>alert(e.message))};
+  function draw(){if(!sn){$('app').innerHTML='<div class="pz"><h2>Bedienplatz wird geladen …</h2><p>Live muss in WBU Sports eingeschaltet sein.</p></div>';return}
+    const L=rows(),cur=st&&L.find(r=>r.mid===st.mid),open=L.filter(r=>!r.done),nxt=open.filter(r=>!cur||r.mid!==cur.mid).slice(0,6),done=L.filter(r=>r.done).reverse(),v=st&&clkAt(st,now());
+    $('app').innerHTML=`<div class="pz"><div style="display:flex;align-items:center;gap:12px"><img src="${LOGO}" style="width:54px"><div><b style="font-size:22px">Bedienplatz ${esc(sn.ringName||'Ring')} ${rg}</b><div>${esc(sn.name)} · ohne Login – Ergebnisse gehen direkt an die Leitstelle</div></div><span style="flex:1"></span>
+      <button onclick="pzMute()" style="${mute?'background:#000;color:#fff':''}">${mute?'🔇 MUTE':'🔊 Signale an'}</button><a target="_blank" href="?l=${LID}&zeit=1&ring=${rg}"><button>📺 WBU Time</button></a></div>
+     ${st&&v?`<div style="display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-top:10px"><div class="bx"><b>${v.phase==='pause'?'GLEICH RUNDE':'RUNDE'}</b><div style="font-size:64px;font-weight:900;line-height:1" id="pzr1">${v.phase==='pause'?v.round+1:v.round}</div><b>von ${st.rounds}</b></div>
+       <div class="bx" id="pzbox"><b id="pzph">ZEIT</b><div style="font-size:76px;font-weight:900;line-height:1" id="pzt">${clkFmt(v.rem)}</div><b style="color:#d0021b" id="pzs"></b></div></div>
+       <div id="pzm" style="display:${v.medOn?'flex':'none'};justify-content:space-between;border:3px solid #d0021b;border-radius:12px;padding:2px 14px;margin-top:6px;color:#d0021b;background:#fff"><b style="font-size:22px">⏱ TIMEOUT</b><b style="font-size:34px" id="pzmt">${clkFmtUp(v.med)}</b></div>
+       <div style="margin-top:8px">${v.run?`<button class="stop" onclick="pzDo('stop')">⏸ STOPP</button>`:`<button class="go" onclick="pzDo('start')">▶ ${st.phase==='idle'?'START':st.phase==='done'?'NEU':'WEITER'}</button>`}
+        <button onclick="pzDo('reset')">↺ Runde neu</button><button onclick="pzDo('next')">⏭ Nächste Runde</button>
+        <b style="color:#d0021b;margin-left:10px">⏱ Timeout:</b>${v.medRun?`<button onclick="pzDo('medstop')">Stopp</button>`:`<button onclick="pzDo('medstart')">Start</button>`}<button onclick="pzDo('medreset')">Reset</button>
+        <b style="margin-left:10px">⚖ DQ:</b><button style="color:#d0021b;border-color:#d0021b" onclick="pzDq('R')">Rot</button><button style="color:#0047bb;border-color:#0047bb" onclick="pzDq('B')">Blau</button></div>`:''}
+     <h3 style="margin:14px 0 4px">IM RING</h3>${cur&&!cur.done?`<div class="bx" style="text-align:left;padding:10px"><b>Kampf ${cur.no}</b> · ${esc(cur.kl)} ${esc(cur.rd||'')}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px"><div class="r">${esc(cur.a)}</div><div class="b">${esc(cur.b)}</div></div>
+       <div style="margin-top:8px"><button class="go" onclick="pzRes('${cur.mid}')">Ergebnis eintragen</button>${nxt[0]?`<button onclick="pzPick('${nxt[0].mid}')">Nächsten Kampf aufrufen ›</button>`:''}</div></div>`:'<p>Keine offenen Kämpfe.</p>'}
+     <h3 style="margin:14px 0 4px">ALS NÄCHSTES</h3><table>${nxt.map((r,i)=>`<tr><td style="width:50px"><b>${r.no}</b></td><td><b style="color:#d0021b">${esc(r.a)}</b> – <b style="color:#0047bb">${esc(r.b)}</b><div style="font-size:13px">${esc(r.kl)}${i<2?' · <b>BEREIT MACHEN</b>':''}</div></td><td style="text-align:right"><button onclick="pzPick('${r.mid}')">aufrufen</button></td></tr>`).join('')||'<tr><td>–</td></tr>'}</table>
+     <details style="margin-top:10px"><summary style="font-weight:800;cursor:pointer">Bisherige Kämpfe (${done.length})</summary><table>${done.map(r=>`<tr><td style="width:50px"><b>${r.no}</b></td><td>${esc(r.a)} – ${esc(r.b)}<div style="font-size:13px">${esc(typeof r.res==='string'?r.res:'')}</div></td></tr>`).join('')}</table></details>
+     <div id="pzd"></div></div>`}
+  poll();setInterval(poll,2500);
+  setInterval(()=>{if(!st)return;const v=clkAt(st,now()),e=x=>document.getElementById(x);if(e('pzt')){e('pzt').textContent=v.phase==='done'?'ENDE':clkFmt(v.rem);e('pzr1').textContent=v.phase==='pause'?v.round+1:v.round;
+      e('pzph').textContent=v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'?'BEREIT':'ZEIT';e('pzt').style.color=v.phase==='round'&&v.rem<=10000?'#d0021b':'#000';
+      e('pzbox').style.borderColor=v.phase==='pause'?'#0047bb':'#000';e('pzs').textContent=!v.run&&v.phase!=='idle'&&v.phase!=='done'?'ZEIT GESTOPPT':'';e('pzm').style.display=v.medOn?'flex':'none';e('pzmt').textContent=clkFmtUp(v.med)}
+    if(!mute)clkSignals(prev,v,st.snd);if(prev&&(prev.run!==v.run||prev.phase!==v.phase||prev.medRun!==v.medRun)&&!$('pzd').innerHTML)draw();prev=v},200)}
 </script>
 </body>
 </html>
