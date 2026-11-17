@@ -1,6 +1,6 @@
 {
-  "versionCode": 89,
-  "versionName": "1.89",
+  "versionCode": 93,
+  "versionName": "1.93",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
   "notes": "Neu: Supervisor kann sich per Bluetooth mit Tablet oder Laptop (WBU Sports) verbinden – ohne Internet."
 }

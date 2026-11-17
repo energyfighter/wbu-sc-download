@@ -1,6 +1,6 @@
 {
-  "versionCode": 89,
-  "versionName": "1.89",
+  "versionCode": 93,
+  "versionName": "1.93",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Windows.zip",
-  "notes": "WBU Sports für Windows"
+  "notes": "Veranstalter trägt Supervisor und Zeitnehmer nicht mehr ein."
 }
