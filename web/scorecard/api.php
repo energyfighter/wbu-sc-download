@@ -349,6 +349,15 @@ function ostat($o) {
 }
 /** Zählt dieser Sportler im System (Teilnehmerliste, Kategorien, Bracket)?
  *  Ja – sofort nach dem Eintragen. Raus erst, wenn die Zahlungsfrist ohne vollständige Zahlung abgelaufen ist (storno). */
+/** Kopf-Ausschnitt [x,y,w,h] (0..1) prüfen */
+function kopfOk($k) { if (!is_array($k) || count($k) !== 4) return null; $k = array_map('floatval', array_values($k));
+    foreach ($k as $v) if ($v < 0 || $v > 1) return null; if ($k[2] < .03 || $k[3] < .03) return null; return array_map(fn($v) => round($v, 4), $k); }
+/** Prüfcode für den QR-Code der Akkreditierungskarte */
+function akkSig($tid, $kind, $id) { global $CFG; $sec = (is_array($CFG) && !empty($CFG['update_key'])) ? $CFG['update_key'] : SUP_PASS_SHA256;
+    return substr(hash_hmac('sha256', "akk|$tid|$kind|$id", $sec), 0, 10); }
+/** erlaubte Zahl Trainer/Betreuer: 2 pro angefangene 5 Sportler, höchstens 4 */
+function staffMax($n) { return $n > 0 ? min(4, 2 * (int)ceil($n / 5)) : 0; }
+function myAthletes($t, $email) { $n = 0; foreach ($t['regs'] as $x) if (($x['club'] ?? '') === $email && regAlive($t, $x)) $n++; return $n; }
 function regIn($t, $x) { return regAlive($t, $x); }
 /** Ist die Zahlung vollständig da? */
 function regPaid($t, $x) {
@@ -883,6 +892,7 @@ case 't_register':
             if ($ext !== 'jpg' && $ext !== 'png') fail('Das Foto muss ein Bild (JPG/PNG) sein');
             file_put_contents(docdir() . "/r_{$t['id']}_{$reg['id']}_foto.$ext", $data);
             $reg['foto'] = $ext;
+            if ($k = kopfOk($files['foto']['kopf'] ?? null)) $reg['kopf'] = $k;
         }
         $reg['frei'] = !docsMiss($reg);
         // Warenkorb des Vereins für dieses Turnier (ein Zahlungscode für alle Sportler darin)
@@ -937,9 +947,81 @@ case 't_my':        // Verein: eigene Anmeldungen, Warenkorb, Zahlungen
         foreach ($t['regs'] as $x) if (($x['club'] ?? '') === $club['email'] && regAlive($t, $x))
             $mine[] = ['id' => $x['id'], 'vorname' => $x['vorname'], 'name' => $x['name'], 'nr' => $x['nr'], 'need' => $x['need'] ?? [], 'docs' => array_keys((array)($x['docs'] ?? [])),
                        'miss' => docsMiss($x), 'docDue' => $x['docDue'] ?? null, 'attestDate' => $x['attestDate'] ?? null];
-        return ['rechnungAb' => invoiceFrom($t), 'regs' => $mine, 'year' => substr($t['date'] ?: date('Y-m-d'), 0, 4), 'orders' => $os, 'bank' => ['inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic']], 'schluss' => $t['schluss'] ?: $t['date']];
+        $staff = []; foreach (($t['staff'] ?? []) as $x) if ($x['club'] === $club['email']) $staff[] = ['id' => $x['id'], 'name' => $x['name'], 'rolle' => $x['rolle'], 'foto' => !empty($x['foto']), 'kopf' => $x['kopf'] ?? null];
+        return ['staff' => $staff, 'staffMax' => staffMax(myAthletes($t, $club['email'])), 'rechnungAb' => invoiceFrom($t), 'regs' => $mine, 'year' => substr($t['date'] ?: date('Y-m-d'), 0, 4), 'orders' => $os, 'bank' => ['inhaber' => $t['inhaber'], 'iban' => $t['iban'], 'bic' => $t['bic']], 'schluss' => $t['schluss'] ?: $t['date']];
     });
     out(['ok' => true] + $r);
+
+case 't_staff_add':  // Verein/Trainer: Trainer oder Betreuer fürs Turnier anmelden (für die Akkreditierung, kostenlos)
+    $club = needLogin($in['tok'] ?? '');
+    if (empty($club['email']) || strpos($club['email'], '@') === false) fail('Nur mit eigenem Konto möglich', 403);
+    $name = txt($in['name'] ?? '', 80); $rolle = ($in['rolle'] ?? '') === 'trainer' ? 'trainer' : 'betreuer';
+    if (mb_strlen($name) < 3) fail('Bitte Vor- und Nachnamen angeben');
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($club, $name, $rolle, $in) {
+        $mine = array_values(array_filter($t['staff'] ?? [], fn($x) => $x['club'] === $club['email']));
+        $max = staffMax(myAthletes($t, $club['email']));
+        if ($max === 0) fail('Bitte zuerst Sportler anmelden – pro angefangene 5 Sportler sind 2 Trainer/Betreuer frei (höchstens 4).');
+        if (count($mine) >= $max) fail("Es sind schon $max Trainer/Betreuer angemeldet – mehr sind laut Ausschreibung nicht frei (2 pro 5 Sportler, höchstens 4). Weitere zahlen Eintritt.");
+        foreach ($mine as $x) if (mb_strtolower($x['name']) === mb_strtolower($name)) fail('Diese Person ist schon angemeldet');
+        $s = ['id' => bin2hex(random_bytes(6)), 'club' => $club['email'], 'verein' => $club['club'] ?: $club['trainer'], 'name' => $name, 'rolle' => $rolle, 'at' => time()];
+        if (!empty($in['foto'])) { [$data, $ext] = decodeFile($in['foto'], 6000000); if ($ext !== 'jpg' && $ext !== 'png') fail('Das Foto muss ein Bild sein (JPG/PNG)');
+            file_put_contents(docdir() . "/s_{$t['id']}_{$s['id']}.$ext", $data); $s['foto'] = $ext; if ($k = kopfOk($in['kopf'] ?? null)) $s['kopf'] = $k; }
+        $t['staff'][] = $s; return ['id' => $s['id']];
+    }, true);
+    out(['ok' => true] + $r);
+
+case 't_staff_del':
+    $club = needLogin($in['tok'] ?? '');
+    withTurnier($in['tid'] ?? '', function (&$t) use ($club, $in) {
+        $keep = [];
+        foreach (($t['staff'] ?? []) as $x) { if ($x['id'] === ($in['id'] ?? '') && $x['club'] === $club['email']) { if (!empty($x['foto'])) @unlink(docdir() . "/s_{$t['id']}_{$x['id']}.{$x['foto']}"); continue; } $keep[] = $x; }
+        $t['staff'] = $keep;
+    }, true);
+    out(['ok' => true]);
+
+case 't_staffdoc':   // Foto eines Trainers/Betreuers: eigener Verein (tok) oder Veranstalter (key)
+    $tid = (string)($_GET['tid'] ?? ''); $sid = (string)($_GET['sid'] ?? '');
+    $t = json_decode((string)@file_get_contents(tufile($tid)), true);
+    if (!is_array($t)) fail('Nicht gefunden', 404);
+    $me = clubByToken((string)($_GET['tok'] ?? ''));
+    foreach (($t['staff'] ?? []) as $x) if ($x['id'] === $sid && !empty($x['foto']) && (tKeyOk($t, (string)($_GET['key'] ?? '')) || ($me && $me['email'] === $x['club'])))
+        sendFile(docdir() . "/s_{$tid}_{$sid}.{$x['foto']}", $x['foto'], 'foto.' . $x['foto']);
+    fail('Kein Foto', 404);
+
+case 't_akk':        // Veranstalter: alle Personen für Akkreditierungskarten (Sportler im System + Trainer/Betreuer)
+    $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in) {
+        if (!tKeyOk($t, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        $L = [];
+        foreach ($t['regs'] as $x) if (regIn($t, $x))
+            $L[] = ['k' => 'r', 'id' => $x['id'], 'name' => trim($x['vorname'] . ' ' . $x['name']), 'verein' => $x['verein'], 'rolle' => 'sportler', 'klasse' => $x['klasse'], 'nr' => $x['nr'],
+                    'foto' => !empty($x['foto']), 'kopf' => $x['kopf'] ?? null, 'sig' => akkSig($t['id'], 'r', $x['id'])];
+        foreach (($t['staff'] ?? []) as $x)
+            $L[] = ['k' => 's', 'id' => $x['id'], 'name' => $x['name'], 'verein' => $x['verein'], 'rolle' => $x['rolle'], 'klasse' => '', 'nr' => 0,
+                    'foto' => !empty($x['foto']), 'kopf' => $x['kopf'] ?? null, 'sig' => akkSig($t['id'], 's', $x['id'])];
+        return ['list' => $L, 'name' => $t['name'], 'date' => $t['date'], 'ort' => $t['ort'] ?? ''];
+    });
+    out(['ok' => true] + $r);
+
+case 't_kopf':       // Veranstalter: Kopf-Ausschnitt eines Fotos festlegen
+    $k = kopfOk($in['kopf'] ?? null); if (!$k) fail('Ausschnitt fehlerhaft');
+    withTurnier($in['tid'] ?? '', function (&$t) use ($in, $k) {
+        if (!tKeyOk($t, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        $list = ($in['kind'] ?? '') === 's' ? 'staff' : 'regs';
+        foreach (($t[$list] ?? []) as $i => $x) if ($x['id'] === ($in['id'] ?? '')) { $t[$list][$i]['kopf'] = $k; return; }
+        fail('Nicht gefunden', 404);
+    }, true);
+    out(['ok' => true]);
+
+case 't_akkcheck':   // öffentlich: QR-Code einer Akkreditierungskarte prüfen (Einlass)
+    $c = explode('.', (string)($in['c'] ?? ($_GET['c'] ?? '')));
+    if (count($c) !== 4) out(['ok' => true, 'valid' => false]);
+    [$tid, $kind, $id, $sig] = $c;
+    $t = json_decode((string)@file_get_contents(tufile($tid)), true);
+    if (!is_array($t) || !hash_equals(akkSig($tid, $kind, $id), $sig)) out(['ok' => true, 'valid' => false]);
+    $p = null;
+    if ($kind === 'r') { foreach ($t['regs'] as $x) if ($x['id'] === $id && regIn($t, $x)) $p = ['name' => trim($x['vorname'] . ' ' . $x['name']), 'verein' => $x['verein'], 'rolle' => 'sportler', 'klasse' => $x['klasse']]; }
+    else foreach (($t['staff'] ?? []) as $x) if ($x['id'] === $id) $p = ['name' => $x['name'], 'verein' => $x['verein'], 'rolle' => $x['rolle'], 'klasse' => ''];
+    out(['ok' => true, 'valid' => (bool)$p, 'p' => $p, 'turnier' => $t['name'], 'date' => $t['date']]);
 
 case 't_mydoc':     // Verein: fehlende Unterlage eines eigenen Sportlers nachreichen
     $club = needLogin($in['tok'] ?? '');
