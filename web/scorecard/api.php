@@ -792,6 +792,33 @@ case 'c_setrole':   // eigenes Konto: Rolle ändern (z. B. Verein -> Veranstalte
     withClubs(function (&$c) use ($me, $rolle) { $c[$me['email']]['rolle'] = $rolle; }, true);
     out(['ok' => true, 'me' => clubByToken($in['tok'] ?? '')]);
 
+case 'c_logo_set':  // eigenes Konto: ein Logo (Verein/Veranstalter) für Urkunden hochladen – ersetzt das alte
+    $me = needLogin($in['tok'] ?? '');
+    if (empty($me['email']) || strpos($me['email'], '@') === false) fail('Nur mit eigenem Konto möglich', 403);
+    [$data, $ext] = decodeFile($in['data'] ?? '', 3000000);
+    if ($ext !== 'jpg' && $ext !== 'png') fail('Das Logo muss ein Bild sein (JPG oder PNG)');
+    $id = substr(hash('sha256', 'logo|' . $me['email']), 0, 14);
+    foreach (['jpg', 'png'] as $e) @unlink(docdir() . "/logo_$id.$e");
+    file_put_contents(docdir() . "/logo_$id.$ext", $data);
+    withClubs(function (&$c) use ($me, $ext) { $c[$me['email']]['logo'] = $ext; $c[$me['email']]['logoAt'] = time(); }, true);
+    out(['ok' => true, 'id' => $id]);
+
+case 'c_logos':     // eingeloggt: alle hochgeladenen Logos (eigenes zuerst) – zum Auswählen für die Urkunde
+    $me = needLogin($in['tok'] ?? '');
+    $list = withClubs(function (&$c) use ($me) { $L = [];
+        foreach ($c as $em => $x) if (!empty($x['logo'])) {
+            $id = substr(hash('sha256', 'logo|' . $em), 0, 14);
+            $L[] = ['id' => $id, 'name' => trim((string)($x['club'] ?? '')) ?: (string)($x['trainer'] ?? ''), 'own' => $em === ($me['email'] ?? ''), 'v' => (int)($x['logoAt'] ?? 0)];
+        }
+        usort($L, fn($a, $b) => $b['own'] <=> $a['own'] ?: strcasecmp($a['name'], $b['name']));
+        return $L; });
+    out(['ok' => true, 'logos' => $list]);
+
+case 'c_logo':      // Logo-Bild (öffentlich lesbar, wie auf einer Urkunde)
+    $id = preg_replace('/[^a-f0-9]/', '', (string)($_GET['id'] ?? ''));
+    foreach (['png', 'jpg'] as $e) if ($id !== '' && file_exists(docdir() . "/logo_$id.$e")) sendFile(docdir() . "/logo_$id.$e", $e, "logo.$e");
+    fail('Kein Logo', 404);
+
 case 't_info':      // öffentlich (ohne Login): Turnierseite zum Informieren – Plakat, Ausschreibung, Eckdaten
     $t = json_decode((string)@file_get_contents(tufile($in['tid'] ?? ($_GET['tid'] ?? ''))), true);
     if (!is_array($t)) fail('Turnier nicht gefunden', 404);
