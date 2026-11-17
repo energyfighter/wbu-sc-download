@@ -8,7 +8,7 @@
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "799d730e22a96c9f1ebd4008b7cfe472ad96ada374f1a8a16f4b8fd68622a6e9",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "4eb92c10aae68a0eea117e0d0491f6db5b595a77245ee6b7f49e3abc53b426fc",
+    "veranstalter/index.html": "8c0cbe6e8b0239112909c9441db505508173d922d1b02f6597226bc2c92f76a9",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
     "veranstalter/docs/Ablaufplan-WBU-2027.pdf": "6c3b939cdb704f45dd8a46dbd4df184ff6322595180b8d2dbf6418a2fe888ba3",
@@ -17,6 +17,6 @@
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "anmeldung/index.html": "ebfa722093af8a35c903bf236f033f76004205bc31c3aa8c34ee30f687ee9b8b",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "live/index.html": "058a5a31d7f9b08a93d24688e1a9f4de0d90ce80ed9bd09e250ec46d9e176b86"
+    "live/index.html": "2c2daf89ef78151e68f5ad415ec31c456e10a1441e3b5df6338d8197c2631b29"
   }
 }

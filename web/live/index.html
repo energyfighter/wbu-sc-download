@@ -145,7 +145,9 @@ const CLK_CSS=`.wt{position:fixed;inset:0;background:#e9ebef;color:#000;font-fam
 .wt .tm .st{font-size:2vw;font-weight:800;color:#d0021b;min-height:2.4vw}
 .wt .med{display:flex;align-items:center;justify-content:space-between;background:#fff;border:.35vw solid #d0021b;border-radius:1.6vw;padding:.6vw 2.4vw}
 .wt .med .lab{color:#d0021b}.wt .med .big{font-size:8vw;color:#d0021b}
-.wt.withmed .rd .big{font-size:12vw}.wt.withmed .tm .big{font-size:14vw}`;
+.wt.withmed .rd .big{font-size:12vw}.wt.withmed .tm .big{font-size:14vw}
+.wt.adm .rd .big{font-size:min(17vw,21vh)}.wt.adm .tm .big{font-size:min(20vw,24vh)}.wt.adm .lab{font-size:min(2.4vw,3.4vh)}.wt.adm .rd .of{font-size:min(3vw,4vh)}
+.wt.adm.withmed .rd .big{font-size:min(12vw,13vh)}.wt.adm.withmed .tm .big{font-size:min(14vw,15vh)}.wt.adm .med .big{font-size:min(8vw,9vh)}`;
 function clkView(st,now,logo,title){
   if(!st)return `<div class="wt"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">WBU Time<small>${title||''}</small></div></div><div class="main" style="grid-template-columns:1fr"><div class="box"><div class="lab">KEIN KAMPF AKTIV</div></div></div></div>`;
   const v=clkAt(st,now),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -161,16 +163,19 @@ let CLK_AC=null,CLK_OUT=null,KNOCK_VOL=4;
 function clkAudio(){try{if(!CLK_AC){CLK_AC=new (window.AudioContext||window.webkitAudioContext)();CLK_OUT=null}if(CLK_AC.state==='suspended')CLK_AC.resume()}catch(e){}return CLK_AC}
 // Ausgang mit Kompressor: macht die Signale laut, ohne zu verzerren
 function clkOut(ac){if(CLK_OUT&&CLK_OUT.context===ac)return CLK_OUT;const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.knee.value=6;c.ratio.value=8;c.attack.value=.001;c.release.value=.25;
-  const g=ac.createGain();g.gain.value=1.0;c.connect(g).connect(ac.destination);CLK_OUT=c;return c}
+  const g=ac.createGain();g.gain.value=.75;c.connect(g).connect(ac.destination);CLK_OUT=c;return c}
 function clkNoise(ac,sec){const b=ac.createBuffer(1,Math.max(1,ac.sampleRate*sec|0),ac.sampleRate),d=b.getChannelData(0);for(let k=0;k<d.length;k++)d[k]=Math.random()*2-1;return b}
-// Hammer auf Holz: dumpfer, lauter Schlag – bam, bam, bam
-function clkHit(ac,s){const out=ac.createGain();out.gain.value=KNOCK_VOL;const lim=ac.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.0005;lim.release.value=.08;out.connect(lim).connect(ac.destination);
-  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(240,s);o.frequency.exponentialRampToValueAtTime(110,s+.16);   // Körper (tief)
-  g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.7,s+.002);g.gain.exponentialRampToValueAtTime(.001,s+.25);o.connect(g).connect(out);o.start(s);o.stop(s+.34);
-  [[420,1.6,.16],[730,1.3,.11],[1250,.8,.07],[2300,.35,.035]].forEach(([f,a,d])=>{const w=ac.createOscillator(),wg=ac.createGain();w.type='triangle';w.frequency.value=f;   // Holz-Resonanz
-    wg.gain.setValueAtTime(0,s);wg.gain.linearRampToValueAtTime(a,s+.001);wg.gain.exponentialRampToValueAtTime(.001,s+d);w.connect(wg).connect(out);w.start(s);w.stop(s+d+.02)});
-  const n=ac.createBufferSource(),f=ac.createBiquadFilter(),ng=ac.createGain();n.buffer=clkNoise(ac,.08);f.type='bandpass';f.frequency.value=1100;f.Q.value=.8;   // Aufprall
-  ng.gain.setValueAtTime(1.4,s);ng.gain.exponentialRampToValueAtTime(.001,s+.06);n.connect(f).connect(ng).connect(out);n.start(s)}
+// Schwerer Eisenhammer auf massivem Holztisch: harter Aufprall + dumpfer, kurzer Schlag – keine klingenden Töne (sonst klingt es nach Rohr)
+function clkHit(ac,s){const out=ac.createGain();out.gain.value=KNOCK_VOL;const lim=ac.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.0005;lim.release.value=.08;const sh=ac.createWaveShaper(),cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cv[i]=Math.tanh(2.2*x)/Math.tanh(2.2)*.95}sh.curve=cv;
+  out.connect(lim).connect(sh).connect(ac.destination);
+  const burst=(sec,type,freq,q,amp,dec)=>{const n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();n.buffer=clkNoise(ac,sec);f.type=type;f.frequency.value=freq;if(q)f.Q.value=q;
+    g.gain.setValueAtTime(amp,s);g.gain.exponentialRampToValueAtTime(.001,s+dec);n.connect(f).connect(g).connect(out);n.start(s);n.stop(s+sec)};
+  burst(.03,'highpass',2500,0,1.1,.012);          // harter Eisen-Aufprall (Klack)
+  burst(.12,'bandpass',620,.9,4.5,.075);          // Holz – kurz und trocken
+  burst(.07,'bandpass',1400,1,2.2,.045);
+  burst(.14,'lowpass',380,0,1.6,.09);             // massiver Tisch – dumpfer Druck
+  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(130,s);o.frequency.exponentialRampToValueAtTime(70,s+.07);
+  g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.7,s+.001);g.gain.exponentialRampToValueAtTime(.001,s+.09);o.connect(g).connect(out);o.start(s);o.stop(s+.1)}
 function clkKnock3(){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.03;for(let i=0;i<3;i++)clkHit(ac,t+i*.42)}
 // Ringglocke: sehr hell, metallisch, mit Nachhall – kein Piepen
 function clkStrike(ac,s,dur){const out=clkOut(ac);
