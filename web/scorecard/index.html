@@ -299,6 +299,7 @@ function vStart(){
   </div>
   <div class="card" style="font-size:14px;line-height:1.5">
     <b>So geht's</b>
+    ${WEB?'<p style="margin:0 0 6px"><a href="../anmeldung/?hilfe=1" style="color:var(--gold);font-weight:700">📖 Ausführliche Gebrauchsanweisung</a></p>':''}
     <p style="margin:8px 0 4px"><b style="color:var(--gold)">Punktrichter:</b> Mit Vor- und Nachnamen anmelden. ${WEB?'Dazu die PIN vom Supervisor eintippen – dann geht es direkt zur Scorecard. Die Wertungen gehen über das Internet zum Supervisor.':'Bluetooth einschalten – die App verbindet sich automatisch mit dem Supervisor.'} Jede Runde werten und je nach Ansage des Supervisors <i>Runde senden</i> oder am Ende <i>Kampf abschließen</i>. Runden lassen sich jederzeit antippen und korrigieren.</p>
     <p style="margin:4px 0 0"><b style="color:var(--gold)">Supervisor:</b> Mit Namen, Promoter, Ort und Datum anmelden. Beim Kampf Ringrichter und Zeitnehmer eintragen, die Wertungen kommen automatisch an. Ergebnis festlegen und bestätigen – am Ende <i>Veranstaltung abschließen &amp; PDF erstellen</i>.</p>
   </div>
@@ -764,7 +765,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('64')||0;
+const WEB_VERSION=Number('65')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
