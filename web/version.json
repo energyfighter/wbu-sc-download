@@ -1,22 +1,22 @@
 {
-  "version": 37,
+  "version": 38,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "scorecard/api.php": "8b7fc0a4c3c837b1a02f8a09e80e5a551a0229288ce788c3fb29c1fc0db23e61",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "45115b582ff695f7d36144d7f49cd0bb2b797676605f96edc761cfaa5211d2b0",
+    "scorecard/index.html": "72b905bb3f5091419dc42b2d9d8f385ce3096326b09c727dbfb7623d2fe1e7b2",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "799d730e22a96c9f1ebd4008b7cfe472ad96ada374f1a8a16f4b8fd68622a6e9",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "64d71ce2f902ebf1cdc7fd28276e4ee60c7f35d9f3071a06c9b9ca2c08892a6d",
+    "veranstalter/index.html": "4eb92c10aae68a0eea117e0d0491f6db5b595a77245ee6b7f49e3abc53b426fc",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
     "veranstalter/docs/Ablaufplan-WBU-2027.pdf": "6c3b939cdb704f45dd8a46dbd4df184ff6322595180b8d2dbf6418a2fe888ba3",
     "veranstalter/docs/Ausschreibung-WBU-2027.pdf": "8855fa0daf8d6e230a3c39a341d8924774ac805a34a05348df81cc7f4b0e841b",
     "veranstalter/docs/WBU-DM-Teilnahmeerklaerung-Haftungsausschluss.pdf": "63e747a5a45d69b48812d30c8dc0e141a6dc74d87ffa27dd432a33689f512dc6",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "88212c419aebf0a9605a242738db51bb7ff4b9fe31f98b07b7a703db1369e596",
+    "anmeldung/index.html": "ebfa722093af8a35c903bf236f033f76004205bc31c3aa8c34ee30f687ee9b8b",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "live/index.html": "7d85d0e775233ec4037b8fe9c9eb0490cc89c15a1116f99b6e31bc5ac7c711c0"
+    "live/index.html": "058a5a31d7f9b08a93d24688e1a9f4de0d90ce80ed9bd09e250ec46d9e176b86"
   }
 }
