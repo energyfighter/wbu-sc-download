@@ -157,19 +157,19 @@ function clkView(st,now,logo,title){
        <div class="big">${v.phase==='done'?'ENDE':clkFmt(v.rem)}</div><div class="st">${!v.run&&v.phase!=='idle'&&v.phase!=='done'?'ZEIT GESTOPPT':''}</div></div></div>
    ${v.medOn?`<div class="med"><div class="lab">⏱ TIMEOUT${v.med>=600000?' – 10 MIN ERREICHT':''}</div><div class="big">${clkFmtUp(v.med)}</div></div>`:''}</div>`}
 // ---------- Signale (werden im Browser erzeugt, keine Tondateien nötig) ----------
-let CLK_AC=null,CLK_OUT=null;
+let CLK_AC=null,CLK_OUT=null,KNOCK_VOL=4;
 function clkAudio(){try{if(!CLK_AC){CLK_AC=new (window.AudioContext||window.webkitAudioContext)();CLK_OUT=null}if(CLK_AC.state==='suspended')CLK_AC.resume()}catch(e){}return CLK_AC}
 // Ausgang mit Kompressor: macht die Signale laut, ohne zu verzerren
 function clkOut(ac){if(CLK_OUT&&CLK_OUT.context===ac)return CLK_OUT;const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.knee.value=6;c.ratio.value=8;c.attack.value=.001;c.release.value=.25;
-  const g=ac.createGain();g.gain.value=1.25;c.connect(g).connect(ac.destination);CLK_OUT=c;return c}
+  const g=ac.createGain();g.gain.value=1.0;c.connect(g).connect(ac.destination);CLK_OUT=c;return c}
 function clkNoise(ac,sec){const b=ac.createBuffer(1,Math.max(1,ac.sampleRate*sec|0),ac.sampleRate),d=b.getChannelData(0);for(let k=0;k<d.length;k++)d[k]=Math.random()*2-1;return b}
 // Hammer auf Holz: dumpfer, lauter Schlag – bam, bam, bam
-function clkHit(ac,s){const out=clkOut(ac);
-  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(150,s);o.frequency.exponentialRampToValueAtTime(55,s+.18);   // Körper (tief)
-  g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(1.6,s+.002);g.gain.exponentialRampToValueAtTime(.001,s+.32);o.connect(g).connect(out);o.start(s);o.stop(s+.34);
-  [[340,.9,.11],[610,.55,.07],[1150,.3,.04]].forEach(([f,a,d])=>{const w=ac.createOscillator(),wg=ac.createGain();w.type='triangle';w.frequency.value=f;   // Holz-Resonanz
+function clkHit(ac,s){const out=ac.createGain();out.gain.value=KNOCK_VOL;const lim=ac.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.0005;lim.release.value=.08;out.connect(lim).connect(ac.destination);
+  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(240,s);o.frequency.exponentialRampToValueAtTime(110,s+.16);   // Körper (tief)
+  g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.7,s+.002);g.gain.exponentialRampToValueAtTime(.001,s+.25);o.connect(g).connect(out);o.start(s);o.stop(s+.34);
+  [[420,1.6,.16],[730,1.3,.11],[1250,.8,.07],[2300,.35,.035]].forEach(([f,a,d])=>{const w=ac.createOscillator(),wg=ac.createGain();w.type='triangle';w.frequency.value=f;   // Holz-Resonanz
     wg.gain.setValueAtTime(0,s);wg.gain.linearRampToValueAtTime(a,s+.001);wg.gain.exponentialRampToValueAtTime(.001,s+d);w.connect(wg).connect(out);w.start(s);w.stop(s+d+.02)});
-  const n=ac.createBufferSource(),f=ac.createBiquadFilter(),ng=ac.createGain();n.buffer=clkNoise(ac,.08);f.type='lowpass';f.frequency.value=2200;   // Aufprall
+  const n=ac.createBufferSource(),f=ac.createBiquadFilter(),ng=ac.createGain();n.buffer=clkNoise(ac,.08);f.type='bandpass';f.frequency.value=1100;f.Q.value=.8;   // Aufprall
   ng.gain.setValueAtTime(1.4,s);ng.gain.exponentialRampToValueAtTime(.001,s+.06);n.connect(f).connect(ng).connect(out);n.start(s)}
 function clkKnock3(){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.03;for(let i=0;i<3;i++)clkHit(ac,t+i*.42)}
 // Ringglocke: sehr hell, metallisch, mit Nachhall – kein Piepen
@@ -179,7 +179,7 @@ function clkStrike(ac,s,dur){const out=clkOut(ac);
   const n=ac.createBufferSource(),f=ac.createBiquadFilter(),ng=ac.createGain();n.buffer=clkNoise(ac,.05);f.type='highpass';f.frequency.value=3000;
   ng.gain.setValueAtTime(.9,s);ng.gain.exponentialRampToValueAtTime(.001,s+.04);n.connect(f).connect(ng).connect(out);n.start(s)}
 function clkBell(times){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.03;const n=times||1;
-  for(let k=0;k<n;k++)clkStrike(ac,t+k*.45,n>1&&k<n-1?1.4:3.2)}
+  for(let k=0;k<n;k++)clkStrike(ac,t+k*.45,n>1&&k<n-1?.75:1.3)}
 // erkennt die Momente für die Signale (10 Sek. vorher klopfen, Glocke bei Runden-/Pausenende)
 function clkSignals(prev,v){if(!prev||!v)return;
   if(v.run&&prev.phase===v.phase&&prev.round===v.round&&prev.rem>10000&&v.rem<=10000&&v.rem>7000&&(v.phase==='round'||v.phase==='pause'))clkKnock3();

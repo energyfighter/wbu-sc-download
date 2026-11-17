@@ -276,7 +276,7 @@ function invoicePdf($t, $o, $inv) {
     $txt($L, $y, 'Ohne Mehrwertsteuer (§ 19 UStG). Der Rechnungsbetrag ist bereits vollständig bezahlt – vielen Dank!', 'Helvetica-Bold', 10.5);
     $y -= 12;
     $c .= "q 159 0 0 63 $L " . ($y - 63) . " cm /Im2 Do Q\n"; $y -= 63 + 20;
-    $txt($L, $y, 'Zahlung erfolgt am ' . date('d.m.Y', $inv['paid']) . ' per Überweisung auf folgendes Konto:'); $y -= 23;
+    $txt($L, $y, 'Zahlung erfolgt am ' . date('d.m.Y', strtotime(($t['date'] ?: date('Y-m-d')) . ' 12:00')) . ' auf folgendes Konto:'); $y -= 23;
     $txt($L, $y, 'Torsten Knille'); $y -= 25;
     foreach (['IBAN:  DE18 1001 0178 0614 8617 07', 'BIC: REVODEB2'] as $b) { $c .= "0 0 0 rg " . ($L + 4) . ' ' . ($y + 2.5) . " 3 3 re f\n"; $txt($L + 14, $y, $b, 'Helvetica', 10.5); $y -= 23; }
     $txt($L, $y, 'Revolut Bank UAB, Zweigniederlassung Deutschland', 'Helvetica-Bold', 10.5); $y -= 13;
