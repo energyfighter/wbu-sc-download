@@ -330,7 +330,7 @@ function liveFor(no){
   assignLive(no,r.mid,true);return r}
 function assignLive(no,mid,auto){const r=liveRows().find(x=>x.mid===mid);if(!r)return;
   const m=get('wbuMeta',{})[no]||{};
-  saveMeta(no,{mid,red:r.a,blue:r.b,title:r.kl+(r.rd?' · '+r.rd:''),rounds:r.rounds||m.rounds,dur:r.dur||m.dur,liveNo:r.no});
+  saveMeta(no,{mid,red:r.a,blue:r.b,ri:r.ai||'',bi:r.bi||'',title:r.kl+(r.rd?' · '+r.rd:''),rounds:r.rounds||m.rounds,dur:r.dur||m.dur,liveNo:r.no});
   if(!auto)render()}
 function liveCard(no){const r=liveFor(no);if(!liveLid())return '';
   const meta=get('wbuMeta',{}),used=new Set(Object.entries(meta).filter(([k,m])=>+k!==no&&m.mid).map(([k,m])=>m.mid));
@@ -596,6 +596,8 @@ function vSup(){
     ${optChips(C,'type','Kampfart',['Profi','Semi-Pro','Master','K1'],m.type)}
     <div class="row2" style="margin-top:4px"><div><label style="color:#ff8a8a">Rote Ecke (optional)</label><input value="${esc(m.red||'')}" placeholder="Name" onchange="saveMeta(${C},{red:this.value})"></div>
     <div><label style="color:#8dbcff">Blaue Ecke (optional)</label><input value="${esc(m.blue||'')}" placeholder="Name" onchange="saveMeta(${C},{blue:this.value})"></div></div>
+    <div class="row2" style="margin-top:4px"><div><label style="color:#ff8a8a">Rot: Land · Alter · Gewicht</label><input value="${esc(m.ri||'')}" placeholder="z. B. Deutschland · 27 J. · 72,4 kg" onchange="saveMeta(${C},{ri:this.value})"></div>
+    <div><label style="color:#8dbcff">Blau: Land · Alter · Gewicht</label><input value="${esc(m.bi||'')}" placeholder="z. B. Polen · 30 J. · 72,1 kg" onchange="saveMeta(${C},{bi:this.value})"></div></div>
     <label>Gewichtsklasse / Titel (optional)</label><input value="${esc(m.title||'')}" placeholder="z. B. Mittelgewicht – WBU-WM" onchange="saveMeta(${C},{title:this.value})">
     <div class="row2"><div><label>Ringrichter</label><input value="${esc(officials(m).ref)}" placeholder="Name" onchange="setRef(${C},this.value);render()"></div><div><label>Zeitnehmer</label><input value="${esc(officials(m).time)}" placeholder="Name" onchange="setTime(${C},this.value)"></div></div>
     ${(ev.refs||[]).length?`<label>Gespeicherte Ringrichter – antippen zum Wechseln</label><div class="chips">${ev.refs.map(r=>`<div class="chip ${officials(m).ref===r?'on':''}" onclick="setRef(${C},${esc(JSON.stringify(r)).replace(/"/g,"'")});render()">${esc(r)}</div>`).join('')}</div>`:''}
@@ -629,6 +631,7 @@ function demo(){
   set('wbuInbox',inbox);render();
 }
 function curFight(){return fights().find(f=>f.no===S.openFight)}
+function fz(n,i){return (n||'–')+(i?' ('+i+')':'')}
 function saveMeta(no,m){const all=get('wbuMeta',{});all[no]={...(all[no]||{}),...m};set('wbuMeta',all)}
 function vFight(){
   const f=curFight();if(!f){S.view='sup';return vSup()}
@@ -650,6 +653,8 @@ function vFight(){
     ${optChips(f.no,'dur','Rundendauer',['2 Min','3 Min'],m.dur)}
     <div class="row2" style="margin-top:4px"><div><label style="color:#ff8a8a">Rote Ecke</label><input value="${esc(m.red||'')}" placeholder="Name" onchange="saveMeta(${f.no},{red:this.value})"></div>
     <div><label style="color:#8dbcff">Blaue Ecke</label><input value="${esc(m.blue||'')}" placeholder="Name" onchange="saveMeta(${f.no},{blue:this.value})"></div></div>
+    <div class="row2" style="margin-top:4px"><div><label style="color:#ff8a8a">Rot: Land · Alter · Gewicht</label><input value="${esc(m.ri||'')}" placeholder="z. B. Deutschland · 27 J. · 72,4 kg" onchange="saveMeta(${f.no},{ri:this.value})"></div>
+    <div><label style="color:#8dbcff">Blau: Land · Alter · Gewicht</label><input value="${esc(m.bi||'')}" placeholder="z. B. Polen · 30 J. · 72,1 kg" onchange="saveMeta(${f.no},{bi:this.value})"></div></div>
     <label>Titel / Gewichtsklasse</label><input value="${esc(m.title||'')}" placeholder="z. B. WBU-Weltmeisterschaft Mittelgewicht" onchange="saveMeta(${f.no},{title:this.value})">
     <div class="row2"><div><label>Ringrichter</label><input value="${esc(m.ref||'')}" placeholder="${esc(get('wbuEvent',{}).ref||'Name')}" onchange="saveMeta(${f.no},{ref:this.value})"></div><div><label>Zeitnehmer</label><input value="${esc(m.time||'')}" placeholder="${esc(get('wbuEvent',{}).time||'Name')}" onchange="saveMeta(${f.no},{time:this.value})"></div></div>
   </div>
@@ -677,7 +682,7 @@ function vFinal(){
   return `<div class="rbar"><span class="fnum">Kampf ${f.no}</span><a href="#" style="color:var(--gold)" onclick="S.view='sup';render();return false">‹ Zurück</a></div>
   <div class="final">
     <div style="display:flex;gap:10px;align-items:center"><img class="logo" src="${LOGO}" alt="WBU"><div><b>Offizielle WBU-Scorecard</b><div style="font-size:12px;color:#555">Kampf ${f.no} · ${evDate()}${m.ev?' · '+esc(m.ev):''}</div></div></div>
-    <p style="margin:12px 0 4px"><b style="color:#b71c1c">ROT:</b> ${esc(m.red||'–')}<br><b style="color:#0d47a1">BLAU:</b> ${esc(m.blue||'–')}</p>
+    <p style="margin:12px 0 4px"><b style="color:#b71c1c">ROT:</b> ${esc(fz(m.red,m.ri))}<br><b style="color:#0d47a1">BLAU:</b> ${esc(fz(m.blue,m.bi))}</p>
     <div style="font-size:13px;color:#555">${[m.type,m.rounds?m.rounds+' Runden':'',m.dur,m.title].filter(Boolean).map(esc).join(' · ')}</div>
     <div class="res">${esc(resLine(f))}</div>
     <div class="scroll"><table>${head}${rows}</table></div>
@@ -688,7 +693,7 @@ function vFinal(){
   <div id="cp" class="note"></div>`;
 }
 function copyCard(){
-  const f=curFight(),m=f.meta;let t=`WBU SCORECARD – Kampf ${f.no} – ${evDate()}\nROT: ${m.red||'-'}\nBLAU: ${m.blue||'-'}\nERGEBNIS: ${resLine(f)}\n`;
+  const f=curFight(),m=f.meta;let t=`WBU SCORECARD – Kampf ${f.no} – ${evDate()}\nROT: ${fz(m.red,m.ri)}\nBLAU: ${fz(m.blue,m.bi)}\nERGEBNIS: ${resLine(f)}\n`;
   f.cards.forEach(c=>{const[a,b]=totals(c.rounds);t+=`${c.judge}: ${a}-${b}\n`});t+=`Supervisor: ${m.result.by}\nRingrichter: ${officials(m).ref||'-'}\nZeitnehmer: ${officials(m).time||'-'}\nRingarzt: ${officials(m).arzt||'-'}`;
   navigator.clipboard.writeText(t).then(()=>$('cp').textContent='Kopiert.',()=>$('cp').textContent='Kopieren nicht möglich.');
 }
@@ -701,7 +706,7 @@ function fightBlock(f){
   rows+='<tr class="tot"><td>Σ</td>'+cs.map(c=>{const[a,b]=totals(c.rounds);return`<td class="rc">${a}</td><td class="bc">${b}</td>`}).join('')+'</tr>';
   const info=[m.type,m.rounds?m.rounds+' Runden':'',m.dur,m.title].filter(Boolean).map(esc).join(' · ');
   return `<div class="final" style="margin-bottom:12px"><b style="font-size:17px">Kampf ${f.no}</b>${info?`<div style="font-size:13px;color:#555">${info}</div>`:''}
-    <p style="margin:6px 0"><b style="color:#b71c1c">ROT:</b> ${esc(m.red||'–')} &nbsp; <b style="color:#0d47a1">BLAU:</b> ${esc(m.blue||'–')}</p>
+    <p style="margin:6px 0"><b style="color:#b71c1c">ROT:</b> ${esc(fz(m.red,m.ri))} &nbsp; <b style="color:#0d47a1">BLAU:</b> ${esc(fz(m.blue,m.bi))}</p>
     <div style="font-size:12px;color:#555">Ringrichter: ${esc(officials(m).ref||'–')} · Zeitnehmer: ${esc(officials(m).time||'–')} · Ringarzt: ${esc(officials(m).arzt||'–')} · Punktrichter: ${cs.map(c=>esc(c.judge)).join(', ')}</div>
     <div class="res" style="font-size:16px">${m.result?esc(resLine(f)):'Ergebnis nicht bestätigt'}</div>
     <div class="scroll"><table>${head}${rows}</table></div></div>`;
@@ -735,7 +740,7 @@ async function makePdf(){
     d.setFont('helvetica','bold');d.setFontSize(13);d.setTextColor(0);d.text(`Kampf ${f.no}`,M,y);
     d.setFont('helvetica','normal');d.setFontSize(9);d.setTextColor(90);
     d.text(T([m.type,m.rounds?m.rounds+' Runden':'',m.dur,m.title].filter(Boolean).join('  ·  ')),M+24,y);y+=6;
-    d.setFontSize(10);d.setTextColor(183,28,28);d.text(T('ROT: '+(m.red||'-')),M,y);d.setTextColor(13,71,161);d.text(T('BLAU: '+(m.blue||'-')),M+W/2,y);y+=5;
+    d.setFontSize(m.ri||m.bi?8.5:10);d.setTextColor(183,28,28);d.text(T('ROT: '+fz(m.red,m.ri)),M,y);d.setTextColor(13,71,161);d.text(T('BLAU: '+fz(m.blue,m.bi)),M+W/2,y);y+=5;
     d.setFontSize(8.5);d.setTextColor(90);d.text(T(`Ringrichter: ${officials(m).ref||'-'}   ·   Zeitnehmer: ${officials(m).time||'-'}   ·   Ringarzt: ${officials(m).arzt||'-'}`),M,y);y+=6;
     d.setFillColor(238,243,252);d.rect(M,y-4,W,7,'F');d.setTextColor(0);d.setFont('helvetica','bold');d.setFontSize(11);
     d.text(T(m.result?resLine(f):'Ergebnis nicht bestätigt'),M+2,y+1);y+=8;
@@ -765,7 +770,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('65')||0;
+const WEB_VERSION=Number('66')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
