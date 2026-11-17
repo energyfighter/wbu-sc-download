@@ -121,7 +121,8 @@ window.wbuStatus=(t,ok)=>{BT={txt:t,ok};document.querySelectorAll('.btstat').for
 function btBadge(def){const live=NATIVE||WEB;const t=live?(BT.txt||(WEB?'Verbinde …':'Bluetooth startet …')):def, ok=live?BT.ok:true;return `<span class="badge btstat ${ok?'bt':'y'}">● ${esc(t)}</span>`}
 window.wbuHubMsg=j=>{try{const c=JSON.parse(j);if(c.t==='snap'&&c.snap){const js=JSON.stringify(c.snap.rows||[]);if(js!==S.liveJs){S.liveJs=js;S.live=c.snap;softRender()}}}catch(e){}};
 window.wbuHubStatus=(t,ok)=>{S.hubSt=t;S.hubOk=ok;const e=$('hubst');if(e){e.textContent='📱 '+t;e.style.color=ok?'var(--ok)':'var(--gold)'}};
-window.wbuReceive=j=>{try{const c=JSON.parse(j);if(c.t==='msg'){chatAdd(c);refreshChat(true);return}if(c.t==='hello')return;upsertInbox(c);softRender()}catch(e){}};
+window.wbuReceive=j=>{try{const c=JSON.parse(j);
+  if(c.t==='snap'){if(S.nlid==='pc'&&c.snap){wbuHubStatus('Laptop verbunden: '+(c.snap.name||''),true);const js=JSON.stringify(c.snap.rows||[]);if(js!==S.liveJs){S.liveJs=js;S.live=c.snap;softRender()}}return}if(c.t==='msg'){chatAdd(c);refreshChat(true);return}if(c.t==='hello')return;upsertInbox(c);softRender()}catch(e){}};
 // gleiche Scorecard-ID = Aktualisierung (neue Runde oder Korrektur) -> ersetzen
 function upsertInbox(card){const ib=get('wbuInbox',[]),i=ib.findIndex(x=>x.id===card.id);if(i>=0){if((ib[i].rev||0)<=(card.rev||0))ib[i]=card}else ib.push(card);set('wbuInbox',ib)}
 window.wbuSent=id=>{if(id===S.sendId){S.delivered=true;const e=$('sendst');if(e)e.innerHTML=sendStatus()}};
@@ -292,8 +293,8 @@ function vStart(){
     <label>Ort <span class="muted">(nur Supervisor)</span></label><input id="evo" name="veranstaltungsort" autocomplete="address-level2" value="${esc(e.ort||'')}" placeholder="z. B. Hamburg">
     <label>Datum <span class="muted">(nur Supervisor)</span></label><input id="evd" type="date" value="${toIso(e.date||today())}">
     <label>Ringarzt <span class="muted">(Pflicht für Supervisor – gilt für alle Kämpfe)</span></label><input id="eva" autocomplete="off" value="${esc(e.arzt||'')}" placeholder="Name des Ringarztes">
-    <label>Turnier / Gala aus WBU Sports <span class="muted">(optional – Kämpfe und Namen werden übernommen${NATIVE?', Internet nötig':''})</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– ohne WBU Sports –</option>${NATIVE?'<option value="hub" '+(S.lid==='hub'?'selected':'')+'>📱 Tablet mit WBU Sports (Bluetooth, ohne Internet)</option>':''}</select>
-    ${NATIVE?`<div id="npw" style="display:${S.lid&&S.lid!=='hub'?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
+    <label>Turnier / Gala aus WBU Sports <span class="muted">(optional – Kämpfe und Namen werden übernommen${NATIVE?', Internet nötig':''})</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– ohne WBU Sports –</option>${NATIVE?'<option value="hub" '+(S.lid==='hub'?'selected':'')+'>📱 Tablet mit WBU Sports (Bluetooth, ohne Internet)</option><option value="pc" '+(S.lid==='pc'?'selected':'')+'>💻 Laptop mit WBU Sports (Bluetooth, ohne Internet)</option>':''}</select>
+    ${NATIVE?`<div id="npw" style="display:${S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
     ${WEB?`<label>WBU-Supervisor-Passwort <span class="muted">(nur Supervisor)</span></label><input type="text" name="username" autocomplete="username" value="WBU-Supervisor" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><input id="evpw" name="password" type="password" autocomplete="current-password" placeholder="Passwort">
     <label>PIN für die Punktrichter <span class="muted">(Pflicht, 4 Ziffern – die Punktrichter kommen nur damit rein)</span></label><input id="evp" inputmode="numeric" maxlength="8" value="${esc(e.pin||'')}" placeholder="z. B. 2468">`:''}`})()}</div>
     <button class="btn" onclick="doLogin()">Los geht's</button>
@@ -316,8 +317,8 @@ async function lapi(a,body){const r=await fetch(LIVE_API+'?a='+a,{method:'POST',
 function liveLid(){return WEB?(S.web&&S.web.lid):S.nlid}
 async function loadLives(){const sel=$('evl');if(!sel)return;
   try{LIVES=(await lapi('l_list')).live||[];
-    sel.innerHTML='<option value="">– ohne WBU Sports –</option>'+(NATIVE?`<option value="hub" ${S.lid==='hub'?'selected':''}>📱 Tablet mit WBU Sports (Bluetooth, ohne Internet)</option>`:'')+LIVES.map(l=>`<option value="${l.id}" ${S.lid===l.id?'selected':''}>${esc(l.name)} · ${esc(l.ort||'')} · ${esc(fromIso(l.date)||l.date||'')}</option>`).join('')}catch(e){}}
-function pickLive(id){S.lid=id||'';if($('npw'))$('npw').style.display=S.lid&&S.lid!=='hub'?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l)return;
+    sel.innerHTML='<option value="">– ohne WBU Sports –</option>'+(NATIVE?`<option value="hub" ${S.lid==='hub'?'selected':''}>📱 Tablet mit WBU Sports (Bluetooth, ohne Internet)</option><option value="pc" ${S.lid==='pc'?'selected':''}>💻 Laptop mit WBU Sports (Bluetooth, ohne Internet)</option>`:'')+LIVES.map(l=>`<option value="${l.id}" ${S.lid===l.id?'selected':''}>${esc(l.name)} · ${esc(l.ort||'')} · ${esc(fromIso(l.date)||l.date||'')}</option>`).join('')}catch(e){}}
+function pickLive(id){S.lid=id||'';if($('npw'))$('npw').style.display=S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l)return;
   if($('evn'))$('evn').value=l.name;if($('evo'))$('evo').value=l.ort||'';if($('eva')&&l.arzt&&!$('eva').value)$('eva').value=l.arzt;if($('evd')&&l.date)$('evd').value=l.date}
 function myRing(){return +get('wbuRing',1)}
 function liveRows(){const r=(S.live&&S.live.rows)||[];return (S.live&&S.live.rings||1)>1?r.filter(x=>(x.ring||1)===myRing()):r}
@@ -338,7 +339,7 @@ function liveCard(no){const r=liveFor(no);if(!liveLid())return '';
   const meta=get('wbuMeta',{}),used=new Set(Object.entries(meta).filter(([k,m])=>+k!==no&&m.mid).map(([k,m])=>m.mid));
   const opts=liveRows().filter(x=>!x.done&&!used.has(x.mid));
   const rg=(S.live&&S.live.rings)||1;
-  return `<div class="card" style="border-color:var(--gold)">${S.nlid==='hub'?`<div id="hubst" style="font-weight:800;color:${S.hubOk?'var(--ok)':'var(--gold)'}">📱 ${esc(S.hubSt||'Suche Tablet …')}</div>`:''}<div class="muted">Aus WBU Sports${S.nlid==='hub'?' (Tablet)':''}${S.live?'':' – wird geladen …'}</div>
+  return `<div class="card" style="border-color:var(--gold)">${S.nlid==='hub'||S.nlid==='pc'?`<div id="hubst" style="font-weight:800;color:${S.hubOk?'var(--ok)':'var(--gold)'}">📱 ${esc(S.hubSt||(S.nlid==='pc'?'Warte auf den Laptop …':'Suche Tablet …'))}</div>`:''}<div class="muted">Aus WBU Sports${S.nlid==='hub'?' (Tablet)':S.nlid==='pc'?' (Laptop)':''}${S.live?'':' – wird geladen …'}</div>
    ${rg>1?`<label>Mein ${esc((S.live&&S.live.ringName)||'Ring')}</label><div class="chips">${Array.from({length:rg},(_,i)=>`<div class="chip ${myRing()===i+1?'on':''}" onclick="setRing(${i+1})">${esc((S.live&&S.live.ringName)||'Ring')} ${i+1}</div>`).join('')}</div>`:''}
    ${r?`<div style="font-size:18px;font-weight:800;margin-top:2px">Kampf ${r.no} · ${esc(r.kl)}</div><div class="muted">${esc(r.rd||'')}</div>
    <div class="row2" style="margin-top:6px"><div><div class="muted" style="color:#ff8a8a">ROTE ECKE</div><b style="color:#ff8a8a;font-size:17px">${esc(r.a)}</b><div class="muted">${esc(r.ac||'')}</div></div>
@@ -355,6 +356,8 @@ function sendCur(){if(S.role!=='sup')return;const c=curInfo(),js=JSON.stringify(
 let nliveT=null;
 function startNativeLive(){clearInterval(nliveT);if(!S.nlid)return;nliveT=setInterval(nativeLive,4000);nativeLive()}
 async function nativeLive(){if(!S.nlid)return;
+  if(S.nlid==='pc'){const out=get('wbuLiveOut',[]);out.forEach(it=>WBU.sendMsg('WBU-Leitstand',JSON.stringify({t:'res',mid:it.mid,res:it.res})));
+    if(out.length)set('wbuLiveOut',[]);sendCur();return}
   if(S.nlid==='hub'){const out=get('wbuLiveOut',[]);out.forEach(it=>WBU.hubResult(JSON.stringify({t:'res',id:'res-'+it.mid,mid:it.mid,res:it.res,judge:S.name})));
     if(out.length)set('wbuLiveOut',[]);sendCur();return}
   try{const j=await lapi('l_get',{lid:S.nlid});if(j.snap){const js=JSON.stringify(j.snap.rows||[]);if(js!==S.liveJs){S.liveJs=js;S.live=j.snap;softRender()}}
@@ -400,6 +403,9 @@ function doLogin(){
   // Tablet mit WBU Sports per Bluetooth: Kampfliste vom Tablet, Ergebnisse ans Tablet – ganz ohne Internet
   if(NATIVE&&S.role==='sup'&&S.lid==='hub'){S.nlid='hub';S.live=null;S.liveJs='';S.hubSt='Suche Tablet …';const e=get('wbuEvent',{});
     WBU.startSupervisorHub(n,[e.name,e.ort].filter(Boolean).join(' · '));startNativeLive();S.view='sup';render();return}
+  // Laptop mit WBU Sports (Windows-Programm) verbindet sich selbst per Bluetooth mit diesem Handy
+  if(NATIVE&&S.role==='sup'&&S.lid==='pc'){S.nlid='pc';S.live=null;S.liveJs='';S.hubSt='Warte auf den Laptop …';S.hubOk=false;const e=get('wbuEvent',{});
+    WBU.startSupervisor(n,[e.name,e.ort].filter(Boolean).join(' · '));startNativeLive();S.view='sup';render();return}
   if(NATIVE&&S.role==='sup'&&S.lid&&!S.nlidOk){const pw=$('evpwn')?$('evpwn').value.trim():'';
     if(!pw){$('err').textContent='Bitte das WBU-Supervisor-Passwort eingeben (für WBU Sports).';return}
     lapi('auth',{pass:pw}).then(()=>{S.npass=pw;S.nlid=S.lid;S.nlidOk=true;doLogin();S.nlidOk=false;startNativeLive()})
@@ -777,7 +783,7 @@ async function makePdf(){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('68')||0;
+const WEB_VERSION=Number('69')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
