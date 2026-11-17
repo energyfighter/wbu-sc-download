@@ -149,7 +149,8 @@ async function setRole(k){try{const j=await api('c_setrole',{rolle:k});saveAuth(
 // ---------- Öffentliche Turnierseite (ohne Login): Plakat, Eckdaten, Ausschreibung zum Lesen, dann zur Anmeldung ----------
 const pubDoc=(tid,k)=>`${API}?a=t_docget&tid=${encodeURIComponent(tid)}&kind=${k}`;
 async function openInfo(id){S.view='info';S.info=null;render();
-  try{S.info=(await api('t_info',{tid:id})).t}catch(e){S.info={err:e.message}}render();if(S.info&&S.info.docs){if(S.info.docs.aus)pdfShow('pdf_aus',pubDoc(id,'aus'));
+  try{S.info=(await api('t_info',{tid:id})).t}catch(e){S.info={err:e.message}}render();if(S.info&&S.info.docs){if(S.info.docs.aus)pdfShow('pdf_aus',pubDoc(id,'aus'));}}
+let PDFJS=null;
 async function pdfShow(el,url,maxPages){const box=$(el);if(!box)return;box.innerHTML='<p>Wird geladen …</p>';
   try{PDFJS=PDFJS||await import('../veranstalter/pdf.min.js');PDFJS.GlobalWorkerOptions.workerSrc='../veranstalter/pdf.worker.min.js';
     const pdf=await PDFJS.getDocument({url}).promise;box.innerHTML='';const W=box.clientWidth||800;
@@ -468,7 +469,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('49')||0;
+const WEB_VERSION=Number('50')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
