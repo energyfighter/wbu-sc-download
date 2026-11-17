@@ -127,8 +127,11 @@ const euro=v=>(+v||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 // ---- Login (Club / Trainer / Einzelsportler / Supervisor / Kampfrichter) ----
 // Login gilt nur, solange der Browser offen ist (Browser zu = automatisch abgemeldet)
 try{localStorage.removeItem('wbuClub')}catch(e){}
-let AUTH=(()=>{try{return JSON.parse(sessionStorage.getItem('wbuClub')||'null')}catch(e){return null}})();
-function saveAuth(a){AUTH=a;try{a?sessionStorage.setItem('wbuClub',JSON.stringify(a)):sessionStorage.removeItem('wbuClub')}catch(e){}}
+// Login als Sitzungs-Cookie: gilt in allen Tabs (Anmeldeseite + WBU Sports), endet wenn der Browser geschlossen wird
+const ckGet=()=>{const m=document.cookie.match(/(?:^|; )wbuClub=([^;]*)/);try{return m?JSON.parse(decodeURIComponent(m[1])):null}catch(e){return null}};
+const ckSet=a=>{document.cookie='wbuClub='+(a?encodeURIComponent(JSON.stringify(a)):'')+'; path=/; SameSite=Lax'+(a?'':'; max-age=0')+(location.protocol==='https:'?'; Secure':'')};
+let AUTH=ckGet();
+function saveAuth(a){AUTH=a;ckSet(a)}
 const TOK=()=>AUTH?AUTH.tok:'';
 const ROLLEN={club:'Verein / Gym',trainer:'Trainer / Coach',einzel:'Einzelsportler (ohne Club)',veranstalter:'Veranstalter (Veranstaltung erstellen)',sup:'Supervisor',ref:'Kampfrichter / Punktrichter',sonst:'Sonstige'};
 const canReg=()=>AUTH&&['club','trainer','einzel','veranstalter'].includes(AUTH.me.rolle)&&!String(AUTH.tok).startsWith('vk:');
@@ -206,7 +209,7 @@ async function doLogin(){const g=id=>($(id)?.value||'').trim(),err=m=>{$('lerr')
     if(S.lmode==='reg'){if(!S.rolle)return err('Bitte auswählen, wer du bist.');if(g('l_pw')!==g('l_pw2'))return err('Die Passwörter sind nicht gleich.');
       j=await api('c_register',{email:g('l_email'),pw:g('l_pw'),club:S.rolle==='einzel'?'Einzelsportler':g('l_club'),trainer:g('l_name'),tel:g('l_tel'),rolle:S.rolle})}
     else j=await api('c_login',{email:g('l_email'),pw:g('l_pw')});
-    saveAuth({tok:j.tok,me:j.me});S.err='';if(j.me.rolle==='veranstalter'){location.href='../veranstalter/';return}const q=new URLSearchParams(location.search).get('t');if(q)openT(q);else{S.view='list';loadList()}}
+    saveAuth({tok:j.tok,me:j.me});S.err='';{const P=new URLSearchParams(location.search);if(j.me.rolle==='veranstalter'||P.get('ziel')==='sports'){location.href='../veranstalter/'+(P.get('ev')?'?ev='+encodeURIComponent(P.get('ev')):'');return}}const q=new URLSearchParams(location.search).get('t');if(q)openT(q);else{S.view='list';loadList()}}
   catch(e){err(e.message)}}
 function accBar(){const a=$('acc');if(a)a.innerHTML=AUTH?`<b>${esc(AUTH.me.trainer)}</b><br>${esc(ROLLEN[AUTH.me.rolle]||'')}${AUTH.me.club&&AUTH.me.club!=='–'&&AUTH.me.club!=='Einzelsportler'?' · '+esc(AUTH.me.club):''}${String(AUTH.tok).startsWith('vk:')?'':' · <a href="#" style="font-weight:700" onclick="roleDlg();return false">Rolle ändern</a>'} · <a href="#" onclick="logout();return false">Abmelden</a>`:''}
 
@@ -466,7 +469,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('47')||0;
+const WEB_VERSION=Number('48')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
