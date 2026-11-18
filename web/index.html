@@ -298,11 +298,12 @@ function chFromResults(L){const out=[];
    out.push({sp,t:ti,n:win,c:inf.filter(x=>x&&!/\d+ J\.|kg$/.test(x)).join(' · '),w:w.replace(/\s*·.*$/,''),a:sp==='Master'&&age?'Master · '+age.replace(' J.',' Jahre'):'',d,ev:g.name})}}
  return out}
 // BoxRec-Archiv als schmale Leiste: Knopf klappt die Gewichtsklassen auf
-function chArchiv(wp){if(!wp)return;const t=wp.querySelector('table');if(!t||t.rows.length<2)return;const T3=CH_T[L]||CH_T.en;
- const grp=[...t.rows[1].cells].map((c,i)=>({h:(t.rows[0].cells[i]||{}).textContent||'',L:[...c.querySelectorAll('a')].map(a=>({n:a.textContent.replace(/^\s*WBU\s+/,'').replace(/\s*World Champions?\s*$/i,'').trim(),u:a.href}))})).reverse();
- const lab=[T3.a1,T3.a2];
- wp.innerHTML=`<div class="arb"><span class="arl">${T3.ar}</span>${grp.map((g,i)=>`<button class="arbt" onclick="const p=document.getElementById('arp${i}'),o=p.hidden;document.querySelectorAll('.arp').forEach(x=>x.hidden=true);document.querySelectorAll('.arbt').forEach(x=>x.classList.remove('on'));p.hidden=!o;this.classList.toggle('on',o)">${lab[i]||nEsc(g.h)} ▾</button>`).join('')}</div>
- ${grp.map((g,i)=>`<div class="arp" id="arp${i}" hidden>${g.L.map(x=>`<a href="${nEsc(x.u)}" target="_blank" rel="noopener">${nEsc(x.n)}</a>`).join('')}</div>`).join('')}`}
+const BR=id=>`https://boxrec.com/en/titles?titles_filter%5Bsex%5D=all&titles_filter%5BsportId%5D=all&titles_filter%5BtitleId%5D=${id}&titles_filter%5Bdivision%5D=results&titles_filter%5Blang%5D=en`;
+// BoxRec führt die WBU als „World Boxing Union (Germany)“ (seit 2010) und „World Boxing Union (1995-2004)“; Gewichtsklassen lassen sich dort nicht mehr einzeln verlinken
+const BR_GRP=[[['world',225],['eu',449]],[['world',224],['ic',494]]];
+function chArchiv(wp){if(!wp)return;const T3=CH_T[L]||CH_T.en,i=chLi(),lab=[T3.a1,T3.a2];
+ wp.innerHTML=`<div class="arb"><span class="arl">${T3.ar}</span>${BR_GRP.map((g,k)=>`<button class="arbt" onclick="const p=document.getElementById('arp${k}'),o=p.hidden;document.querySelectorAll('.arp').forEach(x=>x.hidden=true);document.querySelectorAll('.arbt').forEach(x=>x.classList.remove('on'));p.hidden=!o;this.classList.toggle('on',o)">${lab[k]} ▾</button>`).join('')}</div>
+ ${BR_GRP.map((g,k)=>`<div class="arp" id="arp${k}" hidden>${g.map(([t,id])=>`<a href="${BR(id)}" target="_blank" rel="noopener">WBU ${CHX.ti[t][i]} ›</a>`).join('')}</div>`).join('')}`}
 async function champBlock(host){if(!host)return;const T3=CH_T[L]||CH_T.en;const box=document.createElement('section');box.className='chb';box.innerHTML=`<h2 class="H">${T3.h}</h2><p class="chs">${T3.s}</p><div class="chl">…</div>`;host.appendChild(box);
  let R=[];try{R=(await nApi('r_list',{})).list||[]}catch(e){}
  const A=[...CH_HIST,...chFromResults(R)],heute=new Date().toISOString().slice(0,10);
