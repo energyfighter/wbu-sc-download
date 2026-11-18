@@ -270,8 +270,8 @@ function header(){
   const who=S.name?`${S.role==='sup'?'Supervisor':'Punktrichter'}<br><b style="color:var(--txt)">${esc(S.name)}</b><a href="#" onclick="logout();return false">Abmelden</a>`:'';
   return `<img class="toplogo" src="${LOGO}" alt="WBU World Boxing Union"><header><div class="htitle"><b>WBU Scorecard</b><span>World Boxing Union · 10-Point Must System</span></div><div class="who">${who}</div></header>`;
 }
-function logout(){clearInterval(nliveT);S.nlid='';if(NATIVE)WBU.stop();clearInterval(pollT);S.web=null;S.role=null;S.name='';S.view='start';S.openFight=null;render()}
-function render(){setTimeout(()=>{if(S.view==='start'&&(WEB||NATIVE))loadLives();if(S.role==='judge')showJCur()},0);
+function logout(){set('wbuSess',null);clearInterval(nliveT);S.nlid='';if(NATIVE)WBU.stop();clearInterval(pollT);S.web=null;S.role=null;S.name='';S.view='start';S.openFight=null;render()}
+function render(){sessSave();setTimeout(()=>{if(S.view==='start'&&(WEB||NATIVE))loadLives();if(S.role==='judge')showJCur()},0);
   const v={start:vStart,pick:vPick,judge:vJudge,sent:vSent,sup:vSup,fight:vFight,final:vFinal,report:vReport,fc:vFc}[S.view];
   $('app').innerHTML=header()+v();
   if(S.view==='judge')initWheels();
@@ -467,7 +467,7 @@ function setVal(s,v,scroll){
   if(scroll)$('w'+s).scrollTo({top:VALS.indexOf(v)*60,behavior:'smooth'});
   mark(s);updSum();
 }
-function updSum(){
+function updSum(){sessSave();
   const{r,b,dr,db}=S.cur;const[R,B]=calc(r,b,dr,db);
   $('sr').textContent=R;$('sb').textContent=B;
   document.querySelectorAll('.ded').forEach(el=>{const k=el.dataset.k;el.querySelectorAll('.chip').forEach((c,j)=>c.classList.toggle('on',S.cur[k]===j+1))});
@@ -896,7 +896,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('125')||0;
+const WEB_VERSION=Number('126')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
@@ -905,6 +905,27 @@ async function checkWebVersion(){
       d.textContent='Neue Version verfügbar – hier tippen zum Neuladen';d.onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
 setTimeout(checkWebVersion,3000);setInterval(checkWebVersion,5*60*1000);
 
+// ---- Sitzung fest auf dem Handy sichern: Akku leer, App/Browser zu → nach dem Neustart geht es genau dort weiter ----
+const SESS_KEYS=['role','name','view','card','cur','editIdx','lastSent','delivered','sendId','web','lid','nlid','npass','openFight','chatWith','seen'];
+function sessSave(){try{if(!S.role||!S.name||S.view==='start'){return}const o={ts:Date.now()};SESS_KEYS.forEach(k=>{if(S[k]!==undefined)o[k]=S[k]});set('wbuSess',o)}catch(e){}}
+function sessRestore(){const o=get('wbuSess',null);if(!o||!o.role||!o.name||!o.view||o.view==='start')return;
+  if(Date.now()-(o.ts||0)>20*3600*1000){set('wbuSess',null);return}   // nur am selben Veranstaltungstag
+  SESS_KEYS.forEach(k=>{if(o[k]!==undefined)S[k]=o[k]});
+  if(S.role==='judge'&&!S.card)newCard();
+  if(S.role==='judge'&&S.editIdx!=null&&S.view!=='judge')S.editIdx=null;
+  try{
+    if(WEB){if(S.web)startPoll()}
+    else if(NATIVE){const e=get('wbuEvent',{}),ev=[e.name,e.ort].filter(Boolean).join(' · ');
+      if(S.role==='judge')WBU.startJudge(S.name);
+      else if(S.nlid==='hub'){S.live=null;S.liveJs='';S.hubSt='Suche Tablet …';WBU.startSupervisorHub(S.name,ev);startNativeLive()}
+      else if(S.nlid==='pc'){S.live=null;S.liveJs='';S.hubSt='Warte auf den Laptop …';S.hubOk=false;WBU.startSupervisor(S.name,ev);startNativeLive()}
+      else if(S.lid){WBU.startSupervisor(S.name,ev);if(S.nlid)startNativeLive()}
+      else WBU.startSupervisorHub(S.name,ev)}
+  }catch(e){}
+  S.restored=true;setTimeout(()=>{const d=document.createElement('div');d.textContent='✓ Weiter wie vor dem Neustart – nichts verloren';
+    d.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:99;background:#1f9d55;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.4)';
+    document.body.appendChild(d);setTimeout(()=>d.remove(),4000)},300)}
+sessRestore();
 render();
 if(NATIVE&&WBU.checkUpdate)setTimeout(()=>WBU.checkUpdate(),800);
 {const q=new URLSearchParams(location.search).get('fc');if(WEB&&q)fcStandalone(q)}

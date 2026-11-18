@@ -652,7 +652,7 @@ function fbImport($n) {
         }
         $zeilen = preg_split('/\R/u', $msg, 2);
         $titel = mb_substr(trim($zeilen[0] ?? ''), 0, 120);
-        if ($titel === '') $titel = 'WBU News';
+        if ($titel === '') $titel = 'Bericht vom ' . date('d.m.Y', strtotime((string)($po['created_time'] ?? 'now')) ?: time());
         $text = trim($zeilen[1] ?? '');
         if (mb_strlen($zeilen[0] ?? '') > 120) { $titel = mb_substr($zeilen[0], 0, 117) . ' …'; $text = $msg; }
         $ts = strtotime((string)($po['created_time'] ?? '')) ?: time();
