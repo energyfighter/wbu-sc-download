@@ -1,7 +1,7 @@
 {
-  "versionCode": 108,
-  "versionName": "1.108",
+  "versionCode": 126,
+  "versionName": "1.126",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Fehler behoben: Scorecard schloss sich nach Eingabe des Punktrichter-Namens."
+  "notes": "Datenschutz: öffentliche Live-Anzeigen zeigen nur noch Alter statt Geburtsdatum; Supervisor bekommt die vollen Daten."
 }

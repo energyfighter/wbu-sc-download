@@ -1,6 +1,6 @@
 {
-  "versionCode": 108,
-  "versionName": "1.108",
+  "versionCode": 126,
+  "versionName": "1.126",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Fehler behoben: Scorecard schloss sich nach Eingabe des Punktrichter-Namens."
+  "notes": "Datenschutz: öffentliche Live-Anzeigen zeigen nur noch Alter statt Geburtsdatum; Supervisor bekommt die vollen Daten."
 }
