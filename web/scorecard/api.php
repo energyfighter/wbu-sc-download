@@ -587,7 +587,8 @@ function newsStatus($me) {
     $c = json_decode((string)@file_get_contents(clubsFile()), true) ?: [];
     return $c[$me['email']]['news'] ?? 'none';
 }
-function newsPublic($p) { return ['id' => $p['id'], 'd' => $p['d'], 't' => $p['t'], 'x' => $p['x'], 'n' => count($p['img'] ?? []), 'by' => $p['by'] ?? '', 'fb' => !empty($p['fb'])]; }
+function newsPublic($p) { return ['id' => $p['id'], 'd' => $p['d'], 't' => $p['t'], 'x' => $p['x'], 'n' => count($p['img'] ?? []), 'by' => $p['by'] ?? '', 'fb' => !empty($p['fb']), 'tr' => (object)($p['tr'] ?? [])]; }
+function newsTr($v) { $o = []; foreach (['en','de','es','fr','ru'] as $l) { $e = $v[$l] ?? null; if (is_array($e) && trim((string)($e['t'] ?? '')) !== '') $o[$l] = ['t' => txt($e['t'], 160), 'x' => mb_substr(trim((string)($e['x'] ?? '')), 0, 20000)]; } return $o; }
 function newsImgUrl($id, $i) { return 'https://www.wbu-boxing.com/scorecard/api.php?a=n_img&id=' . $id . '&i=' . $i; }
 function fbHttp($method, $path, $params) {
     $url = 'https://graph.facebook.com/v24.0/' . ltrim($path, '/');
@@ -603,7 +604,8 @@ function fbHttp($method, $path, $params) {
 function fbPublish($p) {
     $fb = json_decode((string)@file_get_contents(fbFile()), true);
     if (!is_array($fb) || empty($fb['page']) || empty($fb['tok'])) return ['err' => 'Facebook ist noch nicht verbunden'];
-    $msg = trim($p['t'] . "\n\n" . $p['x']) . "\n\nhttps://www.wbu-boxing.com/#news/" . $p['id'];
+    $en = $p['tr']['en'] ?? ['t' => $p['t'], 'x' => $p['x']];   // Facebook immer Englisch, wenn vorhanden
+    $msg = trim($en['t'] . "\n\n" . $en['x']) . "\n\nhttps://www.wbu-boxing.com/#news/" . $p['id'];
     $n = count($p['img'] ?? []);
     if ($n === 0) $r = fbHttp('POST', $fb['page'] . '/feed', ['message' => $msg, 'access_token' => $fb['tok']]);
     elseif ($n === 1) $r = fbHttp('POST', $fb['page'] . '/photos', ['url' => newsImgUrl($p['id'], 0), 'caption' => $msg, 'access_token' => $fb['tok']]);
@@ -1055,8 +1057,8 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
         if (strlen($d) > 4000000) fail('Ein Bild ist zu groß');
         $bilder[] = $d;
     }
-    $sup = isSuper($me);
-    $p = withNews(function (&$n) use ($id, $t, $x, $keep, $bilder, $me, $sup) {
+    $sup = isSuper($me); $tr = isset($in['tr']) && is_array($in['tr']) ? newsTr($in['tr']) : null;
+    $p = withNews(function (&$n) use ($id, $t, $x, $keep, $bilder, $me, $sup, $tr) {
         $i = $id === '' ? -1 : array_search($id, array_column($n, 'id'));
         if ($id !== '' && $i === false) fail('Bericht nicht gefunden', 404);
         if ($i >= 0 && !$sup && ($n[$i]['em'] ?? '') !== $me['email']) fail('Nur eigene Berichte bearbeiten', 403);
@@ -1066,7 +1068,7 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
         foreach ($alt as $k => $_) @unlink("$dir/{$p['id']}-$k.jpg");
         $all = array_merge($tmp, $bilder); $p['img'] = [];
         foreach ($all as $k => $d) { file_put_contents("$dir/{$p['id']}-$k.jpg", $d); $p['img'][] = 1; }
-        $p['t'] = $t; $p['x'] = $x; $p['upd'] = time();
+        $p['t'] = $t; $p['x'] = $x; $p['upd'] = time(); if ($tr !== null) $p['tr'] = $tr;
         if ($i >= 0) $n[$i] = $p; else $n[] = $p;
         return $p;
     }, true);
@@ -1078,6 +1080,12 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
         $p['fb'] = $r['id'] ?? '';
     }
     out(['ok' => true, 'post' => newsPublic($p), 'fbErr' => $fbErr]);
+
+case 'n_tr':       // Superadmin: Übersetzungen eines Berichts setzen (Bilder und Facebook bleiben unberührt)
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    $id = preg_replace('/[^a-f0-9]/', '', (string)($in['id'] ?? '')); $tr = newsTr((array)($in['tr'] ?? []));
+    $p = withNews(function (&$n) use ($id, $tr) { foreach ($n as &$q) if ($q['id'] === $id) { $q['tr'] = $tr; return $q; } fail('Bericht nicht gefunden', 404); }, true);
+    out(['ok' => true, 'post' => newsPublic($p)]);
 
 case 'n_del':
     $me = needLogin($in['tok'] ?? ''); $sup = isSuper($me);

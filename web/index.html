@@ -397,6 +397,7 @@ const NW={list:null};
 const ckGet=()=>{const m=document.cookie.match(/(?:^|; )wbuClub=([^;]*)/);try{return m?JSON.parse(decodeURIComponent(m[1])):null}catch(e){return null}};
 const ckSet=a=>{document.cookie='wbuClub='+(a?encodeURIComponent(JSON.stringify(a)):'')+'; path=/; SameSite=Lax'+(a?'':'; max-age=0')+(location.protocol==='https:'?'; Secure':'')};
 async function nApi(a,b){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,...(b||{})})});let j={};try{j=await r.json()}catch(e){}if(!r.ok||!j.ok)throw new Error(j.error||'Verbindungsfehler');return j}
+const nTr=p=>{const o=(p.tr||{})[L]||(p.tr||{}).en;return o&&o.t?o:{t:p.t,x:p.x}};   // Bericht in der gewählten Sprache (sonst Englisch, sonst Original)
 const nImg=(id,i)=>API+'?a=n_img&id='+id+'&i='+i;
 const nDate=d=>{const[y,m,t]=String(d||'').split('-');return t?`${t}.${m}.${y}`:''};
 const nEsc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -405,9 +406,9 @@ async function newsLoad(){const el=document.getElementById('nwl');if(!el)return;
  const box=document.getElementById('nwl');if(!box)return;
  if(!NW.list.length){box.parentNode.classList.remove('nw');box.parentNode.innerHTML=FBOX();return}
  const PER=20,pg=Math.max(1,Math.min(NW.page||1,Math.ceil(NW.list.length/PER)));NW.page=pg;
- box.innerHTML=NW.list.slice((pg-1)*PER,pg*PER).map(p=>{const kurz=p.x;
+ box.innerHTML=NW.list.slice((pg-1)*PER,pg*PER).map(p=>{const q=nTr(p),kurz=q.x;
   const MX=6,sh=Math.min(p.n,MX);
-  return `<article class="nc" id="n-${p.id}"><div class="nb"><div class="nd">${nDate(p.d)}</div><h4>${nEsc(p.t)}</h4><p>${nEsc(kurz)}</p>
+  return `<article class="nc" id="n-${p.id}"><div class="nb"><div class="nd">${nDate(p.d)}</div><h4>${nEsc(q.t)}</h4><p>${nEsc(kurz)}</p>
   ${p.n?`<div class="ng">${Array.from({length:sh},(_,i)=>`<img src="${nImg(p.id,i)}" alt="" loading="lazy" onclick="event.stopPropagation();zoomU(this.src)">`).join('')}${p.n>MX?`<span class="more">+${p.n-MX}</span>`:''}</div>`:''}</div></article>`}).join('')+newsPager(pg,Math.ceil(NW.list.length/PER))}
 function newsPager(pg,n){if(n<2)return'';let h='<nav class="npg">';
  if(pg>1)h+=`<button onclick="newsPage(${pg-1})">‹ ${t('newer')}</button>`;
@@ -420,9 +421,9 @@ const PLAKAT_ARCHIV=[ // {d:'JJJJ-MM-TT',img:'/start/img/plakate/…jpg',t:'Tite
 function plakView(){const all=[...SHOWS_ALL,...PLAKAT_ARCHIV].sort((a,b)=>a.d<b.d?1:-1);
  return `<div class="plk"><h2 class="H">${t('plt')}</h2><p>${t('pls')}</p><div class="plg">${all.map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${nEsc(x.t)}"><img src="${x.img}" alt="${nEsc(x.t)}" loading="lazy"><span>${nDate(x.d)}</span></a>`).join('')}</div></div>`}
 async function newsOpen(id){if(!NW.list){try{NW.list=(await nApi('n_list')).news}catch(e){NW.list=[]}}
- const p=NW.list.find(x=>x.id===id);if(!p)return;document.querySelectorAll('.nov').forEach(x=>x.remove());
+ const p=NW.list.find(x=>x.id===id);if(!p)return;const q=nTr(p);document.querySelectorAll('.nov').forEach(x=>x.remove());
  const d=document.createElement('div');d.className='nov';
- d.innerHTML=`<div class="ni"><button class="x" aria-label="×">×</button><div class="nb"><div class="nd">${nDate(p.d)} · WBU</div><h2>${nEsc(p.t)}</h2><p>${nEsc(p.x)}</p>
+ d.innerHTML=`<div class="ni"><button class="x" aria-label="×">×</button><div class="nb"><div class="nd">${nDate(p.d)} · WBU</div><h2>${nEsc(q.t)}</h2><p>${nEsc(q.x)}</p>
   ${p.n?`<div class="ng">${Array.from({length:p.n},(_,i)=>`<img src="${nImg(p.id,i)}" alt="" loading="lazy" onclick="zoomU(this.src)">`).join('')}</div>`:''}</div></div>`;
  const zu=()=>{d.remove();if(location.hash.startsWith('#news/'))history.replaceState(null,'',location.pathname+location.search)};
  d.onclick=e=>{if(e.target===d||e.target.classList.contains('x'))zu()};document.body.appendChild(d)}
