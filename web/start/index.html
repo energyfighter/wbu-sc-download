@@ -26,7 +26,7 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .menu a.coin{color:#140e00;background:var(--gold)}.menu a.coin:hover{background:var(--gold2);color:#140e00}
 .dd{position:relative}.dd .sub{display:none;position:absolute;top:100%;left:0;min-width:180px;background:#151922;border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
 .dd:hover .sub{display:block}
-@media(max-width:900px){.top .in{padding-top:8px;padding-bottom:8px}.brand img{width:40px;height:40px}.brand b{font-size:18px}.brand small{font-size:10px;letter-spacing:2px}.top .lang button{padding:6px 6px;font-size:12px}.dd .sub{display:block;position:static;box-shadow:none;border:0;padding:0 0 0 10px;background:none}}
+@media(max-width:900px){.top .in{padding-top:8px;padding-bottom:8px}.brand img{width:40px;height:40px}.brand b{font-size:18px}.brand small{font-size:10px;letter-spacing:2px}.top .lang button{padding:6px 6px;font-size:12px}.dd .sub{display:none;position:static;box-shadow:none;border:0;padding:0 0 0 10px;background:none}.dd.open{flex-basis:100%}.dd.open .sub{display:block}.dd:hover .sub{display:none}.dd.open:hover .sub{display:block}}
 
 /* Gürtel-Banner */
 .belts{background:#000;border-bottom:1px solid var(--line)}.belts a{display:block;max-width:1240px;margin:0 auto}.belts img{display:block;width:100%}
@@ -78,6 +78,7 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .shows .sl{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:14px;display:flex;flex-direction:column;gap:14px;-webkit-mask-image:linear-gradient(#000 92%,transparent)}.shows .sl::-webkit-scrollbar{display:none}
 .shows .sl a{flex:none;display:block;border-radius:10px;overflow:hidden;border:1px solid var(--line)}.shows .sl img{display:block;width:100%}.shows .sl p{padding:6px 4px}
 @media(max-width:900px){.side .shows{flex:none;max-height:640px}}
+.dd .sub a.mo{display:none}@media(max-width:900px){.dd .sub a.mo{display:block}}
 /* Verbände */
 .orgs{display:flex;justify-content:center;gap:clamp(10px,2.4vw,30px);flex-wrap:wrap;padding:28px 0 6px}
 .orgs a{display:block;width:clamp(78px,10vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
@@ -139,7 +140,7 @@ const langBox=cls=>`<div class="lang ${cls||''}">${LANGS.map(l=>`<button class="
 function draw(){document.documentElement.lang=L;
  const cur=route().startsWith('p/')?route():(rootOf(route())||'#');
  const isOn=k=>k&&(k===1?cur==='#':k===cur);
- const m=MENU().map(([n,u,k,sub,cls,nw])=>sub?`<div class="dd"><a class="${isOn(k)?'on':''}" href="${u}">${n} ▾</a><div class="sub">${sub.map(([a,b,,nw])=>`<a href="${b}" ${nw?'target="_blank" rel="noopener"':''}>${a}</a>`).join('')}</div></div>`
+ const m=MENU().map(([n,u,k,sub,cls,nw])=>sub?`<div class="dd"><a class="${isOn(k)?'on':''}" href="${u}" onclick="return ddTap(this)">${n} ▾</a><div class="sub"><a class="mo" href="${u}">${n}</a>${sub.map(([a,b,,nw])=>`<a href="${b}" ${nw?'target="_blank" rel="noopener"':''}>${a}</a>`).join('')}</div></div>`
    :`<a class="${isOn(k)?'on':''} ${cls||''}" href="${u}" ${nw?'target="_blank" rel="noopener"':''}>${n}</a>`).join('');
  document.getElementById('app').innerHTML=`
  <header class="top"><div class="in"><a class="brand" href="#"><img src="${UP}2026/01/wbulogo-150x150.png" alt="WBU"><div><b>WORLD BOXING <span>UNION</span></b><small>${t('sub').toUpperCase()}</small></div></a><div class="tr">${SOC}${langBox()}</div></div></header>
@@ -149,6 +150,8 @@ function draw(){document.documentElement.lang=L;
  <div id="view"></div>
  <footer class="ft">© World Boxing Union · ${t('foot')} · <a href="#p/contact">${t('contact')}</a></footer>`;
  view()}
+// Handy: Untermenü (z. B. WBU Sports) klappt erst beim Antippen auf
+function ddTap(a){if(!matchMedia('(max-width:900px)').matches)return true;a.parentNode.classList.toggle('open');return false}
 function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
  return `<div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
  <div class="main"><div>
