@@ -1,7 +1,7 @@
 {
-  "versionCode": 95,
-  "versionName": "1.95",
+  "versionCode": 97,
+  "versionName": "1.97",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Neu: WBU Sports installiert Updates jetzt selbst."
+  "notes": "Gala: Supervisor kann die Fight Card ändern – auch ohne Internet über Tablet/Laptop."
 }
