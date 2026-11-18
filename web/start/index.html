@@ -53,21 +53,22 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .lm{max-width:1240px;margin:22px auto 0;padding:0 22px}.lmb{background:#e9ebef;color:#000;border:3px solid #000;border-radius:16px;overflow:hidden;font-family:system-ui,Arial,sans-serif}
 .lmh{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:3px solid #000}.lmh b{font-size:20px}.lmh span{font-size:15px}
 .lv{background:#d0021b;color:#fff;font-weight:800;padding:4px 12px;border-radius:8px;letter-spacing:1px;animation:lvb 1.6s infinite}@keyframes lvb{50%{opacity:.55}}
-.lmg{display:grid;grid-template-columns:1.25fr 1fr;aspect-ratio:16/8.2;min-height:0}
+.lmg{display:grid;grid-template-columns:1.25fr 1fr;height:clamp(420px,46vw,560px)}
 .lml{padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}.lmr{border-left:3px solid #000;display:flex;flex-direction:column;min-height:0;background:#fff}
 .lmr h4{margin:0;padding:10px 14px;font-size:18px;border-bottom:2px solid #000}.lml .no{font-size:18px;font-weight:800}.lml .tt{display:inline-block;background:#d8a93a;color:#000;font-weight:800;border-radius:8px;padding:2px 10px;margin-left:8px}
 .lmv{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch}.lmv .vs{align-self:center;font-weight:900;font-size:22px}
 .lmc{border-radius:12px;padding:12px;color:#fff}.lmc.r{background:#d0021b}.lmc.b{background:#0047bb;text-align:right}.lmc b{display:block;font-size:clamp(18px,2.2vw,28px);line-height:1.15}.lmc span{font-size:15px;font-weight:600}
 .lmi{display:flex;flex-wrap:wrap;gap:8px}.lmi span{background:#fff;border:2px solid #000;border-radius:9px;padding:5px 10px;font-weight:700;font-size:15px}
-.lmk{flex:1;display:flex;align-items:center;justify-content:center;gap:30px;background:#fff;border:3px solid #000;border-radius:14px;min-height:90px}.lmk div{text-align:center}.lmk small{display:block;font-size:15px;font-weight:700}.lmk b{font-size:clamp(34px,5vw,64px);font-variant-numeric:tabular-nums;line-height:1}
+.lmk{display:flex;padding:14px 0;align-items:center;justify-content:center;gap:30px;background:#fff;border:3px solid #000;border-radius:14px;min-height:90px}.lmk div{text-align:center}.lmk small{display:block;font-size:15px;font-weight:700}.lmk b{font-size:clamp(34px,5vw,64px);font-variant-numeric:tabular-nums;line-height:1}
 .lmk.pa b{color:#0047bb}.lmk.to{background:#ffe9a8}.lmk.to b{color:#d0021b}
+.lmx{background:#fff;border:2px solid #000;border-radius:12px;padding:8px 12px;font-size:15px}.lmx.ok{border-color:#1e8e3e}.lmx small{display:block;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.5px}.lmx b{font-size:17px}.lmx .rr{color:#d0021b}.lmx .bb{color:#0047bb}.lmx.ok div{color:#1e7a34;font-weight:800}
 .lml .res{background:#fff;border:3px solid #1e8e3e;border-radius:12px;padding:10px 12px;font-weight:800;font-size:17px}
 .lmlist{overflow-y:auto;flex:1}.lmf{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:8px 12px;border-bottom:1px solid #bbb;font-size:15px}.lmf:nth-child(even){background:#f3f4f6}
 .lmf .n{font-weight:900;font-size:17px}.lmf .rr{color:#d0021b;font-weight:800}.lmf .bb{color:#0047bb;font-weight:800}.lmf small{display:block;font-size:13px}.lmf .e{color:#1e7a34;font-weight:800;font-size:14px}
 .lmf.cur{background:#fff3c4!important;outline:3px solid #d8a93a;outline-offset:-3px}.lmf.cur .e{color:#000}
 @media(max-width:900px){.wp .wp-block-gallery,.wp .blocks-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:520px){.wp .wp-block-gallery,.wp .blocks-gallery-grid{grid-template-columns:1fr!important}}
-@media(max-width:900px){.lm{padding:0 12px}.lmg{grid-template-columns:1fr;aspect-ratio:auto}.lmr{border-left:0;border-top:3px solid #000}.lmlist{max-height:420px}}
+@media(max-width:900px){.lm{padding:0 12px}.lmg{grid-template-columns:1fr;height:auto}.lmr{border-left:0;border-top:3px solid #000}.lmlist{max-height:420px}}
 .wa{position:fixed;right:18px;bottom:18px;z-index:60;width:60px;height:60px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .15s}.wa:hover{transform:scale(1.08)}.wa svg{width:34px;height:34px;fill:#fff}
 .cfm{margin:14px 0;padding:12px 14px;border-radius:10px;font-weight:700}.cfm.ok{background:#173d24;border:1px solid #2f9e57}.cfm.err{background:#4a1717;border:1px solid #c0392b}
 /* Verbände */
@@ -337,18 +338,18 @@ function clkSignals(prev,v,snd){if(!prev||!v)return;
 // ---------- WBU Live-Monitor: erscheint automatisch, wenn eine Gala live ist ----------
 const API='/scorecard/api.php';
 const LM={ev:null,snap:null,st:null,off:0,t:{}};
-const LT={en:{fc:'Fight card',fight:'Fight',rd:'Round',time:'Time',pause:'Break',to:'Timeout',rnds:'rounds',min:'min',next:'next',now:'live now',done:'All fights finished',win:'Winner',title:'Title fight',soon:'Fight is about to start',end:'Fight over – result follows'},
- de:{fc:'Fight Card',fight:'Kampf',rd:'Runde',time:'Zeit',pause:'Pause',to:'Timeout',rnds:'Runden',min:'Min.',next:'als Nächstes',now:'läuft gerade',done:'Alle Kämpfe beendet',win:'Sieger',title:'Titelkampf',soon:'Kampf beginnt gleich',end:'Kampf beendet – Wertung folgt'},
- es:{fc:'Cartelera',fight:'Combate',rd:'Asalto',time:'Tiempo',pause:'Descanso',to:'Tiempo muerto',rnds:'asaltos',min:'min',next:'siguiente',now:'en vivo',done:'Todos los combates terminados',win:'Ganador',title:'Combate por título',soon:'El combate empieza enseguida',end:'Combate terminado – resultado pronto'},
- fr:{fc:'Programme',fight:'Combat',rd:'Round',time:'Temps',pause:'Pause',to:'Temps mort',rnds:'rounds',min:'min',next:'ensuite',now:'en direct',done:'Tous les combats terminés',win:'Vainqueur',title:'Combat pour le titre',soon:'Le combat va commencer',end:'Combat terminé – résultat à suivre'},
- ru:{fc:'Карта боёв',fight:'Бой',rd:'Раунд',time:'Время',pause:'Перерыв',to:'Тайм-аут',rnds:'раундов',min:'мин',next:'следующий',now:'идёт сейчас',done:'Все бои завершены',win:'Победитель',title:'Титульный бой',soon:'Бой скоро начнётся',end:'Бой окончен – результат скоро'}};
+const LT={en:{last:'Last result',fc:'Fight card',fight:'Fight',rd:'Round',time:'Time',pause:'Break',to:'Timeout',rnds:'rounds',min:'min',next:'Next',now:'live now',done:'All fights finished',win:'Winner',title:'Title fight',soon:'Fight is about to start',end:'Fight over – result follows'},
+ de:{last:'Letztes Ergebnis',fc:'Fight Card',fight:'Kampf',rd:'Runde',time:'Zeit',pause:'Pause',to:'Timeout',rnds:'Runden',min:'Min.',next:'Als Nächstes',now:'läuft gerade',done:'Alle Kämpfe beendet',win:'Sieger',title:'Titelkampf',soon:'Kampf beginnt gleich',end:'Kampf beendet – Wertung folgt'},
+ es:{last:'Último resultado',fc:'Cartelera',fight:'Combate',rd:'Asalto',time:'Tiempo',pause:'Descanso',to:'Tiempo muerto',rnds:'asaltos',min:'min',next:'Siguiente',now:'en vivo',done:'Todos los combates terminados',win:'Ganador',title:'Combate por título',soon:'El combate empieza enseguida',end:'Combate terminado – resultado pronto'},
+ fr:{last:'Dernier résultat',fc:'Programme',fight:'Combat',rd:'Round',time:'Temps',pause:'Pause',to:'Temps mort',rnds:'rounds',min:'min',next:'Ensuite',now:'en direct',done:'Tous les combats terminés',win:'Vainqueur',title:'Combat pour le titre',soon:'Le combat va commencer',end:'Combat terminé – résultat à suivre'},
+ ru:{last:'Последний результат',fc:'Карта боёв',fight:'Бой',rd:'Раунд',time:'Время',pause:'Перерыв',to:'Тайм-аут',rnds:'раундов',min:'мин',next:'Следующий',now:'идёт сейчас',done:'Все бои завершены',win:'Победитель',title:'Титульный бой',soon:'Бой скоро начнётся',end:'Бой окончен – результат скоро'}};
 const lt=k=>(LT[L]||LT.en)[k];
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function lmApi(a,b){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,...b})});return r.json()}
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 async function lmList(){try{const L0=(await lmApi('l_list',{})).live||[];
-  // „live“: Gala, die heute stattfindet oder in den letzten 6 Stunden bearbeitet wurde – nur eine (die neueste)
-  const now=Date.now()/1000;LM.ev=L0.find(e=>e.type==='gala'&&(e.date===today()||now-e.updated<6*3600))||null}catch(e){}
+  // „live“: Gala mit offenen Kämpfen (heute oder in den letzten 6 Std. bearbeitet); sind alle Kämpfe fertig, bleibt der Monitor noch 30 Min. mit den Ergebnissen stehen, dann ist er weg
+  const now=Date.now()/1000;LM.ev=L0.find(e=>e.type==='gala'&&(e.offen>0?(e.date===today()||now-e.updated<6*3600):now-e.updated<1800))||null}catch(e){}
  if(LM.ev)lmData();else{LM.snap=null;lmDraw()}}
 async function lmData(){if(!LM.ev)return;try{const j=await lmApi('l_get',{lid:LM.ev.id});if(j.snap)LM.snap=j.snap}catch(e){}lmDraw()}
 async function lmClock(){if(!LM.ev)return;try{const t=Date.now(),j=await lmApi('l_clockget',{lid:LM.ev.id,ring:1});LM.off=j.srv-(t+Date.now())/2;LM.st=j.st||null}catch(e){}}
@@ -365,7 +366,10 @@ function lmDraw(){const box=document.getElementById('lmon');if(!box)return;const
  const left=c?`<div><span class="no">${lt('fight')} ${c.no}</span>${c.rd?`<span class="tt">${esc(c.rd)}</span>`:''}</div>
    <div class="lmv"><div class="lmc r"><b>${esc(c.a)}</b><span>${gym(c,'r')}</span></div><div class="vs">VS</div><div class="lmc b"><b>${esc(c.b)}</b><span>${gym(c,'b')}</span></div></div>
    <div class="lmi">${[(c.f||{}).cls,c.kind,c.rounds?c.rounds+' '+lt('rnds')+(c.dur?' × '+esc(c.dur)+' '+lt('min'):''):''].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div>
-   <div id="lmclk" style="display:contents">${lmClockHtml(c)}</div>`
+   <div id="lmclk" style="display:contents">${lmClockHtml(c)}</div>
+   ${(()=>{const i=rows.indexOf(c),nx=rows.slice(i+1).find(r=>!r.done),ls=rows.slice(0,i).reverse().find(r=>r.res);
+     return (ls?`<div class="lmx ok"><small>${lt('last')} · ${lt('fight')} ${ls.no}</small><b><span class="rr">${esc(ls.a)}</span> vs <span class="bb">${esc(ls.b)}</span></b><div>${esc(ls.res)}</div></div>`:'')
+      +(nx?`<div class="lmx"><small>${lt('next')} · ${lt('fight')} ${nx.no}</small><b><span class="rr">${esc(nx.a)}</span> vs <span class="bb">${esc(nx.b)}</span></b><div>${esc([(nx.f||{}).cls,nx.kind].filter(Boolean).join(' · '))}</div></div>`:'')})()}`
   :`<div class="lmk"><div><small>${lt('done')}</small></div></div>${(()=>{const l=[...rows].reverse().find(r=>r.res);return l?`<div class="res">${lt('fight')} ${l.no}: ${esc(l.res)}</div>`:''})()}`;
  const sc=box.querySelector('.lmlist'),y=sc?sc.scrollTop:0;
  box.innerHTML=`<section class="lm"><div class="lmb"><div class="lmh"><span class="lv">LIVE</span><b>${esc(sn.name)}</b><span>${esc([sn.ort,sn.date&&sn.date.split('-').reverse().join('.')].filter(Boolean).join(' · '))}</span></div>
