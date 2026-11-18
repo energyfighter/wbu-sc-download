@@ -198,7 +198,7 @@ function prep(d,k){try{const st=d.createElement('style');st.textContent=(HIDE[k]
 
 const WPC={};
 // Eigene Seiten im neuen Design (statt WordPress-Inhalt)
-const GUERTEL=[5,1,6,2,7,3,8,4].map(n=>'img/guertel-'+String(n).padStart(2,'0')+'.jpg');
+const GUERTEL=[5,1,6,2,7,3,8,4].map(n=>'/start/img/guertel-'+String(n).padStart(2,'0')+'.jpg');
 function guertelSeite(v){v.innerHTML=`<div class="in wpw"><h1 class="H">${t('belts')}</h1><div class="bar"></div><div class="gg">${GUERTEL.map((u,i)=>`<a href="${u}" onclick="return zoom(${i})"><img src="${u}" alt="WBU ${t('belts')} ${i+1}" loading="lazy"></a>`).join('')}</div></div>`}
 function zoom(i){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${GUERTEL[i]}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
 async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'/'+slug+'/';

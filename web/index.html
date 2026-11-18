@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>World Boxing Union – Be the Best</title>
+<meta name="description" content="World Boxing Union (WBU) – world rankings, champions, results, events and the WBU Coin.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0d12;--card:#151922;--line:#262b36;--gold:#d8a93a;--gold2:#f2cf6b;--red:#e0262e;--blue:#1f6fe5;--txt:#f4f1ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.in{max-width:1240px;margin:0 auto;padding:0 22px}
+/* Kopf */
+.top{background:#0b0d12;border-bottom:1px solid var(--line)}
+.top .in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-top:12px;padding-bottom:12px}
+.brand{display:flex;align-items:center;gap:12px;flex:1}.brand img{width:50px;height:50px}.brand b{font:700 24px Oswald,sans-serif;letter-spacing:1px}.brand b span{color:var(--gold)}
+.brand small{display:block;font:600 12px Inter,sans-serif;letter-spacing:3px;color:var(--gold)}
+.lang{display:flex;gap:4px;background:#1a1e27;border:1px solid var(--line);border-radius:10px;padding:3px}
+.lang button{background:none;border:0;color:var(--txt);font:700 13px Inter,sans-serif;padding:7px 9px;border-radius:7px;cursor:pointer}.lang button.on{background:var(--gold);color:#140e00}
+.menu{position:sticky;top:0;z-index:30;background:rgba(17,20,27,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.menu .in{display:flex;flex-wrap:wrap;gap:2px 2px;padding-top:6px;padding-bottom:6px}
+.menu a,.menu .dd>span{display:block;padding:8px 9px;border-radius:7px;font:700 13px Inter,sans-serif;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.menu a:hover,.menu .dd:hover>span{background:#1f2430;color:var(--gold2)}.menu a.on{color:var(--gold2)}
+.menu a.coin{color:#140e00;background:var(--gold)}.menu a.coin:hover{background:var(--gold2);color:#140e00}
+.dd{position:relative}.dd .sub{display:none;position:absolute;top:100%;left:0;min-width:180px;background:#151922;border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.dd:hover .sub{display:block}
+@media(max-width:900px){.top .in{padding-top:8px;padding-bottom:8px}.brand img{width:40px;height:40px}.brand b{font-size:18px}.brand small{font-size:10px;letter-spacing:2px}.top .lang button{padding:6px 6px;font-size:12px}.dd .sub{display:block;position:static;box-shadow:none;border:0;padding:0 0 0 10px;background:none}}
+
+/* Gürtel-Banner */
+.belts{background:#000;border-bottom:1px solid var(--line)}.belts a{display:block;max-width:1240px;margin:0 auto}.belts img{display:block;width:100%}
+.menu .in{align-items:center}.menu .sp{flex:1}.menu .lang{margin-left:6px}
+.fb{background:linear-gradient(180deg,#171b25,#12151c);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:22px}.fb h3{margin:0;padding:14px 18px;font-size:20px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(24,119,242,.25),transparent 70%)}
+.fb .fr{display:flex;justify-content:center;padding:16px;background:#fff}.fb iframe{border:0;max-width:100%}.fb a.btn{margin:14px 18px}
+.tr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.soc{display:flex;gap:6px}.soc a{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:9px;background:#1a1e27}.soc a:hover{background:var(--gold)}.soc a:hover svg{fill:#140e00}.soc svg{width:17px;height:17px;fill:var(--txt)}
+/* WordPress-Inhalte im neuen Design */
+.wpw{padding:30px 22px 60px}.wpw h1{font-size:clamp(28px,4vw,44px);margin:0 0 6px;color:var(--gold2)}.wpw .bar{height:3px;width:90px;background:linear-gradient(90deg,var(--gold),transparent);margin-bottom:24px}
+.wp{background:linear-gradient(180deg,#151922,#11141b);border:1px solid var(--line);border-radius:16px;padding:clamp(16px,3vw,34px);font-size:16px;line-height:1.65;overflow-wrap:anywhere}
+.wp *{color:inherit!important;background-color:transparent!important;font-family:inherit!important;max-width:100%}
+.wp h1,.wp h2,.wp h3,.wp h4{font-family:Oswald,Impact,sans-serif!important;text-transform:uppercase;letter-spacing:.5px;color:var(--gold2)!important;line-height:1.2}
+.wp a{color:var(--gold2)!important;text-decoration:underline}.wp img{height:auto;border-radius:10px}.wp figure{margin:18px auto}.wp .aligncenter{display:block;margin-left:auto;margin-right:auto}
+.wp table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px;display:block;overflow-x:auto}.wp td,.wp th{border:1px solid var(--line)!important;padding:8px 10px;vertical-align:top}.wp tr:nth-child(even) td{background:#1a1f2a!important}.wp tr:first-child td,.wp th{background:#222837!important;font-weight:700}
+.wp input,.wp textarea,.wp select{background:#0f1218!important;border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;color:var(--txt)!important;font-size:15px}.wp button,.wp input[type=submit]{background:var(--gold)!important;color:#140e00!important;border:0;border-radius:9px;padding:11px 18px;font-weight:800;width:auto;cursor:pointer}
+.wp iframe{max-width:100%;border:0}
+.wp .wp-block-gallery,.wp .blocks-gallery-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;list-style:none;padding:0;margin:18px 0}
+.wp .wp-block-gallery>*,.wp .blocks-gallery-grid>*{margin:0!important;width:auto!important;display:block}
+.wp .wp-block-gallery figure,.wp .blocks-gallery-item figure{margin:0!important;height:100%}
+.wp .wp-block-gallery img,.wp .blocks-gallery-item img{width:100%!important;height:100%!important;aspect-ratio:3/2;object-fit:contain;background:#0d1016;padding:6px;border:1px solid var(--line);border-radius:10px;display:block}
+.wp .wp-block-gallery>.blocks-gallery-grid{grid-column:1/-1}
+.wpmsg{padding:60px 22px;text-align:center;font-size:18px}
+/* Live-Monitor (heller Hintergrund wie WBU Live / WBU Time) */
+.lm{max-width:1240px;margin:22px auto 0;padding:0 22px}.lm+.lm{margin-top:18px}.lmb{background:#e9ebef;color:#000;border:3px solid #000;border-radius:16px;overflow:hidden;font-family:system-ui,Arial,sans-serif}
+.lmh{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:3px solid #000}.lmh b{font-size:20px}.lmh span{font-size:15px}
+.lv{background:#d0021b;color:#fff;font-weight:800;padding:4px 12px;border-radius:8px;letter-spacing:1px;animation:lvb 1.6s infinite}@keyframes lvb{50%{opacity:.55}}
+.lmg{display:grid;grid-template-columns:1.25fr 1fr;height:clamp(420px,46vw,560px)}
+.lml{padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}.lmr{border-left:3px solid #000;display:flex;flex-direction:column;min-height:0;background:#fff}
+.lmr h4{margin:0;padding:10px 14px;font-size:18px;border-bottom:2px solid #000}.lml .no{font-size:18px;font-weight:800}.lml .tt{display:inline-block;background:#d8a93a;color:#000;font-weight:800;border-radius:8px;padding:2px 10px;margin-left:8px}
+.lmv{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch}.lmv .vs{align-self:center;font-weight:900;font-size:22px}
+.lmc{border-radius:12px;padding:12px;color:#fff}.lmc.r{background:#d0021b}.lmc.b{background:#0047bb;text-align:right}.lmc b{display:block;font-size:clamp(18px,2.2vw,28px);line-height:1.15}.lmc span{font-size:15px;font-weight:600}
+.lmi{display:flex;flex-wrap:wrap;gap:8px}.lmi span{background:#fff;border:2px solid #000;border-radius:9px;padding:5px 10px;font-weight:700;font-size:15px}
+.lmk{display:flex;padding:14px 0;align-items:center;justify-content:center;gap:30px;background:#fff;border:3px solid #000;border-radius:14px;min-height:90px}.lmk div{text-align:center}.lmk small{display:block;font-size:15px;font-weight:700}.lmk b{font-size:clamp(34px,5vw,64px);font-variant-numeric:tabular-nums;line-height:1}
+.lmk.pa b{color:#0047bb}.lmk.to{background:#ffe9a8}.lmk.to b{color:#d0021b}
+.lmx{background:#fff;border:2px solid #000;border-radius:12px;padding:8px 12px;font-size:15px}.lmx.ok{border-color:#1e8e3e}.lmx small{display:block;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.5px}.lmx b{font-size:17px}.lmx .rr{color:#d0021b}.lmx .bb{color:#0047bb}.lmx.ok div{color:#1e7a34;font-weight:800}
+.lml .res{background:#fff;border:3px solid #1e8e3e;border-radius:12px;padding:10px 12px;font-weight:800;font-size:17px}
+.lmlist{overflow-y:auto;flex:1}.lmf{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:8px 12px;border-bottom:1px solid #bbb;font-size:15px}.lmf:nth-child(even){background:#f3f4f6}
+.lmf .n{font-weight:900;font-size:17px}.lmf .rr{color:#d0021b;font-weight:800}.lmf .bb{color:#0047bb;font-weight:800}.lmf small{display:block;font-size:13px}.lmf .e{color:#1e7a34;font-weight:800;font-size:14px}
+.lmf.cur{background:#fff3c4!important;outline:3px solid #d8a93a;outline-offset:-3px}.lmf.cur .e{color:#000}
+@media(max-width:900px){.wp .wp-block-gallery,.wp .blocks-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:520px){.wp .wp-block-gallery,.wp .blocks-gallery-grid{grid-template-columns:1fr!important}}
+@media(max-width:900px){.lm{padding:0 12px}.lmg{grid-template-columns:1fr;height:auto}.lmr{border-left:0;border-top:3px solid #000}.lmlist{max-height:420px}}
+.wa{position:fixed;right:18px;bottom:18px;z-index:60;width:60px;height:60px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .15s}.wa:hover{transform:scale(1.08)}.wa svg{width:34px;height:34px;fill:#fff}
+.cfm{margin:14px 0;padding:12px 14px;border-radius:10px;font-weight:700}.cfm.ok{background:#173d24;border:1px solid #2f9e57}.cfm.err{background:#4a1717;border:1px solid #c0392b}
+.gg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.gg a{display:block;border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.45);transition:transform .15s}.gg a:hover{transform:translateY(-4px)}.gg img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
+@media(max-width:1000px){.gg{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.gg{gap:10px}}
+.zm{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.88);display:grid;place-items:center;cursor:zoom-out}.zm img{max-width:94vw;max-height:92vh;border-radius:12px}.zm button{position:absolute;top:14px;right:18px;font-size:34px;background:none;border:0;color:#fff;cursor:pointer}
+/* Verbände */
+.orgs{display:flex;justify-content:center;gap:clamp(10px,2.4vw,30px);flex-wrap:wrap;padding:28px 0 6px}
+.orgs a{display:block;width:clamp(78px,10vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
+/* Inhalt */
+.main{display:grid;grid-template-columns:1fr 330px;gap:26px;padding:26px 22px 60px;max-width:1240px;margin:0 auto}
+.ban{display:block;border-radius:16px;overflow:hidden;border:1px solid var(--line);margin-bottom:22px;box-shadow:0 20px 50px rgba(0,0,0,.45);transition:transform .15s}.ban:hover{transform:translateY(-3px)}
+.ban img{display:block;width:100%}
+.side .card{background:linear-gradient(180deg,#171b25,#12151c);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:22px}
+.side h3{margin:0;padding:14px 18px;font-size:20px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(216,169,58,.14),transparent 70%)}
+.side .card img{display:block;width:100%}.side .card p{margin:0;padding:12px 18px 0;font-size:15px;line-height:1.5}
+.btn{display:inline-block;margin:14px 18px 18px;background:var(--gold);color:#140e00;font:800 13px Inter,sans-serif;letter-spacing:1.5px;text-transform:uppercase;padding:11px 18px;border-radius:9px}
+.tile{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line)}.tile:last-child{border-bottom:0}.tile:hover{background:#1b2030}
+.tile .i{font-size:26px}.tile b{display:block;font:700 18px Oswald,sans-serif;text-transform:uppercase}.tile span{font-size:13px}
+.ft{border-top:1px solid var(--line);padding:30px 22px;text-align:center;font-size:14px}.ft a{color:var(--gold)}
+@media(max-width:900px){.main{grid-template-columns:1fr;padding:18px 14px 40px}
+ .mbar{display:flex!important}.menu .in{display:none}.menu.open .in{display:flex}}
+.mbar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px}
+.burger{background:#1a1e27;border:1px solid var(--line);color:var(--txt);font:700 14px Inter,sans-serif;padding:9px 12px;border-radius:9px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<a class="wa" href="https://wa.me/4915774719789" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.8-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.2-.2-.4-.3z"/></svg></a>
+<script>
+const W='https://wbu.wbu-boxing.com',WWW='https://www.wbu-boxing.com',UP=W+'/wp-content/uploads/';
+const LANGS=['en','de','es','fr','ru'];
+const T={
+ en:{sub:'Be the best',t4s:'Fight for the world title – coming soon',fb:'WBU on Facebook',fbb:'Open Facebook page',home:'Home',rank:'Rankings',champ:'Champions',res:'Results',rules:'Rules & Fees',belts:'Belts',dl:'Downloads',hist:'WBU History',dir:'Directory',contact:'Contact',shop:'Shop',bl:'Bundesliga',menu:'Menu',
+  pass:'Grab your Sportpass!',passT:'The official WBU international sports passport – for boxers of all WBU sports.',passB:'Order now',more:'Quick links',
+  t1:'World Rankings',t1s:'Champions and Top 15 of 18 weight classes',t2:'Results',t2s:'All results of galas and tournaments',t3:'WBU Live',t3s:'Live fight list and results',foot:'Official website of the World Boxing Union.'},
+ de:{sub:'Be the best',t4s:'Kämpfe um den Weltmeistertitel – bald',fb:'WBU auf Facebook',fbb:'Facebook-Seite öffnen',home:'Startseite',rank:'Rangliste',champ:'Champions',res:'Results',rules:'Regeln & Gebühren',belts:'Gürtel',dl:'Downloads',hist:'WBU-Geschichte',dir:'Verzeichnis',contact:'Kontakt',shop:'Shop',bl:'Bundesliga',menu:'Menü',
+  pass:'Hol dir deinen Sportpass!',passT:'Der offizielle internationale Sportpass der WBU – für Boxer aller WBU-Sportarten.',passB:'Jetzt bestellen',more:'Schnellzugriff',
+  t1:'Weltrangliste',t1s:'Weltmeister und Top 15 in 18 Gewichtsklassen',t2:'Results',t2s:'Alle Ergebnisse von Galas und Turnieren',t3:'WBU Live',t3s:'Kampfliste und Ergebnisse live',foot:'Offizielle Webseite der World Boxing Union.'},
+ es:{sub:'Be the best',t4s:'Lucha por el título mundial – pronto',fb:'WBU en Facebook',fbb:'Abrir página de Facebook',home:'Inicio',rank:'Ranking',champ:'Campeones',res:'Resultados',rules:'Reglas y tarifas',belts:'Cinturones',dl:'Descargas',hist:'Historia WBU',dir:'Directorio',contact:'Contacto',shop:'Tienda',bl:'Bundesliga',menu:'Menú',
+  pass:'¡Consigue tu Sportpass!',passT:'El pasaporte deportivo internacional oficial de la WBU – para boxeadores de todos los deportes WBU.',passB:'Pedir ahora',more:'Accesos rápidos',
+  t1:'Ranking mundial',t1s:'Campeones y Top 15 de 18 categorías',t2:'Resultados',t2s:'Todos los resultados de galas y torneos',t3:'WBU Live',t3s:'Cartelera y resultados en vivo',foot:'Sitio oficial de la World Boxing Union.'},
+ fr:{sub:'Be the best',t4s:'Bats-toi pour le titre mondial – bientôt',fb:'La WBU sur Facebook',fbb:'Ouvrir la page Facebook',home:'Accueil',rank:'Classement',champ:'Champions',res:'Résultats',rules:'Règles & tarifs',belts:'Ceintures',dl:'Téléchargements',hist:'Histoire WBU',dir:'Annuaire',contact:'Contact',shop:'Boutique',bl:'Bundesliga',menu:'Menu',
+  pass:'Obtiens ton Sportpass !',passT:'Le passeport sportif international officiel de la WBU – pour les boxeurs de tous les sports WBU.',passB:'Commander',more:'Accès rapide',
+  t1:'Classement mondial',t1s:'Champions et Top 15 de 18 catégories',t2:'Résultats',t2s:'Tous les résultats des galas et tournois',t3:'WBU Live',t3s:'Programme et résultats en direct',foot:'Site officiel de la World Boxing Union.'},
+ ru:{sub:'Be the best',t4s:'Борись за титул чемпиона – скоро',fb:'WBU в Facebook',fbb:'Открыть страницу Facebook',home:'Главная',rank:'Рейтинг',champ:'Чемпионы',res:'Результаты',rules:'Правила и взносы',belts:'Пояса',dl:'Загрузки',hist:'История WBU',dir:'Справочник',contact:'Контакты',shop:'Магазин',bl:'Бундеслига',menu:'Меню',
+  pass:'Получи свой Sportpass!',passT:'Официальный международный спортивный паспорт WBU – для боксёров всех видов спорта WBU.',passB:'Заказать',more:'Быстрые ссылки',
+  t1:'Мировой рейтинг',t1s:'Чемпионы и Топ-15 в 18 категориях',t2:'Результаты',t2s:'Все результаты гал и турниров',t3:'WBU Live',t3s:'Список боёв и результаты онлайн',foot:'Официальный сайт World Boxing Union.'}};
+let L=(()=>{const q=new URLSearchParams(location.search).get('lang');if(LANGS.includes(q))return q;try{const s=localStorage.getItem('wbuLang');if(LANGS.includes(s))return s}catch(e){}return 'en'})();
+const t=k=>(T[L]||T.en)[k]||T.en[k];
+const lq=u=>u.startsWith(WWW)?u+(u.includes('?')?'&':'?')+'lang='+L:u;
+// Neue WBU-Seiten werden UNTER Kopf, Banner und Menü angezeigt (Menü bleibt immer stehen)
+const ROUTES=['rankings','results','live','coin','anmeldung'];
+const R=p=>'#'+p;               // Link auf eine eingebettete Seite
+function MENU(){return [[t('home'),'#',1],[t('rank'),R('rankings'),'rankings'],[t('champ'),R('p/champions'),'p/champions'],[t('res'),R('results'),'results'],[t('rules'),R('p/sample-page'),'p/sample-page'],[t('belts'),R('p/belt'),'p/belt'],
+ ['PBU',R('p/upcoming-fights'),'p/upcoming-fights'],['EBO',R('p/ebo-2'),'p/ebo-2'],['WFU',R('p/wfu'),'p/wfu'],['K1',R('p/k1'),'p/k1'],['SemiPro',R('p/semipro'),'p/semipro'],['Master',R('p/master'),'p/master'],['BKB',R('p/bkb'),'p/bkb'],['HYBB (4oz)',R('p/hbkb4oz'),'p/hbkb4oz'],['Stress-Defense',R('p/sd'),'p/sd'],
+ [t('dl'),R('p/downloads'),'p/downloads'],[t('hist'),R('p/about-wbu'),'p/about-wbu'],[t('dir'),R('p/directory'),'p/directory'],[t('contact'),R('p/contact'),'p/contact'],[t('shop'),'https://wbu.printify.me/',0,0,'',1],[t('bl'),R('p/bundesliga'),'p/bundesliga'],
+ ['WBU Sports',R('anmeldung'),'anmeldung',[['WBU Live',R('live')],['WBU Time 1',lq(WWW+'/live/?zeit=1&ring=1'),0,1],['WBU Time 2',lq(WWW+'/live/?zeit=1&ring=2'),0,1]]],['Scorecard',W+'/scorecard/'],['WBU Coin',R('coin'),'coin',0,'coin']]}
+const ORGS=[['WBU','2026/01/wbulogo-150x150.png',R('p/sample-page'),'p/sample-page'],['PBU','2026/01/PBULOGO-150x150.png',R('p/upcoming-fights'),'p/upcoming-fights'],['EBO','2026/01/ebologo-150x150.png',R('p/ebo-2'),'p/ebo-2'],
+ ['WFU','2026/01/wfunew-1-150x150.png',R('p/wfu'),'p/wfu'],['Stress Defense','2026/01/SD_logo_freigestellt-150x150.png',R('p/sd'),'p/sd'],['WBU Bundesliga','2026/01/wbulogoBUNDESLIGA-1-150x150.png',R('p/bundesliga'),'p/bundesliga']];
+const SOC=`<div class="soc"><a href="https://www.facebook.com/WorldBoxingUnionV" target="_blank" rel="noopener" title="Facebook"><svg viewBox="0 0 24 24"><path d="M14 8h3V4h-3c-2.8 0-4 1.7-4 4.2V10H7v4h3v8h4v-8h3l.6-4H14V8.6c0-.4.2-.6.6-.6z"/></svg></a><a href="https://twitter.com/WBU_Office" target="_blank" rel="noopener" title="X / Twitter"><svg viewBox="0 0 24 24"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg></a><a href="mailto:ebp@gmx.de" title="E-Mail"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3zm2 2v.5l7 4.6 7-4.6V7zm14 2.9-7 4.6-7-4.6V17h14z"/></svg></a></div>`;
+const route=()=>decodeURIComponent(location.hash.slice(1));
+const rootOf=r=>r.split(/[\/?]/)[0];
+const langBox=cls=>`<div class="lang ${cls||''}">${LANGS.map(l=>`<button class="${l===L?'on':''}" onclick="setLang('${l}')">${l.toUpperCase()}</button>`).join('')}</div>`;
+function draw(){document.documentElement.lang=L;
+ const cur=route().startsWith('p/')?route():(rootOf(route())||'#');
+ const isOn=k=>k&&(k===1?cur==='#':k===cur);
+ const m=MENU().map(([n,u,k,sub,cls,nw])=>sub?`<div class="dd"><a class="${isOn(k)?'on':''}" href="${u}">${n} ▾</a><div class="sub">${sub.map(([a,b,,nw])=>`<a href="${b}" ${nw?'target="_blank" rel="noopener"':''}>${a}</a>`).join('')}</div></div>`
+   :`<a class="${isOn(k)?'on':''} ${cls||''}" href="${u}" ${nw?'target="_blank" rel="noopener"':''}>${n}</a>`).join('');
+ document.getElementById('app').innerHTML=`
+ <header class="top"><div class="in"><a class="brand" href="#"><img src="${UP}2026/01/wbulogo-150x150.png" alt="WBU"><div><b>WORLD BOXING <span>UNION</span></b><small>${t('sub').toUpperCase()}</small></div></a><div class="tr">${SOC}${langBox()}</div></div></header>
+ <div class="belts"><a href="#"><img src="${UP}2026/11/cropped-banner-1.png" alt="World Boxing Union – World Champion Belts"></a></div>
+ <nav class="menu" id="menu"><div class="mbar"><button class="burger" onclick="document.querySelector('.menu').classList.toggle('open')">☰ ${t('menu')}</button></div>
+  <div class="in">${m}</div></nav>
+ <div id="view"></div>
+ <footer class="ft">© World Boxing Union · ${t('foot')} · <a href="#p/contact">${t('contact')}</a></footer>`;
+ view()}
+function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
+ return `<div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
+ <div class="main"><div>
+   <a class="ban" href="${R('anmeldung')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
+   <a class="ban" href="${R('coin')}"><img src="${UP}2021/01/wbu-coin-banner-850x300-4x.jpg" alt="WBU Coin – Coming Soon"></a>
+   <section class="fb"><h3 class="H">${t('fb')}</h3><div class="fr"><iframe title="Facebook" src="https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB)}&tabs=timeline&width=500&height=1400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false" width="500" height="1400" scrolling="no" allow="encrypted-media" loading="lazy"></iframe></div>
+    <a class="btn" href="${FB}" target="_blank" rel="noopener">${t('fbb')} ›</a></section></div>
+  <aside class="side">
+   <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
+   <div class="card"><h3 class="H">${t('more')}</h3>
+    <a class="tile" href="${R('rankings')}"><span class="i">🏆</span><div><b>${t('t1')}</b><span>${t('t1s')}</span></div></a>
+    <a class="tile" href="${R('results')}"><span class="i">🥊</span><div><b>${t('t2')}</b><span>${t('t2s')}</span></div></a>
+    <a class="tile" href="${R('live')}"><span class="i">📡</span><div><b>${t('t3')}</b><span>${t('t3s')}</span></div></a>
+    <a class="tile" href="${R('coin')}"><span class="i">🥇</span><div><b>WBU Coin</b><span>${t('t4s')}</span></div></a></div>
+  </aside></div>`}
+// Seite im Rahmen: Pfad + Sprache; deren eigenes Kopf-Menü wird ausgeblendet, Untermenüs (z. B. Fight Quiz) bleiben
+const HIDE={rankings:'.nav{display:none!important}',results:'.nav{display:none!important}',coin:'#wbuTop{display:none!important}',live:'',anmeldung:''};
+let frameTimer=0;
+function view(){const r=route(),k=rootOf(r),v=document.getElementById('view');clearInterval(frameTimer);
+ if(r.startsWith('p/'))return wpPage(r.slice(2),v);
+ if(!ROUTES.includes(k)){v.innerHTML=home();if(typeof lmDraw==='function')lmDraw();return}
+ const rest=r.slice(k.length).replace(/^\//,'');let p='/'+k+'/'+rest;
+ const u=new URL(p,location.origin);u.searchParams.set('lang',L);
+ v.innerHTML=`<iframe id="sub" title="WBU" src="${u.pathname+u.search}" style="display:block;width:100%;height:80vh;border:0;opacity:0;transition:opacity .2s"></iframe>`;
+ const f=document.getElementById('sub');let done=false,last=0,grow=0;
+ frameTimer=setInterval(()=>{let d;try{d=f.contentDocument}catch(e){return}
+  if(!d||!d.body||d.location.href==='about:blank')return;
+  if(!done&&d.readyState!=='loading'){done=true;prep(d,k);f.style.opacity=1}
+  if(done){const h=Math.max(d.documentElement.scrollHeight,d.body.scrollHeight);
+   if(Math.abs(h-last)>3){grow=h>last&&last?grow+1:0;last=h;if(grow<40&&h<60000)f.style.height=h+'px'}}},120);
+ f.addEventListener('load',()=>{done=false;last=0;f.style.opacity=0;
+  // Unterseite innerhalb des Rahmens gewechselt (z. B. Fight Quiz) → Adresse oben mitführen
+  try{const lp=f.contentWindow.location;const nr=routeOf(new URL(lp.href));if(nr!==null&&nr!==route())history.replaceState(null,'','#'+nr)}catch(e){}});
+}
+const ours=h=>h===location.hostname||/(^|\.)wbu-boxing\.com$/.test(h);
+function routeOf(u){if(!ours(u.hostname))return null;
+ if(u.pathname==='/'||u.pathname==='/start/'||u.pathname==='/start/index.html')return u.hash&&u.hash.length>1?null:'';
+ const m=u.pathname.match(/^\/(rankings|results|live|coin|anmeldung)\/(.*)$/);if(!m)return null;
+ if(m[1]==='live'&&u.searchParams.get('zeit'))return null;
+ u.searchParams.delete('lang');const rest=(m[2]&&m[2]!=='index.html'?'/'+m[2]:'')+(u.search&&u.search!=='?'?u.search:'');return m[1]+rest}
+function prep(d,k){try{const st=d.createElement('style');st.textContent=(HIDE[k]||'')+'html,body{overflow:hidden!important}';d.head.appendChild(st)}catch(e){}
+ d.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');if(!a)return;const h=a.getAttribute('href')||'';
+  if(h.startsWith('#')){const id=decodeURIComponent(h.slice(1)),el=id&&(d.getElementById(id)||d.querySelector('[name="'+id.replace(/"/g,'')+'"]'));
+   if(el){e.preventDefault();const f=document.getElementById('sub'),mh=document.getElementById('menu').offsetHeight;
+    window.scrollTo({top:f.getBoundingClientRect().top+scrollY+el.getBoundingClientRect().top-mh-10,behavior:'smooth'})}return}
+  let u;try{u=new URL(a.href)}catch(_){return}
+  const r=routeOf(u);
+  if(r!==null&&a.target!=='_blank'){e.preventDefault();if(r===route())view();else location.hash=r;return}
+  if(u.pathname.startsWith('/'+k+'/')&&ours(u.hostname))return;   // bleibt im Rahmen
+  if(a.target!=='_blank')a.target='_top'},true)}
+
+const WPC={};
+// Eigene Seiten im neuen Design (statt WordPress-Inhalt)
+const GUERTEL=[5,1,6,2,7,3,8,4].map(n=>'/start/img/guertel-'+String(n).padStart(2,'0')+'.jpg');
+function guertelSeite(v){v.innerHTML=`<div class="in wpw"><h1 class="H">${t('belts')}</h1><div class="bar"></div><div class="gg">${GUERTEL.map((u,i)=>`<a href="${u}" onclick="return zoom(${i})"><img src="${u}" alt="WBU ${t('belts')} ${i+1}" loading="lazy"></a>`).join('')}</div></div>`}
+function zoom(i){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${GUERTEL[i]}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
+async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'/'+slug+'/';
+ if(slug==='belt')return guertelSeite(v);
+ v.innerHTML=`<div class="wpmsg">…</div>`;
+ try{let d=WPC[slug];
+  if(!d){for(const typ of ['pages','posts']){const j=await fetch(`/wp-json/wp/v2/${typ}?slug=${slug}&_fields=title,content`).then(x=>x.ok?x.json():[]);if(j.length){d=j[0];break}}WPC[slug]=d}
+  if(route()!=='p/'+slug)return;
+  if(!d)throw 0;
+  const tmp=document.createElement('div');tmp.innerHTML=d.content.rendered;
+  tmp.querySelectorAll('script,style').forEach(x=>x.remove());
+  tmp.querySelectorAll('[style]').forEach(x=>{x.style.removeProperty('color');x.style.removeProperty('background');x.style.removeProperty('background-color');x.style.removeProperty('font-family')});
+  // Galerien: doppelte Bilder raus, große Bildversion nehmen
+  const seen=new Set();tmp.querySelectorAll('.wp-block-gallery img,.blocks-gallery-grid img').forEach(i=>{const src=i.getAttribute('src')||'',k=src.split('/').pop().replace(/-\d+x\d+(?=\.)/,'').replace(/-scaled(?=\.)/,'').toLowerCase();
+   const box=i.closest('li,.blocks-gallery-item,.wp-block-gallery>figure')||i.closest('figure')||i;if(seen.has(k)){box.remove();return}seen.add(k);
+   if(!i.getAttribute('srcset')&&/-\d+x\d+\.(jpe?g|png|webp)$/i.test(src))i.setAttribute('src',src.replace(/-\d+x\d+(?=\.)/,''));i.removeAttribute('width');i.removeAttribute('height')});
+  tmp.querySelectorAll('table').forEach(t=>{const rows=[...t.querySelectorAll('tr')].filter(r=>r.textContent.trim());if(rows.length<=1){const h=t.previousElementSibling;if(h&&/^H[1-6]$/.test(h.tagName)&&h.textContent.trim().length<30)h.remove();const w=t.closest('figure.wp-block-table');(w||t).remove()}});
+  tmp.querySelectorAll('p,div,figure').forEach(x=>{if(!x.textContent.trim()&&!x.querySelector('img,iframe,video,form,input,hr,br'))x.remove()});
+  tmp.querySelectorAll('form').forEach(f=>{if(!f.getAttribute('action'))f.setAttribute('action',old);f.setAttribute('target','_top')});
+  tmp.querySelectorAll('img[srcset]').forEach(i=>i.setAttribute('sizes','(max-width:900px) 100vw, 900px'));
+  v.innerHTML=`<div class="in wpw"><h1 class="H">${d.title.rendered}</h1><div class="bar"></div><div class="wp">${tmp.innerHTML}</div></div>`;
+  v.querySelectorAll('.wp form').forEach(f=>{f.removeAttribute('target');f.addEventListener('submit',e=>cfSend(e,f,slug))});
+ }catch(e){v.innerHTML=`<div class="wpmsg">⚠️ <a class="btn" href="${old}">${old}</a></div>`}}
+const CFT={en:['Sending …','Thank you – your message has been sent.','Message could not be sent. Please check your entries.'],de:['Wird gesendet …','Danke – deine Nachricht wurde gesendet.','Nachricht konnte nicht gesendet werden. Bitte Eingaben prüfen.'],
+ es:['Enviando …','Gracias – tu mensaje ha sido enviado.','No se pudo enviar el mensaje. Revisa tus datos.'],fr:['Envoi …','Merci – ton message a été envoyé.',"Le message n'a pas pu être envoyé. Vérifie tes saisies."],ru:['Отправка …','Спасибо – сообщение отправлено.','Не удалось отправить сообщение. Проверьте данные.']};
+async function cfSend(e,f,slug){e.preventDefault();const T3=CFT[L]||CFT.en,old=f.parentNode.querySelector('.cfm');if(old)old.remove();
+ const m=document.createElement('div');m.className='cfm';m.textContent=T3[0];f.before(m);const fd=new FormData(f);const sb=e.submitter||f.querySelector('[type=submit]');if(sb&&sb.name)fd.append(sb.name,sb.value);
+ try{const h=await fetch('/'+slug+'/',{method:'POST',body:fd,credentials:'same-origin'}).then(r=>r.text());const d=new DOMParser().parseFromString(h,'text/html');
+  const nf=d.querySelector('form.scf-form, form [name="seos-submitted"]');
+  // Meldungen des Formulars (Erfolg / Fehler) aus der Antwort übernehmen
+  const msg=[...d.querySelectorAll('[class*="success"],[id*="success"],[class*="error"],[id*="error"],[class*="scf-"]:not(form):not(.scf-title)')].map(x=>x.textContent.trim()).filter(t=>t&&t.length<400).join(' ');
+  const err=!!nf&&/error|fehler|incorrect|invalid|required|falsch/i.test(msg+' '+[...d.querySelectorAll('[class*="error"]')].length);
+  if(!nf||!err){m.className='cfm ok';m.textContent=T3[1]+(msg&&!/error/i.test(msg)?' '+msg:'');f.reset();f.style.display='none'}
+  else{m.className='cfm err';m.textContent=msg||T3[2]}
+ }catch(x){m.className='cfm err';m.textContent=T3[2]}m.scrollIntoView({behavior:'smooth',block:'center'})}
+// Links in Inhalten (auch auf der Startseite) auf WBU-Seiten → unter dem Menü öffnen
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('#view a[href]');if(!a||a.target==='_blank')return;
+ let u;try{u=new URL(a.href)}catch(_){return}if(!ours(u.hostname)||u.hash&&u.pathname===location.pathname)return;
+ const r=routeOf(u);if(r!==null){e.preventDefault();location.hash=r;return}
+ const m=u.pathname.match(/^\/([a-z0-9-]+)\/?$/i);
+ if(m&&!/^(wp-|start$|scorecard$|veranstalter$)/.test(m[1])&&!u.search){e.preventDefault();location.hash='p/'+m[1].toLowerCase()}});
+
+// ===================== WBU Time: Rundenuhr, Pausen, Medical Timeout, Signale =====================
+// Zustand st: {rounds, rSec, pSec, phase:'idle'|'round'|'pause'|'done', round, run, t0, rem, med:{run,t0,acc}, red, blue, kl, no, ring}
+// t0/rem: zum Zeitpunkt t0 (ms) waren noch rem ms übrig. Läuft die Uhr, rechnen alle Geräte daraus die aktuelle Zeit selbst aus.
+function clkDur(d){const m=String(d||'').replace(',','.').match(/[\d.]+/);return Math.round((m?parseFloat(m[0]):2)*60)}
+function clkNew(o){return {rounds:o.rounds||3,rSec:o.rSec||120,pSec:o.pSec||60,phase:'idle',round:1,run:false,t0:0,rem:(o.rSec||120)*1000,
+  med:{run:false,t0:0,acc:0},red:o.red||'',blue:o.blue||'',kl:o.kl||'',no:o.no||'',mid:o.mid||'',ring:o.ring||1}}
+function clkAt(st,now){
+  if(!st)return null;let ph=st.phase,rd=st.round,r=st.rem;
+  if(st.run&&ph!=='idle'&&ph!=='done'){r=st.rem-(now-st.t0);
+    while(r<=0){if(ph==='round'){if(rd>=st.rounds){ph='done';r=0;break}ph='pause';r+=st.pSec*1000}else if(ph==='pause'){ph='round';rd++;r+=st.rSec*1000}else break}}
+  const m=st.med||{};const med=Math.min(600000,(m.acc||0)+(m.run?now-m.t0:0));
+  return {phase:ph,round:rd,rem:Math.max(0,r),run:st.run&&ph!=='done'&&ph!=='idle',med,medOn:!!m.run||(!!m.end&&med>0&&now-m.end<10000),medRun:!!m.run,medLast:m.run?0:med}}
+// Aktionen (geben neuen Zustand zurück)
+function clkFreeze(st,now){const v=clkAt(st,now);return Object.assign({},st,{phase:v.phase,round:v.round,rem:v.rem,t0:now})}
+function clkStart(st,now){let s=clkFreeze(st,now);const m=s.med||{};if(m.run)s.med={run:false,t0:0,acc:Math.min(600000,(m.acc||0)+now-m.t0),end:now};if(s.phase==='idle'||s.phase==='done')s=Object.assign(s,{phase:'round',round:s.phase==='done'?1:s.round,rem:s.rSec*1000});return Object.assign(s,{run:true,t0:now})}
+function clkStop(st,now){const s=Object.assign(clkFreeze(st,now),{run:false});if(st.run&&s.phase==='round')s.med={run:true,t0:now,acc:0,end:0};return s}
+function clkResetRound(st,now){const s=clkFreeze(st,now);return Object.assign(s,{med:{run:false,t0:0,acc:0},run:false,phase:s.phase==='idle'?'idle':'round',rem:s.rSec*1000})}
+function clkNextRound(st,now){const s=clkFreeze(st,now);const rd=s.phase==='pause'?s.round+1:Math.min(s.rounds,s.round+(s.phase==='round'?1:0));
+  return Object.assign(s,{phase:'round',round:Math.min(s.rounds,rd),rem:s.rSec*1000,run:false,med:{run:false,t0:0,acc:0}})}
+function clkMed(st,now,act){const m=Object.assign({run:false,t0:0,acc:0},st.med||{});let s=Object.assign({},st);
+  if(act==='start'&&!m.run){if(s.run)s=clkStop(s,now);m.run=true;m.t0=now}
+  else if(act==='stop'&&m.run){m.acc+=now-m.t0;m.run=false}
+  else if(act==='reset'){m.run=false;m.acc=0;m.t0=0}
+  s.med=m;return s}
+function clkFmt(ms){const s=Math.ceil(ms/1000),m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0')}
+function clkFmtUp(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0')}
+// ---------- Anzeige 16:9 (heller Hintergrund, schwarze Schrift, rote/blaue Ecke) ----------
+const CLK_CSS=`.wt{position:fixed;inset:0;background:#e9ebef;color:#000;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:flex;flex-direction:column;padding:2.2vw 3vw;gap:1.6vw;box-sizing:border-box}
+.wt *{box-sizing:border-box}.wt .hd{display:flex;align-items:center;gap:1.6vw}.wt .hd img{width:6vw;height:6vw}
+.wt .hd .t{font-size:2.1vw;font-weight:800;line-height:1.15}.wt .hd .t small{display:block;font-size:1.35vw;font-weight:600}
+.wt .ec{display:grid;grid-template-columns:1fr 1fr;gap:1.6vw}.wt .ec div{border-radius:1.2vw;padding:1vw 1.6vw;color:#fff;font-size:2.6vw;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wt .ec .r{background:#d0021b}.wt .ec div small,.wt .ec .r small,.wt .ec .b small{color:#fff}.wt .ec .b{background:#0047bb;text-align:right}.wt .ec small{display:block;font-size:1.1vw;font-weight:700;letter-spacing:.15em;opacity:.95}
+.wt .main{flex:1;display:grid;grid-template-columns:1fr 1.6fr;gap:1.6vw;min-height:0}
+.wt .box{background:#fff;border:.35vw solid #000;border-radius:1.6vw;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
+.wt .lab{font-size:2.4vw;font-weight:800;letter-spacing:.2em}.wt .big{font-weight:900;line-height:.95;font-variant-numeric:tabular-nums}
+.wt .rd .big{font-size:17vw}.wt .rd .of{font-size:3vw;font-weight:800}.wt .tm .big{font-size:20vw}
+.wt .tm.pause{border-color:#0047bb}.wt .tm.pause .lab{color:#0047bb}.wt .tm.last .big{color:#d0021b}.wt .tm.done .big{font-size:9vw}
+.wt .tm .st{font-size:2vw;font-weight:800;color:#d0021b;min-height:2.4vw}
+.wt .med{display:flex;align-items:center;justify-content:space-between;background:#fff;border:.35vw solid #d0021b;border-radius:1.6vw;padding:.6vw 2.4vw}
+.wt .med .lab{color:#d0021b}.wt .med .big{font-size:8vw;color:#d0021b}
+.wt.withmed .rd .big{font-size:12vw}.wt.withmed .tm .big{font-size:14vw}
+.wt.adm .rd .big{font-size:min(17vw,21vh)}.wt.adm .tm .big{font-size:min(20vw,24vh)}.wt.adm .lab{font-size:min(2.4vw,3.4vh)}.wt.adm .rd .of{font-size:min(3vw,4vh)}
+.wt.adm.withmed .rd .big{font-size:min(12vw,13vh)}.wt.adm.withmed .tm .big{font-size:min(14vw,15vh)}.wt.adm .med .big{font-size:min(8vw,9vh)}`;
+function clkView(st,now,logo,title){
+  if(!st)return `<div class="wt"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">WBU Time<small>${title||''}</small></div></div><div class="main" style="grid-template-columns:1fr"><div class="box"><div class="lab">KEIN KAMPF AKTIV</div></div></div></div>`;
+  const v=clkAt(st,now),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const cls=v.phase==='pause'?'pause':v.phase==='done'?'done':v.rem<=10000&&v.phase==='round'?'last':'';
+  return `<div class="wt ${v.medOn?'withmed':''}"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${st.no?'Kampf '+E(st.no):'WBU Time'}${st.ring?' · '+(/^\d+$/.test(String(st.ring))?'Ring '+E(st.ring):E(st.ring)):''}<small>${E(st.kl||title||'')}</small></div></div>
+   <div class="ec"><div class="r"><small>ROTE ECKE</small>${E(st.red)||'&nbsp;'}</div><div class="b"><small>BLAUE ECKE</small>${E(st.blue)||'&nbsp;'}</div></div>
+   <div class="main"><div class="box rd"><div class="lab">${v.phase==='pause'?'GLEICH RUNDE':'RUNDE'}</div><div class="big">${v.phase==='pause'?v.round+1:v.round}</div><div class="of">von ${st.rounds}</div></div>
+     <div class="box tm ${cls}"><div class="lab">${v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'?'BEREIT':'ZEIT'}</div>
+       <div class="big">${v.phase==='done'?'ENDE':clkFmt(v.rem)}</div><div class="st">${!v.run&&v.phase!=='idle'&&v.phase!=='done'?'ZEIT GESTOPPT':''}</div></div></div>
+   ${v.medOn?`<div class="med"><div class="lab">⏱ TIMEOUT${v.med>=600000?' – 10 MIN ERREICHT':v.medRun?'':' – BEENDET'}</div><div class="big">${clkFmtUp(v.med)}</div></div>`:''}</div>`}
+// ---------- Signale (werden im Browser erzeugt, keine Tondateien nötig) ----------
+let CLK_AC=null,CLK_OUT=null,KNOCK_VOL=4;
+function clkAudio(){try{if(!CLK_AC){CLK_AC=new (window.AudioContext||window.webkitAudioContext)();CLK_OUT=null}if(CLK_AC.state==='suspended')CLK_AC.resume()}catch(e){}return CLK_AC}
+// Ausgang mit Kompressor: macht die Signale laut, ohne zu verzerren
+function clkOut(ac){if(CLK_OUT&&CLK_OUT.context===ac)return CLK_OUT;const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.knee.value=6;c.ratio.value=8;c.attack.value=.001;c.release.value=.25;
+  const g=ac.createGain();g.gain.value=.75;c.connect(g).connect(ac.destination);CLK_OUT=c;return c}
+function clkNoise(ac,sec){const b=ac.createBuffer(1,Math.max(1,ac.sampleRate*sec|0),ac.sampleRate),d=b.getChannelData(0);for(let k=0;k<d.length;k++)d[k]=Math.random()*2-1;return b}
+// Schwerer Eisenhammer auf massivem Holztisch: harter Aufprall + dumpfer, kurzer Schlag – keine klingenden Töne (sonst klingt es nach Rohr)
+function clkHit(ac,s){const out=ac.createGain();out.gain.value=KNOCK_VOL;const lim=ac.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.0005;lim.release.value=.08;const sh=ac.createWaveShaper(),cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cv[i]=Math.tanh(2.2*x)/Math.tanh(2.2)*.95}sh.curve=cv;
+  out.connect(lim).connect(sh).connect(ac.destination);
+  const burst=(sec,type,freq,q,amp,dec)=>{const n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();n.buffer=clkNoise(ac,sec);f.type=type;f.frequency.value=freq;if(q)f.Q.value=q;
+    g.gain.setValueAtTime(amp,s);g.gain.exponentialRampToValueAtTime(.001,s+dec);n.connect(f).connect(g).connect(out);n.start(s);n.stop(s+sec)};
+  burst(.03,'highpass',2500,0,1.1,.012);          // harter Eisen-Aufprall (Klack)
+  burst(.12,'bandpass',620,.9,4.5,.075);          // Holz – kurz und trocken
+  burst(.07,'bandpass',1400,1,2.2,.045);
+  burst(.14,'lowpass',380,0,1.6,.09);             // massiver Tisch – dumpfer Druck
+  const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(130,s);o.frequency.exponentialRampToValueAtTime(70,s+.07);
+  g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.7,s+.001);g.gain.exponentialRampToValueAtTime(.001,s+.09);o.connect(g).connect(out);o.start(s);o.stop(s+.1)}
+function clkKnock3(){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.03;for(let i=0;i<3;i++)clkHit(ac,t+i*.42)}
+// Ringglocke: sehr hell, metallisch, mit Nachhall – kein Piepen
+function clkStrike(ac,s,dur){const out=clkOut(ac);
+  [[1,1],[1.006,.7],[2.02,.55],[2.74,.6],[2.76,.4],[3.93,.35],[5.41,.28],[6.82,.18],[8.21,.12]].forEach(([m,a])=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=1180*m;
+    const d=dur*(m<1.1?1:m<3?.7:.45);g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.42*a,s+.002);g.gain.exponentialRampToValueAtTime(.0006,s+d);o.connect(g).connect(out);o.start(s);o.stop(s+d+.05)});
+  const n=ac.createBufferSource(),f=ac.createBiquadFilter(),ng=ac.createGain();n.buffer=clkNoise(ac,.05);f.type='highpass';f.frequency.value=3000;
+  ng.gain.setValueAtTime(.9,s);ng.gain.exponentialRampToValueAtTime(.001,s+.04);n.connect(f).connect(ng).connect(out);n.start(s)}
+// weitere Klänge, damit Ringe nebeneinander verschiedene Signale haben (Hammer bleibt überall gleich)
+function clkPartials(ac,s,f0,parts,dur,amp){const out=clkOut(ac);parts.forEach(([m,a,dm])=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f0*m;const d=dur*(dm||1);
+  g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(amp*a,s+.003);g.gain.exponentialRampToValueAtTime(.0006,s+d);o.connect(g).connect(out);o.start(s);o.stop(s+d+.05)})}
+function clkClick(ac,s,freq,amp){const out=clkOut(ac),n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();n.buffer=clkNoise(ac,.05);f.type='bandpass';f.frequency.value=freq;f.Q.value=.7;
+  g.gain.setValueAtTime(amp,s);g.gain.exponentialRampToValueAtTime(.001,s+.04);n.connect(f).connect(g).connect(out);n.start(s)}
+const CLK_SOUNDS={
+  glocke:{name:'Ringglocke (hell)',hit:(ac,s,d)=>clkStrike(ac,s,d)},
+  gong:{name:'Hammer auf Metallglocke (tiefer)',hit:(ac,s,d)=>{clkClick(ac,s,1800,.9);clkPartials(ac,s,520,[[1,1,1],[1.008,.6,1],[2.32,.6,.7],[3.17,.45,.55],[4.6,.3,.4],[6.1,.2,.3]],d*1.1,.5)}},
+  amboss:{name:'Hammer auf Metall (Amboss)',hit:(ac,s,d)=>{clkClick(ac,s,3500,1.2);clkPartials(ac,s,1650,[[1,1,.5],[1.42,.8,.45],[2.05,.7,.35],[2.81,.5,.3],[3.6,.35,.25]],Math.min(d,.9),.5)}},
+  doppel:{name:'Doppelglocke (ding-dong)',hit:(ac,s,d)=>{clkPartials(ac,s,880,[[1,1,1],[2.76,.45,.5],[5.4,.2,.3]],d*.8,.45);clkPartials(ac,s+.28,660,[[1,1,1],[2.76,.45,.5],[5.4,.2,.3]],d*.9,.45)}},
+  fanfare:{name:'Fanfare / Tröte',hit:(ac,s,d)=>{const out=clkOut(ac);[[392,0,.16],[523,.18,.5]].forEach(([f,st,len])=>{[1,1.005,2,3].forEach((m,i)=>{const o=ac.createOscillator(),g=ac.createGain(),lp=ac.createBiquadFilter();
+      o.type='sawtooth';o.frequency.value=f*m;lp.type='lowpass';lp.frequency.value=2600;const a=[.22,.18,.08,.04][i],t0=s+st;
+      g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(a,t0+.03);g.gain.setValueAtTime(a,t0+len-.06);g.gain.linearRampToValueAtTime(0,t0+len);o.connect(lp).connect(g).connect(out);o.start(t0);o.stop(t0+len+.02)})})}},
+  pfeife:{name:'Schiedsrichterpfiff',hit:(ac,s,d)=>{const out=clkOut(ac),o=ac.createOscillator(),g=ac.createGain(),l=ac.createOscillator(),lg=ac.createGain();o.type='sine';o.frequency.value=2900;l.frequency.value=32;lg.gain.value=180;
+      l.connect(lg).connect(o.frequency);g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.5,s+.02);g.gain.setValueAtTime(.5,s+.5);g.gain.linearRampToValueAtTime(0,s+.6);o.connect(g).connect(out);o.start(s);l.start(s);o.stop(s+.65);l.stop(s+.65)}}};
+function clkBell(times,snd){const ac=clkAudio();if(!ac)return;const t=ac.currentTime+.03;const n=times||1,S=CLK_SOUNDS[snd]||CLK_SOUNDS.glocke,gap=snd==='fanfare'?.8:snd==='doppel'?.75:snd==='pfeife'?.75:.45;
+  for(let k=0;k<n;k++)S.hit(ac,t+k*gap,n>1&&k<n-1?.75:1.3)}
+// erkennt die Momente für die Signale (10 Sek. vorher klopfen, Glocke bei Runden-/Pausenende)
+function clkSignals(prev,v,snd){if(!prev||!v)return;
+  if(v.run&&prev.phase===v.phase&&prev.round===v.round&&prev.rem>10000&&v.rem<=10000&&v.rem>7000&&(v.phase==='round'||v.phase==='pause'))clkKnock3();
+  if(!prev.run&&v.run&&prev.phase==='idle'&&v.phase==='round')clkBell(1,snd);
+  const pk=prev.phase+prev.round,vk=v.phase+v.round;
+  if(pk!==vk&&prev.run&&((prev.phase==='round'&&(v.phase==='pause'||v.phase==='done'))||(prev.phase==='pause'&&v.phase==='round')))clkBell(v.phase==='done'?3:1,snd)}
+
+// ---------- WBU Live-Monitor: erscheint automatisch, wenn eine Gala live ist ----------
+const API='/scorecard/api.php';
+const LM={evs:[],D:{}};   // D[lid] = {snap, st, off}
+const LT={en:{last:'Last result',fc:'Fight card',fight:'Fight',rd:'Round',time:'Time',pause:'Break',to:'Timeout',rnds:'rounds',min:'min',next:'Next',now:'live now',done:'All fights finished',win:'Winner',title:'Title fight',soon:'Fight is about to start',end:'Fight over – result follows'},
+ de:{last:'Letztes Ergebnis',fc:'Fight Card',fight:'Kampf',rd:'Runde',time:'Zeit',pause:'Pause',to:'Timeout',rnds:'Runden',min:'Min.',next:'Als Nächstes',now:'läuft gerade',done:'Alle Kämpfe beendet',win:'Sieger',title:'Titelkampf',soon:'Kampf beginnt gleich',end:'Kampf beendet – Wertung folgt'},
+ es:{last:'Último resultado',fc:'Cartelera',fight:'Combate',rd:'Asalto',time:'Tiempo',pause:'Descanso',to:'Tiempo muerto',rnds:'asaltos',min:'min',next:'Siguiente',now:'en vivo',done:'Todos los combates terminados',win:'Ganador',title:'Combate por título',soon:'El combate empieza enseguida',end:'Combate terminado – resultado pronto'},
+ fr:{last:'Dernier résultat',fc:'Programme',fight:'Combat',rd:'Round',time:'Temps',pause:'Pause',to:'Temps mort',rnds:'rounds',min:'min',next:'Ensuite',now:'en direct',done:'Tous les combats terminés',win:'Vainqueur',title:'Combat pour le titre',soon:'Le combat va commencer',end:'Combat terminé – résultat à suivre'},
+ ru:{last:'Последний результат',fc:'Карта боёв',fight:'Бой',rd:'Раунд',time:'Время',pause:'Перерыв',to:'Тайм-аут',rnds:'раундов',min:'мин',next:'Следующий',now:'идёт сейчас',done:'Все бои завершены',win:'Победитель',title:'Титульный бой',soon:'Бой скоро начнётся',end:'Бой окончен – результат скоро'}};
+const lt=k=>(LT[L]||LT.en)[k];
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function lmApi(a,b){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,...b})});return r.json()}
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+// „live“: jede Gala mit offenen Kämpfen (heute oder in den letzten 6 Std. bearbeitet); sind alle Kämpfe fertig, bleibt ihr Monitor noch 30 Min. mit den Ergebnissen stehen.
+// Laufen mehrere gleichzeitig, erscheinen mehrere Monitore untereinander.
+async function lmList(){try{const L0=(await lmApi('l_list',{})).live||[],now=Date.now()/1000;
+  LM.evs=L0.filter(e=>e.type==='gala'&&(e.offen>0?(e.date===today()||now-e.updated<6*3600):now-e.updated<1800));
+  for(const k in LM.D)if(!LM.evs.some(e=>e.id===k))delete LM.D[k]}catch(e){}
+ await lmData()}
+async function lmData(){await Promise.all(LM.evs.map(async e=>{try{const j=await lmApi('l_get',{lid:e.id});if(j.snap)(LM.D[e.id]=LM.D[e.id]||{}).snap=j.snap}catch(x){}}));lmDraw()}
+async function lmClock(){await Promise.all(LM.evs.map(async e=>{try{const t=Date.now(),j=await lmApi('l_clockget',{lid:e.id,ring:1});const d=LM.D[e.id]=LM.D[e.id]||{};d.off=j.srv-(t+Date.now())/2;d.st=j.st||null}catch(x){}}))}
+function lmCur(d){const rows=(d.snap&&d.snap.rows)||[],st=d.st;let c=st&&st.mid&&rows.find(r=>r.mid===st.mid&&!r.done);return c||rows.find(r=>!r.done)||null}
+function lmClockHtml(d,r){const st=d.st;if(!st||!r||st.mid!==r.mid)return '';const v=clkAt(st,Date.now()+(d.off||0));if(!v)return '';
+ if(v.medOn)return `<div class="lmk to"><div><small>${lt('to')}</small><b>${clkFmtUp(v.med)}</b></div><div><small>${lt('rd')}</small><b>${v.round}/${st.rounds}</b></div></div>`;
+ if(v.phase==='idle')return `<div class="lmk"><div><small>${lt('soon')}</small></div></div>`;
+ if(v.phase==='done')return `<div class="lmk"><div><small>${lt('end')}</small></div></div>`;
+ if(v.phase==='pause')return `<div class="lmk pa"><div><small>${lt('pause')}</small><b>${clkFmt(v.rem)}</b></div><div><small>${lt('rd')}</small><b>${v.round}/${st.rounds}</b></div></div>`;
+ return `<div class="lmk"><div><small>${lt('rd')}</small><b>${v.round}/${st.rounds}</b></div><div><small>${lt('time')}</small><b>${clkFmt(v.rem)}</b></div></div>`}
+function lmOne(id){const d=LM.D[id],sn=d&&d.snap;if(!sn||!(sn.rows||[]).length)return '';
+ const rows=sn.rows,c=lmCur(d),gym=(r,s)=>esc([(r.f||{})[s+'v'],(r.f||{})[s+'l']].filter(Boolean).join(' · '));
+ const left=c?`<div><span class="no">${lt('fight')} ${c.no}</span>${c.rd?`<span class="tt">${esc(c.rd)}</span>`:''}</div>
+   <div class="lmv"><div class="lmc r"><b>${esc(c.a)}</b><span>${gym(c,'r')}</span></div><div class="vs">VS</div><div class="lmc b"><b>${esc(c.b)}</b><span>${gym(c,'b')}</span></div></div>
+   <div class="lmi">${[(c.f||{}).cls,c.kind,c.rounds?c.rounds+' '+lt('rnds')+(c.dur?' × '+esc(c.dur)+' '+lt('min'):''):''].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div>
+   <div class="lmclk" data-id="${id}" style="display:contents">${lmClockHtml(d,c)}</div>
+   ${(()=>{const i=rows.indexOf(c),nx=rows.slice(i+1).find(r=>!r.done),ls=rows.slice(0,i).reverse().find(r=>r.res);
+     return (ls?`<div class="lmx ok"><small>${lt('last')} · ${lt('fight')} ${ls.no}</small><b><span class="rr">${esc(ls.a)}</span> vs <span class="bb">${esc(ls.b)}</span></b><div>${esc(ls.res)}</div></div>`:'')
+      +(nx?`<div class="lmx"><small>${lt('next')} · ${lt('fight')} ${nx.no}</small><b><span class="rr">${esc(nx.a)}</span> vs <span class="bb">${esc(nx.b)}</span></b><div>${esc([(nx.f||{}).cls,nx.kind].filter(Boolean).join(' · '))}</div></div>`:'')})()}`
+  :`<div class="lmk"><div><small>${lt('done')}</small></div></div>${(()=>{const l=[...rows].reverse().find(r=>r.res);return l?`<div class="res">${lt('fight')} ${l.no}: ${esc(l.res)}</div>`:''})()}`;
+ return `<section class="lm" data-id="${id}"><div class="lmb"><div class="lmh"><span class="lv">LIVE</span><b>${esc(sn.name)}</b><span>${esc([sn.ort,sn.date&&sn.date.split('-').reverse().join('.')].filter(Boolean).join(' · '))}</span></div>
+  <div class="lmg"><div class="lml">${left}</div><div class="lmr"><h4>${lt('fc')}</h4><div class="lmlist">${rows.map(r=>`<div class="lmf ${c&&r.mid===c.mid?'cur':''}"><div class="n">${r.no}</div><div>
+   <span class="rr">${esc(r.a)}</span> vs <span class="bb">${esc(r.b)}</span>${r.rd?` · <b>${esc(r.rd)}</b>`:''}<small>${esc([(r.f||{}).cls,r.kind,r.rounds?r.rounds+' '+lt('rnds'):''].filter(Boolean).join(' · '))}</small>
+   <div class="e">${r.res?esc(r.res):c&&r.mid===c.mid?'▶ '+lt('now'):''}</div></div></div>`).join('')}</div></div></div></div></section>`}
+function lmDraw(){const box=document.getElementById('lmon');if(!box)return;
+ const ys={};box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l)ys[x.dataset.id]=l.scrollTop});
+ box.innerHTML=LM.evs.map(e=>lmOne(e.id)).join('');
+ box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l&&ys[x.dataset.id])l.scrollTop=ys[x.dataset.id]})}
+// Uhren fein nachziehen, ohne die Listen neu zu zeichnen
+setInterval(()=>document.querySelectorAll('.lmclk').forEach(k=>{const d=LM.D[k.dataset.id];if(!d)return;const h=lmClockHtml(d,lmCur(d));if(k.innerHTML!==h)k.innerHTML=h}),250);
+lmList();setInterval(lmList,30000);setInterval(lmData,5000);setInterval(lmClock,1000);
+function setLang(l){L=l;try{localStorage.setItem('wbuLang',l)}catch(e){}const u=new URL(location.href);u.searchParams.set('lang',l);history.replaceState(null,'',u);draw()}
+addEventListener('hashchange',()=>{draw();const mn=document.getElementById('menu');mn.classList.remove('open');
+ const top=document.querySelector('.belts').getBoundingClientRect().bottom+scrollY;if(scrollY>top)scrollTo({top})});
+draw();
+</script>
+</body>
+</html>
