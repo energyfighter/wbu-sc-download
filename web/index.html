@@ -74,6 +74,10 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .gg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.gg a{display:block;border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.45);transition:transform .15s}.gg a:hover{transform:translateY(-4px)}.gg img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
 @media(max-width:1000px){.gg{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.gg{gap:10px}}
 .zm{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.88);display:grid;place-items:center;cursor:zoom-out}.zm img{max-width:94vw;max-height:92vh;border-radius:12px}.zm button{position:absolute;top:14px;right:18px;font-size:34px;background:none;border:0;color:#fff;cursor:pointer}
+.side{display:flex;flex-direction:column}.side .card{flex:none}.side .shows{flex:1 1 0;min-height:340px;display:flex;flex-direction:column;margin-bottom:22px}
+.shows .sl{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:14px;display:flex;flex-direction:column;gap:14px;-webkit-mask-image:linear-gradient(#000 92%,transparent)}.shows .sl::-webkit-scrollbar{display:none}
+.shows .sl a{flex:none;display:block;border-radius:10px;overflow:hidden;border:1px solid var(--line)}.shows .sl img{display:block;width:100%}.shows .sl p{padding:6px 4px}
+@media(max-width:900px){.side .shows{flex:none;max-height:640px}}
 /* Verbände */
 .orgs{display:flex;justify-content:center;gap:clamp(10px,2.4vw,30px);flex-wrap:wrap;padding:28px 0 6px}
 .orgs a{display:block;width:clamp(78px,10vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
@@ -101,19 +105,19 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 const W='https://wbu.wbu-boxing.com',WWW='https://www.wbu-boxing.com',UP=W+'/wp-content/uploads/';
 const LANGS=['en','de','es','fr','ru'];
 const T={
- en:{sub:'Be the best',t4s:'Fight for the world title – coming soon',fb:'WBU on Facebook',fbb:'Open Facebook page',home:'Home',rank:'Rankings',champ:'Champions',res:'Results',rules:'Rules & Fees',belts:'Belts',dl:'Downloads',hist:'WBU History',dir:'Directory',contact:'Contact',shop:'Shop',bl:'Bundesliga',menu:'Menu',
+ en:{sub:'Be the best',noshow:'Upcoming WBU shows will appear here soon.',t4s:'Fight for the world title – coming soon',fb:'WBU on Facebook',fbb:'Open Facebook page',home:'Home',rank:'Rankings',champ:'Champions',res:'Results',rules:'Rules & Fees',belts:'Belts',dl:'Downloads',hist:'WBU History',dir:'Directory',contact:'Contact',shop:'Shop',bl:'Bundesliga',menu:'Menu',
   pass:'Grab your Sportpass!',passT:'The official WBU international sports passport – for boxers of all WBU sports.',passB:'Order now',more:'Quick links',
   t1:'World Rankings',t1s:'Champions and Top 15 of 18 weight classes',t2:'Results',t2s:'All results of galas and tournaments',t3:'WBU Live',t3s:'Live fight list and results',foot:'Official website of the World Boxing Union.'},
- de:{sub:'Be the best',t4s:'Kämpfe um den Weltmeistertitel – bald',fb:'WBU auf Facebook',fbb:'Facebook-Seite öffnen',home:'Startseite',rank:'Rangliste',champ:'Champions',res:'Results',rules:'Regeln & Gebühren',belts:'Gürtel',dl:'Downloads',hist:'WBU-Geschichte',dir:'Verzeichnis',contact:'Kontakt',shop:'Shop',bl:'Bundesliga',menu:'Menü',
+ de:{sub:'Be the best',noshow:'Die nächsten WBU-Shows erscheinen hier in Kürze.',t4s:'Kämpfe um den Weltmeistertitel – bald',fb:'WBU auf Facebook',fbb:'Facebook-Seite öffnen',home:'Startseite',rank:'Rangliste',champ:'Champions',res:'Results',rules:'Regeln & Gebühren',belts:'Gürtel',dl:'Downloads',hist:'WBU-Geschichte',dir:'Verzeichnis',contact:'Kontakt',shop:'Shop',bl:'Bundesliga',menu:'Menü',
   pass:'Hol dir deinen Sportpass!',passT:'Der offizielle internationale Sportpass der WBU – für Boxer aller WBU-Sportarten.',passB:'Jetzt bestellen',more:'Schnellzugriff',
   t1:'Weltrangliste',t1s:'Weltmeister und Top 15 in 18 Gewichtsklassen',t2:'Results',t2s:'Alle Ergebnisse von Galas und Turnieren',t3:'WBU Live',t3s:'Kampfliste und Ergebnisse live',foot:'Offizielle Webseite der World Boxing Union.'},
- es:{sub:'Be the best',t4s:'Lucha por el título mundial – pronto',fb:'WBU en Facebook',fbb:'Abrir página de Facebook',home:'Inicio',rank:'Ranking',champ:'Campeones',res:'Resultados',rules:'Reglas y tarifas',belts:'Cinturones',dl:'Descargas',hist:'Historia WBU',dir:'Directorio',contact:'Contacto',shop:'Tienda',bl:'Bundesliga',menu:'Menú',
+ es:{sub:'Be the best',noshow:'Los próximos shows de la WBU aparecerán aquí pronto.',t4s:'Lucha por el título mundial – pronto',fb:'WBU en Facebook',fbb:'Abrir página de Facebook',home:'Inicio',rank:'Ranking',champ:'Campeones',res:'Resultados',rules:'Reglas y tarifas',belts:'Cinturones',dl:'Descargas',hist:'Historia WBU',dir:'Directorio',contact:'Contacto',shop:'Tienda',bl:'Bundesliga',menu:'Menú',
   pass:'¡Consigue tu Sportpass!',passT:'El pasaporte deportivo internacional oficial de la WBU – para boxeadores de todos los deportes WBU.',passB:'Pedir ahora',more:'Accesos rápidos',
   t1:'Ranking mundial',t1s:'Campeones y Top 15 de 18 categorías',t2:'Resultados',t2s:'Todos los resultados de galas y torneos',t3:'WBU Live',t3s:'Cartelera y resultados en vivo',foot:'Sitio oficial de la World Boxing Union.'},
- fr:{sub:'Be the best',t4s:'Bats-toi pour le titre mondial – bientôt',fb:'La WBU sur Facebook',fbb:'Ouvrir la page Facebook',home:'Accueil',rank:'Classement',champ:'Champions',res:'Résultats',rules:'Règles & tarifs',belts:'Ceintures',dl:'Téléchargements',hist:'Histoire WBU',dir:'Annuaire',contact:'Contact',shop:'Boutique',bl:'Bundesliga',menu:'Menu',
+ fr:{sub:'Be the best',noshow:'Les prochains shows WBU apparaîtront bientôt ici.',t4s:'Bats-toi pour le titre mondial – bientôt',fb:'La WBU sur Facebook',fbb:'Ouvrir la page Facebook',home:'Accueil',rank:'Classement',champ:'Champions',res:'Résultats',rules:'Règles & tarifs',belts:'Ceintures',dl:'Téléchargements',hist:'Histoire WBU',dir:'Annuaire',contact:'Contact',shop:'Boutique',bl:'Bundesliga',menu:'Menu',
   pass:'Obtiens ton Sportpass !',passT:'Le passeport sportif international officiel de la WBU – pour les boxeurs de tous les sports WBU.',passB:'Commander',more:'Accès rapide',
   t1:'Classement mondial',t1s:'Champions et Top 15 de 18 catégories',t2:'Résultats',t2s:'Tous les résultats des galas et tournois',t3:'WBU Live',t3s:'Programme et résultats en direct',foot:'Site officiel de la World Boxing Union.'},
- ru:{sub:'Be the best',t4s:'Борись за титул чемпиона – скоро',fb:'WBU в Facebook',fbb:'Открыть страницу Facebook',home:'Главная',rank:'Рейтинг',champ:'Чемпионы',res:'Результаты',rules:'Правила и взносы',belts:'Пояса',dl:'Загрузки',hist:'История WBU',dir:'Справочник',contact:'Контакты',shop:'Магазин',bl:'Бундеслига',menu:'Меню',
+ ru:{sub:'Be the best',noshow:'Ближайшие шоу WBU скоро появятся здесь.',t4s:'Борись за титул чемпиона – скоро',fb:'WBU в Facebook',fbb:'Открыть страницу Facebook',home:'Главная',rank:'Рейтинг',champ:'Чемпионы',res:'Результаты',rules:'Правила и взносы',belts:'Пояса',dl:'Загрузки',hist:'История WBU',dir:'Справочник',contact:'Контакты',shop:'Магазин',bl:'Бундеслига',menu:'Меню',
   pass:'Получи свой Sportpass!',passT:'Официальный международный спортивный паспорт WBU – для боксёров всех видов спорта WBU.',passB:'Заказать',more:'Быстрые ссылки',
   t1:'Мировой рейтинг',t1s:'Чемпионы и Топ-15 в 18 категориях',t2:'Результаты',t2s:'Все результаты гал и турниров',t3:'WBU Live',t3s:'Список боёв и результаты онлайн',foot:'Официальный сайт World Boxing Union.'}};
 let L=(()=>{const q=new URLSearchParams(location.search).get('lang');if(LANGS.includes(q))return q;try{const s=localStorage.getItem('wbuLang');if(LANGS.includes(s))return s}catch(e){}return 'en'})();
@@ -159,6 +163,7 @@ function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
     <a class="tile" href="${R('results')}"><span class="i">🥊</span><div><b>${t('t2')}</b><span>${t('t2s')}</span></div></a>
     <a class="tile" href="${R('live')}"><span class="i">📡</span><div><b>${t('t3')}</b><span>${t('t3s')}</span></div></a>
     <a class="tile" href="${R('coin')}"><span class="i">🥇</span><div><b>WBU Coin</b><span>${t('t4s')}</span></div></a></div>
+   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.length?SHOWS.map((u,i)=>`<a href="${u}" onclick="return zoomU('${u}')"><img src="${u}" alt="WBU Show ${i+1}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div></div>
   </aside></div>`}
 // Seite im Rahmen: Pfad + Sprache; deren eigenes Kopf-Menü wird ausgeblendet, Untermenüs (z. B. Fight Quiz) bleiben
 const HIDE={rankings:'.nav{display:none!important}',results:'.nav{display:none!important}',coin:'#wbuTop{display:none!important}',live:'',anmeldung:''};
@@ -198,8 +203,11 @@ function prep(d,k){try{const st=d.createElement('style');st.textContent=(HIDE[k]
 
 const WPC={};
 // Eigene Seiten im neuen Design (statt WordPress-Inhalt)
+// Plakate „WBU Shows“ (neueste zuerst) – Dateien in start/img/show-*.jpg
+const SHOWS=[];
 const GUERTEL=[5,1,6,2,7,3,8,4].map(n=>'/start/img/guertel-'+String(n).padStart(2,'0')+'.jpg');
 function guertelSeite(v){v.innerHTML=`<div class="in wpw"><h1 class="H">${t('belts')}</h1><div class="bar"></div><div class="gg">${GUERTEL.map((u,i)=>`<a href="${u}" onclick="return zoom(${i})"><img src="${u}" alt="WBU ${t('belts')} ${i+1}" loading="lazy"></a>`).join('')}</div></div>`}
+function zoomU(u){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${u}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
 function zoom(i){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${GUERTEL[i]}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
 async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'/'+slug+'/';
  if(slug==='belt')return guertelSeite(v);
@@ -374,7 +382,7 @@ function lmOne(id){const d=LM.D[id],sn=d&&d.snap;if(!sn||!(sn.rows||[]).length)r
  const rows=sn.rows,c=lmCur(d),gym=(r,s)=>esc([(r.f||{})[s+'v'],(r.f||{})[s+'l']].filter(Boolean).join(' · '));
  const left=c?`<div><span class="no">${lt('fight')} ${c.no}</span>${c.rd?`<span class="tt">${esc(c.rd)}</span>`:''}</div>
    <div class="lmv"><div class="lmc r"><b>${esc(c.a)}</b><span>${gym(c,'r')}</span></div><div class="vs">VS</div><div class="lmc b"><b>${esc(c.b)}</b><span>${gym(c,'b')}</span></div></div>
-   <div class="lmi">${[(c.f||{}).cls,c.kind,c.rounds?c.rounds+' '+lt('rnds')+(c.dur?' × '+esc(c.dur)+' '+lt('min'):''):''].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div>
+   <div class="lmi">${[(c.f||{}).cls,c.kind,c.rounds?c.rounds+' '+lt('rnds')+(c.dur?' × '+esc(c.dur)+(/^[\d.,\s]+$/.test(c.dur)?' '+lt('min'):''):''):''].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div>
    <div class="lmclk" data-id="${id}" style="display:contents">${lmClockHtml(d,c)}</div>
    ${(()=>{const i=rows.indexOf(c),nx=rows.slice(i+1).find(r=>!r.done),ls=rows.slice(0,i).reverse().find(r=>r.res);
      return (ls?`<div class="lmx ok"><small>${lt('last')} · ${lt('fight')} ${ls.no}</small><b><span class="rr">${esc(ls.a)}</span> vs <span class="bb">${esc(ls.b)}</span></b><div>${esc(ls.res)}</div></div>`:'')
