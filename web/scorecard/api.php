@@ -38,6 +38,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') exit;
 
 // WBU-Supervisor-Passwort: steht als Prüfsumme in config.php (nur auf dem Server, nicht öffentlich)
 $CFG = @include __DIR__ . '/config.php';
+// Veranstalter-Passwort (Windows-Programm / Tablet-App: Veranstaltung erstellen und hochladen) – nur als bcrypt-Prüfsumme; config.php kann es ersetzen
+define('ORG_PASS_HASH', is_array($CFG) && !empty($CFG['org_pass_hash']) ? $CFG['org_pass_hash'] : '$2y$12$mu3hUCOpiBNobm4ewm0nBOyEACcTuLKhmO5KkkRJ/gBfiBIuPcukC');
+function orgPassOk($p) { $p = (string)$p; return $p !== '' && (hash_equals(SUP_PASS_SHA256, hash('sha256', $p)) || password_verify($p, ORG_PASS_HASH)); }
 define('SUP_PASS_SHA256', is_array($CFG) && !empty($CFG['sup_pass_sha256']) ? $CFG['sup_pass_sha256'] : str_repeat('x', 64));
 
 $DIR = __DIR__ . '/daten';
@@ -664,7 +667,7 @@ case 't_publish':
         }, true);
         out(['ok' => true, 'tid' => $in['tid'], 'key' => $in['key']]);
     }
-    if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
+    if (!orgPassOk($in['pass'] ?? '')) fail('Falsches Passwort', 403);
     // kein zweites Turnier mit gleichem Namen und Datum
     foreach (glob("$DIR/tu_*.json") as $f) { $o = json_decode((string)@file_get_contents($f), true);
         if (is_array($o) && mb_strtolower(trim($o['name'] ?? '')) === mb_strtolower(trim((string)($m['name'] ?? ''))) && ($o['date'] ?? '') === ($m['date'] ?? ''))
@@ -1265,7 +1268,7 @@ case 't_del':
 
 
 case 'l_create':
-    if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
+    if (!orgPassOk($in['pass'] ?? '')) fail('Falsches Passwort', 403);
     $l = ['id' => bin2hex(random_bytes(8)), 'key' => bin2hex(random_bytes(12)), 'created' => time(), 'updated' => time(), 'snap' => null, 'results' => new stdClass()];
     if (file_put_contents(lvfile($l['id']), json_encode($l, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
     out(['ok' => true, 'lid' => $l['id'], 'key' => $l['key']]);
