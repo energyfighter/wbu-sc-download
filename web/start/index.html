@@ -71,6 +71,9 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 @media(max-width:900px){.lm{padding:0 12px}.lmg{grid-template-columns:1fr;height:auto}.lmr{border-left:0;border-top:3px solid #000}.lmlist{max-height:420px}}
 .wa{position:fixed;right:18px;bottom:18px;z-index:60;width:60px;height:60px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .15s}.wa:hover{transform:scale(1.08)}.wa svg{width:34px;height:34px;fill:#fff}
 .cfm{margin:14px 0;padding:12px 14px;border-radius:10px;font-weight:700}.cfm.ok{background:#173d24;border:1px solid #2f9e57}.cfm.err{background:#4a1717;border:1px solid #c0392b}
+.gg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.gg a{display:block;border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.45);transition:transform .15s}.gg a:hover{transform:translateY(-4px)}.gg img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
+@media(max-width:1000px){.gg{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.gg{gap:10px}}
+.zm{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.88);display:grid;place-items:center;cursor:zoom-out}.zm img{max-width:94vw;max-height:92vh;border-radius:12px}.zm button{position:absolute;top:14px;right:18px;font-size:34px;background:none;border:0;color:#fff;cursor:pointer}
 /* Verbände */
 .orgs{display:flex;justify-content:center;gap:clamp(10px,2.4vw,30px);flex-wrap:wrap;padding:28px 0 6px}
 .orgs a{display:block;width:clamp(78px,10vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
@@ -194,7 +197,12 @@ function prep(d,k){try{const st=d.createElement('style');st.textContent=(HIDE[k]
   if(a.target!=='_blank')a.target='_top'},true)}
 
 const WPC={};
+// Eigene Seiten im neuen Design (statt WordPress-Inhalt)
+const GUERTEL=[1,2,3,4,5,6,7,8].map(n=>'img/guertel-'+String(n).padStart(2,'0')+'.jpg');
+function guertelSeite(v){v.innerHTML=`<div class="in wpw"><h1 class="H">${t('belts')}</h1><div class="bar"></div><div class="gg">${GUERTEL.map((u,i)=>`<a href="${u}" onclick="return zoom(${i})"><img src="${u}" alt="WBU ${t('belts')} ${i+1}" loading="lazy"></a>`).join('')}</div></div>`}
+function zoom(i){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${GUERTEL[i]}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
 async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'/'+slug+'/';
+ if(slug==='belt')return guertelSeite(v);
  v.innerHTML=`<div class="wpmsg">…</div>`;
  try{let d=WPC[slug];
   if(!d){for(const typ of ['pages','posts']){const j=await fetch(`/wp-json/wp/v2/${typ}?slug=${slug}&_fields=title,content`).then(x=>x.ok?x.json():[]);if(j.length){d=j[0];break}}WPC[slug]=d}

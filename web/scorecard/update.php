@@ -61,7 +61,7 @@ if ($have >= (int)$m['version'] && !isset($_GET['force'])) exit("Aktuell (Versio
 // 1. alles laden und prüfen, 2. erst dann ersetzen
 $new = []; $skipped = [];
 foreach ($m['files'] as $target => $sha) {
-    if (!in_array($target, $ALLOWED, true) && !preg_match('#^veranstalter/docs/[A-Za-z0-9._-]+\.(pdf|docx|jpg|png)$#', $target)) { $skipped[] = $target; continue; }
+    if (!in_array($target, $ALLOWED, true) && !preg_match('#^veranstalter/docs/[A-Za-z0-9._-]+\.(pdf|docx|jpg|png)$#', $target) && !preg_match('#^start/img/[A-Za-z0-9._-]+\.(jpg|png|webp)$#', $target)) { $skipped[] = $target; continue; }
     $data = fetch($BASE . $target);
     if ($data === false) exit("Abbruch: $target konnte nicht geladen werden\n");
     if (!hash_equals($sha, hash('sha256', $data))) exit("Abbruch: Prüfsumme falsch bei $target\n");
