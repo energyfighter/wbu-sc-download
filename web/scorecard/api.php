@@ -591,7 +591,7 @@ function newsPublic($p) { return ['id' => $p['id'], 'd' => $p['d'], 't' => $p['t
 // Automatische Übersetzung (Google-Übersetzer, frei zugängliche Schnittstelle) – für Berichte der Admins
 function gTrPart($q, $tl, $sl) {
     $c = curl_init('https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=' . $sl . '&tl=' . $tl);
-    curl_setopt_array($c, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['q' => $q]), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
+    curl_setopt_array($c, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['q' => $q]), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8]);
     $r = json_decode((string)curl_exec($c), true); curl_close($c);
     if (!is_array($r) || !is_array($r[0] ?? null)) return null;
     $o = ''; foreach ($r[0] as $seg) $o .= $seg[0] ?? '';
@@ -1115,12 +1115,6 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
         $p['fb'] = $r['id'] ?? '';
     }
     out(['ok' => true, 'post' => newsPublic($p), 'fbErr' => $fbErr]);
-
-case 'n_trtest':   // Superadmin: Übersetzer-Verbindung prüfen
-    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
-    $c = curl_init('https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl=en');
-    curl_setopt_array($c, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['q' => 'Hallo Welt']), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
-    $raw = curl_exec($c); out(['ok' => true, 'code' => curl_getinfo($c, CURLINFO_HTTP_CODE), 'err' => curl_error($c), 'raw' => mb_substr((string)$raw, 0, 300)]);
 
 case 'n_tr':       // Superadmin: Übersetzungen eines Berichts setzen (Bilder und Facebook bleiben unberührt)
     $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);

@@ -473,10 +473,15 @@ function adEdit(id){const p=(AD.mine||[]).find(x=>x.id===id);if(!p)return;AD.edi
 async function adDel(id){if(!confirm('Diesen Bericht wirklich löschen? (Auf Facebook bleibt er bestehen.)'))return;try{await nApi('n_del',{tok:adTok(),id});NW.list=null;if(AD.edit&&AD.edit.id===id)adNew();adView(document.getElementById('view'))}catch(e){alert(e.message)}}
 function adShrink(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const M=1600,s=Math.min(1,M/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.82))};im.onerror=()=>res(null);im.src=r.result};r.readAsDataURL(f)})}
 async function adFiles(fs){for(const f of fs){const d=await adShrink(f);if(d)AD.img.push(d)}adDraw()}
+// Übersetzung im Browser des Schreibenden (der Server darf den Google-Übersetzer nicht direkt nutzen)
+async function gTrB(q,tl,sl){if(!q.trim())return{t:q,src:''};const teile=[];let buf='';for(const z of q.split(/(\n)/)){if((buf+z).length>3500&&buf){teile.push(buf);buf=''}buf+=z}if(buf)teile.push(buf);
+ let o='',src='';for(const part of teile){const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl='+(sl||'auto')+'&tl='+tl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'q='+encodeURIComponent(part)});if(!r.ok)throw 0;const j=await r.json();o+=j[0].map(s=>s[0]||'').join('');src=src||j[2]||''}return{t:o,src}}
+async function adAutoTr(t,x){try{const d=await gTrB(t+'\n'+x.slice(0,400),'en');const src=(d.src||'en').slice(0,2);const o={};
+ for(const l of ['en','de','es','fr','ru']){if(l===src)continue;o[l]={t:(await gTrB(t,l,src)).t,x:(await gTrB(x,l,src)).t}}return o}catch(e){return null}}
 async function adSave(){const t=document.getElementById('nt').value.trim(),x=document.getElementById('nx').value,fbBox=document.getElementById('nfb');
  if(!t){AD.msg='Bitte eine Überschrift eintragen';AD.msgErr=1;return adDraw()}
- AD.busy=1;AD.msg='';adDraw();
- try{const j=await nApi('n_save',{tok:adTok(),id:AD.edit?AD.edit.id:'',t,x,keep:AD.keep,img:AD.img,fb:fbBox&&fbBox.checked?1:0});
+ AD.busy=1;AD.msg='Übersetze in alle Sprachen …';adDraw();const tr=await adAutoTr(t,x);AD.msg='';
+ try{const j=await nApi('n_save',{tok:adTok(),id:AD.edit?AD.edit.id:'',t,x,keep:AD.keep,img:AD.img,fb:fbBox&&fbBox.checked?1:0,...(tr?{tr}:{})});
   AD.msg=(AD.edit?'✓ Gespeichert.':'✓ Veröffentlicht auf der Webseite.')+(fbBox&&fbBox.checked?(j.fbErr?'':' Auch auf Facebook gepostet.'):'');AD.msgErr=0;
   if(j.fbErr){AD.msg+=' Achtung – Facebook: '+j.fbErr;AD.msgErr=1}
   AD.edit=null;AD.keep=[];AD.img=[];AD.dt='';AD.dx='';NW.list=null;AD.mine=(await nApi('n_mine',{tok:adTok()})).news}
