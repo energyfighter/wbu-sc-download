@@ -620,6 +620,52 @@ function fbPublish($p) {
     return ['id' => $r['post_id'] ?? ($r['id'] ?? '')];
 }
 
+function newsSecret() { global $DIR; $f = "$DIR/news.key"; if (!file_exists($f)) file_put_contents($f, bin2hex(random_bytes(32))); return trim((string)file_get_contents($f)); }
+function newsOkSig($em) { return hash_hmac('sha256', 'news-ok|' . mb_strtolower($em), newsSecret()); }
+/** Facebook-Beiträge der Seite als Berichte übernehmen (Bilder werden auf den eigenen Server kopiert) */
+function fbImport($n) {
+    $fb = json_decode((string)@file_get_contents(fbFile()), true);
+    if (!is_array($fb) || empty($fb['tok'])) fail('Facebook ist noch nicht verbunden');
+    $r = fbHttp('GET', $fb['page'] . '/posts', ['access_token' => $fb['tok'], 'limit' => $n,
+        'fields' => 'id,message,created_time,full_picture,attachments{media,subattachments{media}}']);
+    if (!empty($r['error'])) fail('Facebook: ' . ($r['error']['message'] ?? 'Fehler'));
+    $neu = 0;
+    foreach (array_reverse((array)($r['data'] ?? [])) as $po) {
+        $msg = trim((string)($po['message'] ?? ''));
+        $urls = [];
+        foreach ((array)($po['attachments']['data'] ?? []) as $at) {
+            foreach ((array)($at['subattachments']['data'] ?? []) as $sa) if (!empty($sa['media']['image']['src'])) $urls[] = $sa['media']['image']['src'];
+            if (!$urls && !empty($at['media']['image']['src'])) $urls[] = $at['media']['image']['src'];
+        }
+        if (!$urls && !empty($po['full_picture'])) $urls[] = $po['full_picture'];
+        if ($msg === '' && !$urls) continue;
+        $exists = withNews(function (&$all) use ($po) { foreach ($all as $q) if (($q['fb'] ?? '') === $po['id']) return true; return false; });
+        if ($exists) continue;
+        $bilder = [];
+        foreach (array_slice($urls, 0, 20) as $u) {
+            $c = curl_init($u); curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_TIMEOUT => 40]);
+            $d = curl_exec($c); curl_close($c);
+            if (is_string($d) && strlen($d) > 500) {
+                if (strncmp($d, "\xFF\xD8", 2) !== 0 && function_exists('imagecreatefromstring') && ($im = @imagecreatefromstring($d))) { ob_start(); imagejpeg($im, null, 85); $d = ob_get_clean(); imagedestroy($im); }
+                if (strncmp($d, "\xFF\xD8", 2) === 0) $bilder[] = $d;
+            }
+        }
+        $zeilen = preg_split('/\R/u', $msg, 2);
+        $titel = mb_substr(trim($zeilen[0] ?? ''), 0, 120);
+        if ($titel === '') $titel = 'WBU News';
+        $text = trim($zeilen[1] ?? '');
+        if (mb_strlen($zeilen[0] ?? '') > 120) { $titel = mb_substr($zeilen[0], 0, 117) . ' …'; $text = $msg; }
+        $ts = strtotime((string)($po['created_time'] ?? '')) ?: time();
+        withNews(function (&$all) use ($po, $titel, $text, $bilder, $ts) {
+            $id = bin2hex(random_bytes(6)); $dir = newsDir(); $img = [];
+            foreach ($bilder as $k => $d) { file_put_contents("$dir/$id-$k.jpg", $d); $img[] = 1; }
+            $all[] = ['id' => $id, 'ts' => $ts, 'd' => date('Y-m-d', $ts), 'em' => '__facebook__', 'by' => 'WBU', 'img' => $img, 'fb' => $po['id'], 't' => $titel, 'x' => $text, 'upd' => time()];
+        }, true);
+        $neu++;
+    }
+    return $neu;
+}
+
 
 switch ($a) {
 
@@ -963,8 +1009,28 @@ case 'n_me':       // eingeloggt: darf ich schreiben?
 
 case 'n_req':      // Schreibrechte anfragen
     $me = needLogin($in['tok'] ?? '');
-    withClubs(function (&$c) use ($me) { if (isset($c[$me['email']]) && ($c[$me['email']]['news'] ?? '') !== 'ok') $c[$me['email']]['news'] = 'req'; }, true);
+    $first = withClubs(function (&$c) use ($me) { if (!isset($c[$me['email']]) || ($c[$me['email']]['news'] ?? '') === 'ok') return false; $was = $c[$me['email']]['news'] ?? ''; $c[$me['email']]['news'] = 'req'; return $was !== 'req'; }, true);
+    if ($first) {
+        $link = 'https://www.wbu-boxing.com/scorecard/api.php?a=n_ok&e=' . rawurlencode($me['email']) . '&k=' . newsOkSig($me['email']);
+        wbuMail('info@wbu-boxing.com', 'WBU News – Anfrage auf Schreibrechte: ' . trim(($me['trainer'] ?? '') . ' ' . ($me['club'] ?? '')),
+            "Neue Anfrage auf Schreibrechte für die WBU News:\n\nName: " . ($me['trainer'] ?? '') . "\nVerein: " . ($me['club'] ?? '') . "\nE-Mail: " . $me['email'] . "\n\n"
+            . "FREIGEBEN – einfach diesen Link antippen:\n$link\n\nWenn du die Person nicht kennst, ignoriere diese E-Mail einfach.");
+    }
     out(['ok' => true, 'status' => 'req']);
+
+case 'n_ok':       // Freigabe per Link aus der E-Mail (nur mit gültiger Unterschrift)
+    header('Content-Type: text/html; charset=utf-8');
+    $em = mb_strtolower(trim((string)($_GET['e'] ?? ''))); $k = (string)($_GET['k'] ?? '');
+    $okSig = $em !== '' && hash_equals(newsOkSig($em), $k);
+    $done = $okSig ? withClubs(function (&$c) use ($em) { if (!isset($c[$em])) return false; $c[$em]['news'] = 'ok'; return $c[$em]; }, true) : false;
+    if ($done) wbuMail($em, 'WBU News – du bist freigeschaltet', "Hallo " . ($done['trainer'] ?? '') . ",\n\ndu kannst ab sofort Berichte für die WBU News schreiben: auf www.wbu-boxing.com oben auf das Schloss tippen und mit deinem WBU-Konto anmelden.");
+    echo '<!DOCTYPE html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:Arial,sans-serif;background:#eceef1;color:#000;padding:40px;text-align:center"><h2>'
+       . ($done ? '✅ Freigegeben' : '❌ Link ungültig oder Konto nicht gefunden') . '</h2><p>' . htmlspecialchars($em) . '</p><p><a href="https://www.wbu-boxing.com/">Zur WBU-Startseite</a></p></body>';
+    exit;
+
+case 'n_fbimport': // Superadmin: letzte Facebook-Beiträge als Berichte übernehmen
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    out(['ok' => true, 'neu' => fbImport(max(1, min(50, (int)($in['n'] ?? 10))))]);
 
 case 'n_mine':     // eigene Berichte (Superadmin: alle)
     $me = needLogin($in['tok'] ?? ''); $sup = isSuper($me);
