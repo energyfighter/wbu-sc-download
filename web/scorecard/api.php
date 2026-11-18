@@ -566,6 +566,61 @@ function orderView($t, $o) {
             'reminded' => $o['reminded'] ?? null, 'total' => orderTotal($t, $o['id']), 'paidAmt' => $o['paidAmt'] ?? null, 'paidAt' => $o['paid'] ?? null, 'verein' => $o['verein'], 'club' => $o['club'], 'items' => $items];
 }
 
+
+// ======================= WBU News (Berichte mit Bildern, optional auch auf Facebook) =======================
+function newsFile() { global $DIR; return "$DIR/news.json"; }
+function newsDir() { global $DIR; $d = "$DIR/news"; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
+function fbFile() { global $DIR; return "$DIR/facebook.json"; }
+function withNews($fn, $write = false) {
+    $h = fopen(newsFile(), 'c+'); if (!$h) fail('Speicherfehler', 500);
+    flock($h, $write ? LOCK_EX : LOCK_SH);
+    $n = json_decode(stream_get_contents($h), true); if (!is_array($n)) $n = [];
+    $res = $fn($n);
+    if ($write) { ftruncate($h, 0); rewind($h); fwrite($h, json_encode($n, JSON_UNESCAPED_UNICODE)); fflush($h); }
+    flock($h, LOCK_UN); fclose($h);
+    return $res;
+}
+/** Darf dieses Konto Berichte schreiben? (WBU-Superadmin immer, sonst nur mit Freigabe) */
+function newsStatus($me) {
+    if (!$me || ($me['email'] ?? '') === '__veranstalter__') return 'none';
+    if (isSuper($me)) return 'ok';
+    $c = json_decode((string)@file_get_contents(clubsFile()), true) ?: [];
+    return $c[$me['email']]['news'] ?? 'none';
+}
+function newsPublic($p) { return ['id' => $p['id'], 'd' => $p['d'], 't' => $p['t'], 'x' => $p['x'], 'n' => count($p['img'] ?? []), 'by' => $p['by'] ?? '', 'fb' => !empty($p['fb'])]; }
+function newsImgUrl($id, $i) { return 'https://www.wbu-boxing.com/scorecard/api.php?a=n_img&id=' . $id . '&i=' . $i; }
+function fbHttp($method, $path, $params) {
+    $url = 'https://graph.facebook.com/v24.0/' . ltrim($path, '/');
+    $c = curl_init();
+    if ($method === 'GET') { curl_setopt($c, CURLOPT_URL, $url . '?' . http_build_query($params)); }
+    else { curl_setopt_array($c, [CURLOPT_URL => $url, CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query($params)]); }
+    curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60]);
+    $r = json_decode((string)curl_exec($c), true); curl_close($c);
+    if (!is_array($r)) return ['error' => ['message' => 'Facebook nicht erreichbar']];
+    return $r;
+}
+/** Bericht auf der Facebook-Seite veröffentlichen – gibt Facebook-ID oder Fehlertext zurück */
+function fbPublish($p) {
+    $fb = json_decode((string)@file_get_contents(fbFile()), true);
+    if (!is_array($fb) || empty($fb['page']) || empty($fb['tok'])) return ['err' => 'Facebook ist noch nicht verbunden'];
+    $msg = trim($p['t'] . "\n\n" . $p['x']) . "\n\nhttps://www.wbu-boxing.com/#news/" . $p['id'];
+    $n = count($p['img'] ?? []);
+    if ($n === 0) $r = fbHttp('POST', $fb['page'] . '/feed', ['message' => $msg, 'access_token' => $fb['tok']]);
+    elseif ($n === 1) $r = fbHttp('POST', $fb['page'] . '/photos', ['url' => newsImgUrl($p['id'], 0), 'caption' => $msg, 'access_token' => $fb['tok']]);
+    else {
+        $media = [];
+        for ($i = 0; $i < min($n, 10); $i++) {
+            $u = fbHttp('POST', $fb['page'] . '/photos', ['url' => newsImgUrl($p['id'], $i), 'published' => 'false', 'access_token' => $fb['tok']]);
+            if (!empty($u['id'])) $media['attached_media[' . count($media) . ']'] = json_encode(['media_fbid' => $u['id']]);
+            elseif (!empty($u['error'])) return ['err' => 'Facebook: ' . ($u['error']['message'] ?? 'Fehler')];
+        }
+        $r = fbHttp('POST', $fb['page'] . '/feed', ['message' => $msg, 'access_token' => $fb['tok']] + $media);
+    }
+    if (!empty($r['error'])) return ['err' => 'Facebook: ' . ($r['error']['message'] ?? 'Fehler')];
+    return ['id' => $r['post_id'] ?? ($r['id'] ?? '')];
+}
+
+
 switch ($a) {
 
 case 'events':
@@ -888,6 +943,124 @@ case 'c_reset':    // Code + neues Passwort -> eingeloggt
     }, true);
     if (isset($r['err'])) fail($r['err'], 403);
     out(['ok' => true] + $r);
+
+case 'n_list':     // öffentlich: neueste Berichte
+    $all = file_exists(newsFile()) ? withNews(function (&$n) { return $n; }) : [];
+    usort($all, function ($x, $y) { return $y['ts'] - $x['ts']; });
+    out(['ok' => true, 'news' => array_map('newsPublic', array_slice($all, 0, 60))]);
+
+case 'n_img':      // öffentlich: Bild eines Berichts
+    $id = preg_replace('/[^a-f0-9]/', '', (string)($_GET['id'] ?? ($in['id'] ?? ''))); $i = (int)($_GET['i'] ?? ($in['i'] ?? 0));
+    $f = newsDir() . "/$id-$i.jpg";
+    if ($id === '' || !file_exists($f)) { http_response_code(404); header('Content-Type: text/plain'); exit('nicht gefunden'); }
+    header('Content-Type: image/jpeg'); header('Cache-Control: public, max-age=31536000'); header_remove('Access-Control-Allow-Origin');
+    readfile($f); exit;
+
+case 'n_me':       // eingeloggt: darf ich schreiben?
+    $me = needLogin($in['tok'] ?? '');
+    $fb = json_decode((string)@file_get_contents(fbFile()), true);
+    out(['ok' => true, 'me' => $me, 'status' => newsStatus($me), 'super' => isSuper($me), 'fb' => is_array($fb) && !empty($fb['page']) ? ($fb['name'] ?? 'Facebook') : '']);
+
+case 'n_req':      // Schreibrechte anfragen
+    $me = needLogin($in['tok'] ?? '');
+    withClubs(function (&$c) use ($me) { if (isset($c[$me['email']]) && ($c[$me['email']]['news'] ?? '') !== 'ok') $c[$me['email']]['news'] = 'req'; }, true);
+    out(['ok' => true, 'status' => 'req']);
+
+case 'n_mine':     // eigene Berichte (Superadmin: alle)
+    $me = needLogin($in['tok'] ?? ''); $sup = isSuper($me);
+    if (newsStatus($me) !== 'ok') fail('Keine Schreibrechte', 403);
+    $all = file_exists(newsFile()) ? withNews(function (&$n) { return $n; }) : [];
+    $all = array_values(array_filter($all, function ($p) use ($me, $sup) { return $sup || ($p['em'] ?? '') === $me['email']; }));
+    usort($all, function ($x, $y) { return $y['ts'] - $x['ts']; });
+    out(['ok' => true, 'news' => array_map('newsPublic', $all)]);
+
+case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verkleinert als JPEG)
+    $me = needLogin($in['tok'] ?? '');
+    if (newsStatus($me) !== 'ok') fail('Keine Schreibrechte – bitte bei der WBU freischalten lassen', 403);
+    $t = txt($in['t'] ?? '', 160); $x = mb_substr(trim((string)($in['x'] ?? '')), 0, 20000);
+    if ($t === '') fail('Bitte eine Überschrift eintragen');
+    $id = preg_replace('/[^a-f0-9]/', '', (string)($in['id'] ?? ''));
+    $keep = array_map('intval', (array)($in['keep'] ?? []));   // beim Ändern: welche alten Bilder bleiben (Reihenfolge)
+    $neu = array_slice((array)($in['img'] ?? []), 0, 30);
+    $bilder = [];
+    foreach ($neu as $b64) {
+        $d = base64_decode(preg_replace('/^data:[^,]*,/', '', (string)$b64), true);
+        if ($d === false || strncmp($d, "\xFF\xD8", 2) !== 0) fail('Bild fehlerhaft (nur JPEG)');
+        if (strlen($d) > 4000000) fail('Ein Bild ist zu groß');
+        $bilder[] = $d;
+    }
+    $sup = isSuper($me);
+    $p = withNews(function (&$n) use ($id, $t, $x, $keep, $bilder, $me, $sup) {
+        $i = $id === '' ? -1 : array_search($id, array_column($n, 'id'));
+        if ($id !== '' && $i === false) fail('Bericht nicht gefunden', 404);
+        if ($i >= 0 && !$sup && ($n[$i]['em'] ?? '') !== $me['email']) fail('Nur eigene Berichte bearbeiten', 403);
+        $p = $i >= 0 ? $n[$i] : ['id' => bin2hex(random_bytes(6)), 'ts' => time(), 'd' => date('Y-m-d'), 'em' => $me['email'], 'by' => trim(($me['trainer'] ?? '') ?: ($me['club'] ?? '')), 'img' => [], 'fb' => ''];
+        $dir = newsDir(); $alt = $p['img']; $tmp = [];
+        foreach ($keep as $k) if (isset($alt[$k]) && file_exists("$dir/{$p['id']}-$k.jpg")) $tmp[] = file_get_contents("$dir/{$p['id']}-$k.jpg");
+        foreach ($alt as $k => $_) @unlink("$dir/{$p['id']}-$k.jpg");
+        $all = array_merge($tmp, $bilder); $p['img'] = [];
+        foreach ($all as $k => $d) { file_put_contents("$dir/{$p['id']}-$k.jpg", $d); $p['img'][] = 1; }
+        $p['t'] = $t; $p['x'] = $x; $p['upd'] = time();
+        if ($i >= 0) $n[$i] = $p; else $n[] = $p;
+        return $p;
+    }, true);
+    $fbErr = '';
+    if (!empty($in['fb']) && empty($p['fb'])) {
+        $r = fbPublish($p);
+        if (!empty($r['id'])) withNews(function (&$n) use ($p, $r) { foreach ($n as &$q) if ($q['id'] === $p['id']) $q['fb'] = $r['id']; }, true);
+        else $fbErr = $r['err'] ?? 'Facebook-Fehler';
+        $p['fb'] = $r['id'] ?? '';
+    }
+    out(['ok' => true, 'post' => newsPublic($p), 'fbErr' => $fbErr]);
+
+case 'n_del':
+    $me = needLogin($in['tok'] ?? ''); $sup = isSuper($me);
+    $id = preg_replace('/[^a-f0-9]/', '', (string)($in['id'] ?? ''));
+    withNews(function (&$n) use ($id, $me, $sup) {
+        foreach ($n as $k => $p) if ($p['id'] === $id) {
+            if (!$sup && ($p['em'] ?? '') !== $me['email']) fail('Nur eigene Berichte löschen', 403);
+            foreach ($p['img'] as $i => $_) @unlink(newsDir() . "/$id-$i.jpg");
+            array_splice($n, $k, 1); return;
+        }
+        fail('Bericht nicht gefunden', 404);
+    }, true);
+    out(['ok' => true]);
+
+case 'n_users':    // Superadmin: Anfragen und Freigaben
+case 'n_grant':
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    $em = mb_strtolower(trim((string)($in['email'] ?? '')));
+    $r = withClubs(function (&$c) use ($a, $em, $in) {
+        if ($a === 'n_grant') { if (!isset($c[$em])) fail('Konto nicht gefunden', 404); if (!empty($in['on'])) $c[$em]['news'] = 'ok'; else unset($c[$em]['news']); }
+        $L = [];
+        foreach ($c as $e => $x) if (!empty($x['news'])) $L[] = ['email' => $e, 'name' => trim(($x['trainer'] ?? '') . ' · ' . ($x['club'] ?? ''), ' ·'), 'status' => $x['news']];
+        return $L;
+    }, $a === 'n_grant');
+    out(['ok' => true, 'users' => $r]);
+
+case 'fb_connect': // Superadmin: Facebook verbinden (App-ID, App-Geheimcode, Zugangsschlüssel aus dem Graph API Explorer)
+case 'fb_pick':
+case 'fb_off':
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    if ($a === 'fb_off') { @unlink(fbFile()); out(['ok' => true]); }
+    if ($a === 'fb_pick') {
+        $pend = json_decode((string)@file_get_contents(fbFile() . '.pending'), true) ?: [];
+        foreach ($pend as $pg) if ((string)$pg['id'] === (string)($in['page'] ?? '')) {
+            file_put_contents(fbFile(), json_encode(['page' => $pg['id'], 'name' => $pg['name'], 'tok' => $pg['access_token'], 'at' => time()]));
+            @unlink(fbFile() . '.pending');
+            out(['ok' => true, 'name' => $pg['name']]);
+        }
+        fail('Seite nicht gefunden – bitte neu verbinden');
+    }
+    $app = preg_replace('/\D/', '', (string)($in['app'] ?? '')); $sec = trim((string)($in['secret'] ?? '')); $tok = trim((string)($in['token'] ?? ''));
+    if ($app === '' || $sec === '' || $tok === '') fail('Bitte App-ID, App-Geheimcode und Zugangsschlüssel eintragen');
+    $l = fbHttp('GET', 'oauth/access_token', ['grant_type' => 'fb_exchange_token', 'client_id' => $app, 'client_secret' => $sec, 'fb_exchange_token' => $tok]);
+    if (empty($l['access_token'])) fail('Facebook: ' . ($l['error']['message'] ?? 'Schlüssel wurde nicht angenommen'));
+    $pg = fbHttp('GET', 'me/accounts', ['access_token' => $l['access_token'], 'fields' => 'id,name,access_token', 'limit' => 100]);
+    $pages = array_values(array_filter((array)($pg['data'] ?? []), function ($x) { return !empty($x['access_token']); }));
+    if (!$pages) fail('Facebook: keine Seite gefunden – beim Zugangsschlüssel die Seite „Official WBU“ mit auswählen');
+    file_put_contents(fbFile() . '.pending', json_encode($pages));
+    out(['ok' => true, 'pages' => array_map(function ($x) { return ['id' => $x['id'], 'name' => $x['name']]; }, $pages)]);
 
 case 'c_me':
     $me = clubByToken($in['tok'] ?? '');
