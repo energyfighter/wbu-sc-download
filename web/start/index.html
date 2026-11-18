@@ -10,7 +10,7 @@
 <style>
 :root{--bg:#0b0d12;--card:#151922;--line:#262b36;--gold:#d8a93a;--gold2:#f2cf6b;--red:#e0262e;--blue:#1f6fe5;--txt:#f4f1ea}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
-.nwl{max-height:1600px;overflow:auto;scrollbar-width:none;padding:14px}.nwl::-webkit-scrollbar{display:none}@media(max-width:900px){.nwl{max-height:none}}
+.nwl{padding:14px}
 .nwe{color:#c9c5bd;padding:10px}.nc{background:#151922;border:1px solid #2a3040;border-radius:14px;overflow:hidden;margin-bottom:16px;cursor:pointer}.nc>img{width:100%;aspect-ratio:16/8;object-fit:cover;display:block}
 .nc .nb{padding:14px 18px}.nd{color:var(--gold);font:700 12px Inter,sans-serif;letter-spacing:2px}.nc h4{margin:4px 0 6px;font:700 22px Oswald,Inter,sans-serif;color:var(--txt);text-transform:uppercase}
 .nc p{margin:0 0 10px;color:#d9d6cf;font:15px/1.5 Inter,sans-serif;white-space:pre-line}.ng{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}.ng img{height:130px;width:auto;max-width:100%;object-fit:contain;border-radius:6px;background:#0b0d12;cursor:zoom-in;border:1px solid #2a3040}.ng .more{height:130px;min-width:90px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#1d2230;color:var(--gold);font:700 20px Inter,sans-serif}@media(max-width:600px){.ng img,.ng .more{height:95px}}
@@ -98,10 +98,10 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .gg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.gg a{display:block;border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.45);transition:transform .15s}.gg a:hover{transform:translateY(-4px)}.gg img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
 @media(max-width:1000px){.gg{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.gg{gap:10px}}
 .zm{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.88);display:grid;place-items:center;cursor:zoom-out}.zm img{max-width:94vw;max-height:92vh;border-radius:12px}.zm button{position:absolute;top:14px;right:18px;font-size:34px;background:none;border:0;color:#fff;cursor:pointer}
-.side{display:flex;flex-direction:column}.side .card{flex:none}.side .shows{flex:1 1 0;min-height:340px;display:flex;flex-direction:column;margin-bottom:22px}
-.shows .sl{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:14px;display:flex;flex-direction:column;gap:14px;-webkit-mask-image:linear-gradient(#000 92%,transparent)}.shows .sl::-webkit-scrollbar{display:none}
+.side{display:flex;flex-direction:column}.side .card{flex:none}.side .shows{flex:none;display:flex;flex-direction:column;margin-bottom:22px}
+.shows .sl{padding:14px;display:flex;flex-direction:column;gap:14px}
 .shows .sl a{flex:none;display:block;border-radius:10px;overflow:hidden;border:1px solid var(--line)}.shows .sl img{display:block;width:100%}.shows .sl p{padding:6px 4px}
-@media(max-width:900px){.side .shows{flex:none;max-height:640px}}
+.up{position:fixed;right:24px;bottom:92px;z-index:60;width:48px;height:48px;border-radius:50%;border:2px solid var(--gold);background:#151922;color:var(--gold);font-size:24px;cursor:pointer;display:none;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.45)}.up.on{display:grid}.up:hover{background:var(--gold);color:#111}
 .dd .sub a.mo{display:none}@media(max-width:900px){.dd .sub a.mo{display:block}}
 .fb .tg{background:#fff}.fb .tg iframe{display:block;width:100%;height:1600px;border:0}@media(max-width:900px){.fb .tg iframe{height:1100px}}
 /* Verbände */
@@ -126,7 +126,7 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 </head>
 <body>
 <div id="app"></div>
-<a class="wa" href="https://wa.me/4915774719789" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.8-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.2-.2-.4-.3z"/></svg></a>
+<button class="up" id="up" title="Nach oben" aria-label="Nach oben" onclick="scrollTo({top:0,behavior:'smooth'})">▲</button><a class="wa" href="https://wa.me/4915774719789" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.8-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.2-.2-.4-.3z"/></svg></a>
 <script>
 const W='https://wbu.wbu-boxing.com',WWW='https://www.wbu-boxing.com',UP=W+'/wp-content/uploads/';
 const LANGS=['en','de','es','fr','ru'];
@@ -397,7 +397,7 @@ async function newsLoad(){const el=document.getElementById('nwl');if(!el)return;
  if(!NW.list){try{NW.list=(await nApi('n_list')).news}catch(e){NW.list=[]}}
  const box=document.getElementById('nwl');if(!box)return;
  if(!NW.list.length){box.parentNode.classList.remove('nw');box.parentNode.innerHTML=FBOX();return}
- box.innerHTML=NW.list.map(p=>{const kurz=p.x.length>260?p.x.slice(0,260).replace(/\s+\S*$/,'')+' …':p.x;
+ box.innerHTML=NW.list.slice(0,20).map(p=>{const kurz=p.x.length>260?p.x.slice(0,260).replace(/\s+\S*$/,'')+' …':p.x;
   const MX=6,sh=Math.min(p.n,MX);
   return `<article class="nc" onclick="location.hash='news/${p.id}'"><div class="nb"><div class="nd">${nDate(p.d)}</div><h4>${nEsc(p.t)}</h4><p>${nEsc(kurz)}</p>
   ${p.n?`<div class="ng">${Array.from({length:sh},(_,i)=>`<img src="${nImg(p.id,i)}" alt="" loading="lazy" onclick="event.stopPropagation();zoomU(this.src)">`).join('')}${p.n>MX?`<span class="more">+${p.n-MX}</span>`:''}</div>`:''}<div class="nm">${L==='de'?'Weiterlesen':'Read more'} ›${p.n?`<span>📷 ${p.n}</span>`:''}</div></div></article>`}).join('')}
@@ -548,5 +548,6 @@ addEventListener('hashchange',()=>{draw();const mn=document.getElementById('menu
  const top=document.querySelector('.belts').getBoundingClientRect().bottom+scrollY;if(scrollY>top)scrollTo({top})});
 draw();
 </script>
+<script>addEventListener('scroll',()=>{const u=document.getElementById('up');if(u)u.classList.toggle('on',scrollY>500)},{passive:true})</script>
 </body>
 </html>

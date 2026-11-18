@@ -1,6 +1,6 @@
 {
-  "versionCode": 148,
-  "versionName": "1.148",
+  "versionCode": 158,
+  "versionName": "1.158",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Supervisor: bei „Show auswählen“ stehen nur noch die Shows; Tablet/Laptop mit WBU Sports werden ohne Internet automatisch per Bluetooth gefunden. Update ohne Fehlermeldung."
+  "notes": "Neustart ohne Datenverlust: Akku leer, App oder Browser zu – Supervisor und Punktrichter machen nach dem Öffnen genau dort weiter (laufender Kampf, Runden, Fight Card, Scorecards), ohne neue Anmeldung."
 }
