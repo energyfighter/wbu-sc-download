@@ -224,6 +224,22 @@ function lvfile($id) {
     if (!is_string($id) || !preg_match('/^[a-f0-9]{16}$/', $id)) fail('Live-Veranstaltung unbekannt', 404);
     return "$DIR/lv_$id.json";
 }
+// Live-Stand für die Öffentlichkeit: Geburtsdatum -> Alter am Veranstaltungstag, genaues Gewicht weg
+function liveOeffentlich($sn) {
+    if (!is_array($sn)) return $sn;
+    $tag = strtotime((string)($sn['date'] ?? '')) ?: time();
+    $alter = function ($g) use ($tag) { $t = strtotime((string)$g); if (!$t) return '';
+        $a = (int)date('Y', $tag) - (int)date('Y', $t); if (date('md', $tag) < date('md', $t)) $a--; return ($a > 0 && $a < 100) ? $a : ''; };
+    foreach ((array)($sn['rows'] ?? []) as $i => $r) {
+        if (isset($r['f']) && is_array($r['f'])) {
+            foreach (['r', 'b'] as $c) { $r['f'][$c . 'a'] = $alter($r['f'][$c . 'g'] ?? ''); unset($r['f'][$c . 'g'], $r['f'][$c . 'w']); }
+        }
+        foreach (['ai', 'bi'] as $k) if (isset($r[$k])) $r[$k] = trim(preg_replace('/(^| · )[\d.,]+ kg( · |$)/u', '$1$2', (string)$r[$k]), ' ·');
+        $sn['rows'][$i] = $r;
+    }
+    return $sn;
+}
+
 function withLive($id, $fn, $write = false) {
     $f = lvfile($id);
     if (!file_exists($f)) fail('Live-Veranstaltung nicht gefunden', 404);
@@ -1489,7 +1505,16 @@ case 'l_clockget':  // WBU Time: öffentlich lesen (Fernseher)
     out(['ok' => true, 'srv' => (int)round(microtime(true) * 1000)] + $r);
 
 case 'l_get':
-    $r = withLive($in['lid'] ?? '', function (&$l) { return ['snap' => $l['snap'], 'updated' => $l['updated']]; });
+    // Öffentlich (WBU Live, Live-Monitor, Fernseher): ohne Geburtsdatum und genaues Gewicht – nur Alter und Gewichtsklasse.
+    // Vollständig nur für Berechtigte (WBU-Passwort, Supervisor-Veranstaltung, freigeschaltetes Konto) – die brauchen es zum Bearbeiten der Fight Card.
+    $lidG = (string)($in['lid'] ?? '');
+    $full = hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')));
+    if (!$full && !empty($in['ev'])) { $e = json_decode((string)@file_get_contents(evfile((string)$in['ev'])), true); $full = is_array($e) && tKeyOk($e, $in['key'] ?? '') && ($e['lid'] ?? '') === $lidG; }
+    $accG = $full ? null : clubByToken($in['tok'] ?? '');
+    $r = withLive($lidG, function (&$l) use ($full, $accG) {
+        $ok = $full || ($accG && isset(((array)($l['grants'] ?? []))[$accG['email']]));
+        return ['snap' => $ok ? $l['snap'] : liveOeffentlich($l['snap']), 'updated' => $l['updated']];
+    });
     out(['ok' => true] + $r);
 
 case 'l_list':

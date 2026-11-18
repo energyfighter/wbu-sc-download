@@ -362,7 +362,7 @@ async function nativeLive(){if(!S.nlid)return;
   if(S.nlid==='hub'){const out=get('wbuLiveOut',[]);out.forEach(it=>WBU.hubResult(JSON.stringify({t:'res',id:'res-'+it.mid,mid:it.mid,res:it.res,judge:S.name})));
     if(out.length)set('wbuLiveOut',[]);sendCur();return}
   fcRetry();
-  try{const j=await lapi('l_get',{lid:S.nlid});if(j.snap){const js=JSON.stringify(j.snap.rows||[]);if(js!==S.liveJs){S.liveJs=js;S.live=j.snap;softRender()}}
+  try{const j=await lapi('l_get',{lid:S.nlid,pass:S.npass||''});if(j.snap){const js=JSON.stringify(j.snap.rows||[]);if(js!==S.liveJs){S.liveJs=js;S.live=j.snap;softRender()}}
     for(const it of get('wbuLiveOut',[])){await lapi('l_result',{lid:S.nlid,pass:S.npass||'',mid:it.mid,res:it.res});set('wbuLiveOut',get('wbuLiveOut',[]).filter(x=>x.mid!==it.mid))}
     S.liveErr=''}catch(e){S.liveErr=e.message}
   sendCur()}
@@ -876,7 +876,7 @@ function vFc(){const F=S.fc||[],d=S.live&&S.live.date;
 // WBU-Sports-Konto: Link „Fight Card bearbeiten“ (…/scorecard/?fc=<Gala>) – nur für freigeschaltete Konten
 async function fcStandalone(lid){
   if(!clubTok()){$('app').innerHTML=header()+`<div class="card"><b>Bitte zuerst bei WBU Sports einloggen.</b><p class="muted">Danach den Link „Fight Card bearbeiten“ noch einmal öffnen.</p><a class="btn" style="text-align:center;text-decoration:none" href="../anmeldung/">Zur Anmeldung</a></div>`;return}
-  try{const j=await lapi('l_get',{lid});if(!j.snap||j.snap.type!=='gala')throw new Error('Diese Gala gibt es nicht (mehr).');
+  try{const j=await lapi('l_get',{lid,tok:clubTok()});if(!j.snap||j.snap.type!=='gala')throw new Error('Diese Gala gibt es nicht (mehr).');
     S.live=j.snap;S.fcAlone=lid;const me=clubMe();S.name=me?(me.trainer||me.club||'Supervisor'):'Supervisor';S.role='sup';fcOpen()}
   catch(e){$('app').innerHTML=header()+`<div class="card"><b>${esc(e.message)}</b></div>`}}
 
@@ -884,7 +884,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('97')||0;
+const WEB_VERSION=Number('98')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
