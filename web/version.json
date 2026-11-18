@@ -1,14 +1,14 @@
 {
-  "version": 88,
+  "version": 89,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "scorecard/api.php": "94c181342881930f4798fcc2433f5744460b91ed8a75eb2f7794a6e6fcbc963a",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "be8f7b6402a03e9d0cfeb4b7147edf4218ffd1b2c274095940e600c1d94c43a3",
+    "scorecard/index.html": "11df17d176c20eac0c1fa486064968663686383739990245661de2fb4efabcaf",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "4bf0cf5853896a707da5df7235245e4e7a5bdef062628b4fcd72a6f71f457c89",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "d36e84b44de8791d7a1a54f23535be3e75b1ec2e312d964f300ae6f594503bb1",
+    "veranstalter/index.html": "07e37197a6a36a54fa17a4b32d7d5ba5f62314fd8a2cff5708dc3e4eec3b2f2e",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
     "veranstalter/docs/Ablaufplan-WBU-2027.pdf": "6c3b939cdb704f45dd8a46dbd4df184ff6322595180b8d2dbf6418a2fe888ba3",
@@ -50,7 +50,7 @@
     "veranstalter/docs/praes-30.jpg": "93a5fd26c6de3b009a82c935ab0fbd39321ddb274e6996c6d576b36296e7997c",
     "veranstalter/docs/praes-31.jpg": "917d32edf92b941d61ef6ebd0465510af6758505386c284a78bfa0a5944f1052",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "7430a9bbd5d79f3aea746ad1ae2eb3aab25f89025c94258160898e14622f2fda",
+    "anmeldung/index.html": "ca96a65a7bfbfd3a37d63b83673c4b44cdca58bb3b8d3650cb007dd7c7ab93d1",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "live/index.html": "3a7113f8a0b1b723288c36aba96c4c72adb4fe0957d33eeb9d372186ff3999cc",
     "results/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
@@ -58,7 +58,7 @@
     "rankings/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "rankings/index.html": "9ef568bbfeced4f22b548c69b5451f800231eea30f1928763b60034cc06e454f",
     "start/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "start/index.html": "a5b1fc86e1ee2e24f2b85f422e8fd5a61fe0169a43eb492931ee6eeca51173a6",
+    "start/index.html": "f860936e49a9ed925c0dec51cab410c282fef7b08f4201f2cf2a859d9e6cee2c",
     "coin/fight-quiz.html": "44e4f58ab55223a738444d80833939b2ff1afb50c738b9e1c5bab94c08c96080",
     "coin/index.html": "ac6ec08d655c60f4bf906275e2398a0c833077154026fb0ca7075dd080c05f5f"
   }
