@@ -632,7 +632,7 @@ function askClose(){
   const fs=fights(), open=fs.filter(f=>!f.meta.result).length;
   sheet(`<h2>Veranstaltung abschließen?</h2><p>${fs.length} Kämpfe werden in den Gesamtbericht übernommen.</p>
   ${open?`<p class="warn">Achtung: ${open} Kampf/Kämpfe noch ohne bestätigtes Ergebnis.</p>`:''}
-  <button class="btn" onclick="closeSheet();setEv('closed',true);S.view='report';render();window.scrollTo(0,0)">Ja, abschließen</button>
+  <button class="btn" onclick="closeSheet();setEv('closed',true);S.view='report';render();window.scrollTo(0,0);resSubmit()">Ja, abschließen</button>
   <button class="btn sec" onclick="closeSheet()">Abbrechen</button>`);
 }
 function reset(){set('wbuInbox',[]);set('wbuMeta',{});set('wbuEvent',{});set('wbuWebSup',null);set('wbuChat',[]);closeSheet();S.view='sup';render()}
@@ -732,13 +732,14 @@ function vReport(){
   return `<div class="card" style="text-align:center"><div class="big" style="color:var(--ok)">✓</div><h2>Veranstaltung abgeschlossen</h2>
     <div class="muted">${[ev.name?'Promoter: '+ev.name:'',ev.ort,evDate()].filter(Boolean).map(esc).join(' · ')}<br>Supervisor: ${esc(S.name)} · ${fs.length} Kämpfe</div></div>
   <button class="btn" onclick="NATIVE?WBU.printReport():makePdf()">PDF erstellen &amp; herunterladen</button><div id="pdfst" class="note" style="margin-top:6px">${NATIVE?'Im nächsten Fenster „Als PDF speichern“ wählen.':''}</div>
+  ${resBox()}
   <h3>Alle Resultate</h3>${fs.map(fightBlock).join('')}
   <button class="btn sec" onclick="setEv('closed',false);S.view='sup';render()">Veranstaltung wieder öffnen</button>
   <button class="btn sec" onclick="sheet('<h2>Neue Veranstaltung?</h2><p class=muted>Alle Kämpfe dieser Veranstaltung werden gelöscht. Vorher das PDF speichern!</p><button class=\\'btn\\' onclick=\\'reset()\\'>Ja, neu starten</button><button class=\\'btn sec\\' onclick=\\'closeSheet()\\'>Abbrechen</button>')">Neue Veranstaltung starten</button>`;
 }
 function loadJs(src){return new Promise((ok,no)=>{if(window.jspdf)return ok();const t=document.createElement('script');t.src=src;t.onload=ok;t.onerror=no;document.head.appendChild(t)})}
-async function makePdf(){
-  const st=$('pdfst');st.textContent='PDF wird erstellt …';
+async function buildPdf(st){
+  st=st||{};st.textContent='PDF wird erstellt …';
   try{await loadJs('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')}catch(e){st.textContent='PDF-Baustein konnte nicht geladen werden (Internet?).';return}
   const{jsPDF}=window.jspdf, d=new jsPDF({unit:'mm',format:'a4'}), M=14, W=210-2*M, ev=get('wbuEvent',{}), fs=fights(), date=evDate();
   const T=x=>String(x??'').replace(/[−–]/g,'-');
@@ -775,12 +776,35 @@ async function makePdf(){
   });
   const pages=d.getNumberOfPages();for(let p=1;p<=pages;p++){d.setPage(p);d.setFontSize(8);d.setTextColor(130);d.setFont('helvetica','normal');
     d.text(T(`WBU World Boxing Union · www.wbu-boxing.com · ${date} · Seite ${p}/${pages}`),105,292,{align:'center'})}
-  const blob=d.output('blob');
+  return d.output('blob')}
+async function makePdf(){const st=$('pdfst'),blob=await buildPdf(st);if(!blob)return;const date=evDate();
   const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
   if(!dl){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`WBU-Veranstaltung-${date.replace(/\./g,'-')}.pdf`;document.body.appendChild(a);a.click();a.remove();st.textContent='PDF gespeichert (Downloads).';return}
   try{await dl.save({filename:`WBU-Veranstaltung-${date.replace(/\./g,'-')}.pdf`,data:blob});st.textContent='PDF gespeichert.'}
   catch(e){st.textContent=e&&e.code==='declined'?'Download abgebrochen.':'PDF konnte nicht gespeichert werden.'}
 }
+
+// ================= RESULTATE AN DIE WBU =================
+// Beim Abschließen: Ergebnisse + PDF an den Server – E-Mail ans Büro (info@wbu-boxing.com) und öffentliche Resultate-Seite
+function resData(){const ev=get('wbuEvent',{}),fs=fights(),L=S.live||{},lid=liveLid();
+  return {lid:/^[a-f0-9]{16}$/.test(lid||'')?lid:'',ring:(L.rings||1)>1&&typeof myRing==='function'?myRing():1,type:L.type||'gala',name:L.name||'',promoter:ev.name||'',ort:ev.ort||'',date:evDate(),sup:S.name||'',arzt:ev.arzt||'',
+    fights:fs.map(f=>{const m=f.meta,r=m.result;return {no:f.no,title:m.title||'',red:m.red||'',blue:m.blue||'',ri:m.ri||'',bi:m.bi||'',rounds:m.rounds||0,dur:m.dur||'',
+      k:r?r.k:'',kn:r?resName(r.k):'',w:r&&r.w?r.w:'',r:r&&r.r?r.r:0,t:r&&r.t?r.t:'',ref:officials(m).ref||'',judges:f.cards.map(c=>{const[a,b]=totals(c.rounds);return {n:c.judge,r:a,b}})}})}}
+function resAuth(){if(WEB&&S.web&&S.web.ev)return {ev:S.web.ev,key:S.web.key};const pw=S.npass||get('wbuResPw','');return pw?{pass:pw}:null}
+function resSubmit(){set('wbuResOut',resData());set('wbuResSt','');resRetry()}
+async function resRetry(){const d=get('wbuResOut',null);if(!d||S.resBusy)return;const au=resAuth();if(!au){resShow();return}S.resBusy=true;
+  try{let pdf='';try{const b=await buildPdf(null);if(b)pdf=await new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b)})}catch(e){}
+    await lapi('r_submit',{...au,data:d,pdf});set('wbuResOut',null);set('wbuResSt','ok')}
+  catch(e){set('wbuResSt',/Passwort/.test(e.message)?'pw':'wait');if(/Passwort/.test(e.message))set('wbuResPw','')}
+  S.resBusy=false;resShow()}
+function resShow(){const e=$('resbox');if(e)e.outerHTML=resBox()}
+function resBox(){const st=get('wbuResSt',''),out=get('wbuResOut',null);
+  if(st==='ok'&&!out)return `<div id="resbox" class="card" style="border-color:var(--ok)"><b style="color:var(--ok)">✓ Ergebnisse an die WBU gesendet</b><div class="muted">E-Mail mit PDF ans Büro · veröffentlicht auf der Resultate-Seite der WBU.</div></div>`;
+  if(!out)return `<div id="resbox"></div>`;
+  if(!resAuth()||st==='pw')return `<div id="resbox" class="card" style="border-color:var(--gold)"><b>Ergebnisse an die WBU senden</b><div class="muted">${st==='pw'?'Das Passwort war falsch. ':''}Bitte einmal das WBU-Supervisor-Passwort eingeben.</div>
+    <input id="respw" type="password" placeholder="WBU-Passwort" autocomplete="new-password"><button class="btn" onclick="set('wbuResPw',$('respw').value.trim());set('wbuResSt','');resRetry()">Senden</button></div>`;
+  return `<div id="resbox" class="card" style="border-color:var(--gold)"><b>Ergebnisse werden an die WBU gesendet …</b><div class="muted">${st==='wait'?'Gerade keine Internetverbindung – wird automatisch gesendet, sobald Internet da ist.':'Einen Moment.'}</div></div>`}
+setInterval(resRetry,30000);setTimeout(resRetry,4000);
 
 // ================= FIGHT CARD BEARBEITEN (nur Gala) =================
 // Der Supervisor (oder ein freigeschaltetes WBU-Sports-Konto) ändert die Fight Card – online, per Bluetooth über Tablet/Laptop oder später nachgesendet
@@ -851,7 +875,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('73')||0;
+const WEB_VERSION=Number('74')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

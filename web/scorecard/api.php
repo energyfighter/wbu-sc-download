@@ -1252,6 +1252,88 @@ case 'l_grant':
     }, $a === 'l_fc' || ($acc && ($okPass || $okEv)));
     out(['ok' => true] + $r);
 
+// ---- Resultate: Supervisor schließt die Veranstaltung ab -> Daten + PDF an den Server, E-Mail ans Büro, öffentliche Tabelle ----
+case 'r_submit':
+    $okPass = hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')));
+    if (!$okPass && !empty($in['ev'])) { $e = json_decode((string)@file_get_contents(evfile((string)$in['ev'])), true); $okPass = is_array($e) && tKeyOk($e, $in['key'] ?? ''); }
+    if (!$okPass) fail('Falsches WBU-Passwort', 403);
+    $d = is_array($in['data'] ?? null) ? $in['data'] : fail('Keine Ergebnisse');
+    $lid = preg_match('/^[a-f0-9]{16}$/', (string)($d['lid'] ?? '')) ? $d['lid'] : '';
+    $T = function ($k, $n = 120) use ($d) { return txt($d[$k] ?? '', $n); };
+    $grp = $lid ?: substr(sha1(mb_strtolower($T('name') . '|' . $T('date') . '|' . $T('ort'))), 0, 16);
+    $fs = [];
+    foreach (array_slice((array)($d['fights'] ?? []), 0, 150) as $f) {
+        if (!is_array($f)) continue;
+        $x = ['no' => (int)($f['no'] ?? 0)];
+        foreach (['title', 'red', 'blue', 'ri', 'bi', 'dur', 'k', 'kn', 'w', 't', 'ref'] as $k) $x[$k] = txt($f[$k] ?? '', 160);
+        $x['rounds'] = (int)($f['rounds'] ?? 0); $x['r'] = (int)($f['r'] ?? 0);
+        $x['judges'] = [];
+        foreach (array_slice((array)($f['judges'] ?? []), 0, 5) as $j) if (is_array($j)) $x['judges'][] = ['n' => txt($j['n'] ?? '', 80), 'r' => (int)($j['r'] ?? 0), 'b' => (int)($j['b'] ?? 0)];
+        $fs[] = $x;
+    }
+    $ring = max(1, (int)($d['ring'] ?? 1));
+    $rec = ['grp' => $grp, 'lid' => $lid, 'type' => $T('type', 10) === 'turnier' ? 'turnier' : 'gala', 'name' => $T('name'), 'promoter' => $T('promoter'), 'ort' => $T('ort'),
+            'date' => $T('date', 20), 'sup' => $T('sup'), 'arzt' => $T('arzt'), 'ring' => $ring, 'fights' => $fs, 'at' => time()];
+    $f = "$DIR/res_" . substr(sha1($grp . '|' . $ring . '|' . mb_strtolower($rec['sup'])), 0, 20) . '.json';
+    $again = file_exists($f);
+    $old = $again ? json_decode((string)@file_get_contents($f), true) : null;
+    if (is_array($old) && !empty($old['hidden'])) $rec['hidden'] = 1;
+    if (file_put_contents($f, json_encode($rec, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler', 500);
+    // E-Mail mit PDF ans Büro
+    $title = ($rec['name'] ?: 'Veranstaltung') . ' · ' . $rec['ort'] . ' · ' . $rec['date'];
+    $lines = [];
+    foreach ($fs as $x) $lines[] = "Kampf {$x['no']}: {$x['red']} vs. {$x['blue']}" . ($x['title'] ? " ({$x['title']})" : '') . ' – ' . ($x['kn'] ?: 'ohne Ergebnis') .
+        ($x['w'] ? ' – Sieger ' . ($x['w'] === 'R' ? $x['red'] : $x['blue']) : '') . ($x['r'] ? " – Runde {$x['r']}" . ($x['t'] ? " / {$x['t']}" : '') : '');
+    $body = ($again ? "KORRIGIERTER Bericht\n\n" : '') . "Veranstaltung: $title\nArt: " . ($rec['type'] === 'turnier' ? 'Turnier' : 'Gala') . ($rec['promoter'] ? "\nPromoter: {$rec['promoter']}" : '') .
+            "\nSupervisor: {$rec['sup']}\nRingarzt: {$rec['arzt']}" . ($ring > 1 ? "\nRing: $ring" : '') . "\n\n" . implode("\n", $lines) .
+            "\n\nDie Ergebnisse stehen auf der Resultate-Seite: https://www.wbu-boxing.com/live/?resultate=1\n\nWorld Boxing Union";
+    $pdf = base64_decode(preg_replace('/^data:[^,]*,/', '', (string)($in['pdf'] ?? '')), true);
+    $host = preg_replace('/^www\./', '', preg_replace('/[^a-z0-9.\-]/i', '', $_SERVER['HTTP_HOST'] ?? '')) ?: 'wbu-boxing.com';
+    $bnd = 'wbu' . bin2hex(random_bytes(8));
+    $hdr = "From: WBU Scorecard <noreply@$host>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"$bnd\"";
+    $msg = "--$bnd\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($body)) . "\r\n";
+    if ($pdf && strlen($pdf) < 8000000 && substr($pdf, 0, 4) === '%PDF') {
+        $fn = 'WBU-Bericht-' . preg_replace('/[^A-Za-z0-9-]+/', '_', $rec['date'] . '-' . $rec['ort']) . '.pdf';
+        $msg .= "--$bnd\r\nContent-Type: application/pdf; name=\"$fn\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"$fn\"\r\n\r\n" . chunk_split(base64_encode($pdf)) . "\r\n";
+    }
+    $msg .= "--$bnd--";
+    $sent = @mail('info@wbu-boxing.com', '=?UTF-8?B?' . base64_encode(($again ? 'Korrektur: ' : '') . 'Ergebnisse ' . $title) . '?=', $msg, $hdr);
+    out(['ok' => true, 'mail' => (bool)$sent]);
+
+case 'r_list':
+    $G = [];
+    foreach (glob("$DIR/res_*.json") as $f) {
+        $r = json_decode((string)@file_get_contents($f), true);
+        if (!is_array($r) || (!empty($r['hidden']) && empty($in['all']))) continue;
+        $g = &$G[$r['grp']];
+        if (!$g) $g = ['id' => $r['grp'], 'type' => $r['type'], 'name' => $r['name'], 'promoter' => $r['promoter'], 'ort' => $r['ort'], 'date' => $r['date'], 'arzt' => $r['arzt'], 'sups' => [], 'fights' => [], 'at' => 0, 'hidden' => !empty($r['hidden']), 'lid' => $r['lid']];
+        if (!in_array($r['sup'], $g['sups'], true)) $g['sups'][] = $r['sup'];
+        foreach ($r['fights'] as $x) { $x['ring'] = $r['ring']; $g['fights'][] = $x; }
+        $g['at'] = max($g['at'], $r['at']);
+        unset($g);
+    }
+    foreach ($G as &$g) {
+        usort($g['fights'], function ($a, $b) { return [$a['ring'], $a['no']] <=> [$b['ring'], $b['no']]; });
+        if ($g['type'] === 'turnier' && $g['lid']) { $l = json_decode((string)@file_get_contents(lvfile($g['lid'])), true); $g['places'] = $l['snap']['places'] ?? []; }
+        $t = strtotime(preg_replace('/^(\d{2})\.(\d{2})\.(\d{4})$/', '$3-$2-$1', (string)$g['date'])) ?: $g['at']; $g['ts'] = $t;
+        unset($g['lid']);
+    }
+    unset($g);
+    $L = array_values($G);
+    usort($L, function ($a, $b) { return $b['ts'] <=> $a['ts']; });
+    out(['ok' => true, 'list' => $L]);
+
+case 'r_hide':
+    if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Falsches WBU-Passwort', 403);
+    $n = 0;
+    foreach (glob("$DIR/res_*.json") as $f) {
+        $r = json_decode((string)@file_get_contents($f), true);
+        if (!is_array($r) || $r['grp'] !== ($in['id'] ?? '')) continue;
+        if (!empty($in['hide'])) $r['hidden'] = 1; else unset($r['hidden']);
+        file_put_contents($f, json_encode($r, JSON_UNESCAPED_UNICODE)); $n++;
+    }
+    out(['ok' => true, 'n' => $n]);
+
 // ---- WBU-Sports-Konto: Galas, für die dieses Konto als Supervisor freigeschaltet ist ----
 case 'l_mine':
     $acc = needLogin($in['tok'] ?? '');
