@@ -1,6 +1,6 @@
 {
-  "versionCode": 97,
-  "versionName": "1.97",
+  "versionCode": 98,
+  "versionName": "1.98",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Gala: Supervisor kann die Fight Card ändern – auch ohne Internet über Tablet/Laptop."
+  "notes": "Neu: Beim Abschließen gehen die Ergebnisse automatisch an die WBU (E-Mail + Resultate-Seite)."
 }
