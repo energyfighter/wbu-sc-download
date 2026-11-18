@@ -158,11 +158,6 @@ function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
     <a class="btn" href="${FB}" target="_blank" rel="noopener">${t('fbb')} ›</a></section></div>
   <aside class="side">
    <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
-   <div class="card"><h3 class="H">${t('more')}</h3>
-    <a class="tile" href="${R('rankings')}"><span class="i">🏆</span><div><b>${t('t1')}</b><span>${t('t1s')}</span></div></a>
-    <a class="tile" href="${R('results')}"><span class="i">🥊</span><div><b>${t('t2')}</b><span>${t('t2s')}</span></div></a>
-    <a class="tile" href="${R('live')}"><span class="i">📡</span><div><b>${t('t3')}</b><span>${t('t3s')}</span></div></a>
-    <a class="tile" href="${R('coin')}"><span class="i">🥇</span><div><b>WBU Coin</b><span>${t('t4s')}</span></div></a></div>
    <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.length?SHOWS.map((u,i)=>`<a href="${u}" onclick="return zoomU('${u}')"><img src="${u}" alt="WBU Show ${i+1}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div></div>
   </aside></div>`}
 // Seite im Rahmen: Pfad + Sprache; deren eigenes Kopf-Menü wird ausgeblendet, Untermenüs (z. B. Fight Quiz) bleiben
