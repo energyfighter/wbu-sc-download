@@ -1,14 +1,14 @@
 {
-  "version": 74,
+  "version": 75,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "scorecard/api.php": "9d914a0b81a01d377448f9c3fabbc573a2c8ec26e48f1872b4334a3eb67fb8d9",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "f718393a7b36da1cace4a13835d13312adf3ca00871900f6784cf3fe1866840d",
+    "scorecard/index.html": "19850cb8b8f1cbbdb3e5fd610259ae499b536b250d86e670a8edb58df93aea7c",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "88d94392fc0f236993bf93006ab69c16f1d4ff5641c44d8f025350d1db263daa",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "a28f459d62686e069f4b4dee6635c24db9ad593aad55d753d9e983eb0fa9be13",
+    "veranstalter/index.html": "6d073bd462524185d2814a0457ae21ffa4f72fad40ad9a9044261857c6414862",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
     "veranstalter/docs/Ablaufplan-WBU-2027.pdf": "6c3b939cdb704f45dd8a46dbd4df184ff6322595180b8d2dbf6418a2fe888ba3",
@@ -49,7 +49,7 @@
     "veranstalter/docs/praes-30.jpg": "93a5fd26c6de3b009a82c935ab0fbd39321ddb274e6996c6d576b36296e7997c",
     "veranstalter/docs/praes-31.jpg": "917d32edf92b941d61ef6ebd0465510af6758505386c284a78bfa0a5944f1052",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "98e6b74fee9b1c36f2b484c454e59e2bafbd4dfdb0a96ad0c3727800dd9ad24c",
+    "anmeldung/index.html": "b2f5082e52729f1f50522685c74a3a217daaec73cd0844ca893646d59a957321",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "live/index.html": "66e05191940b81702ecfc47b9def5265c37d48112840a48e5857ac7e9a9d14a2"
   }

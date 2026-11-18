@@ -626,14 +626,23 @@ function vSup(){
   ${chatBox()}
   ${NATIVE||WEB?'':`<button class="btn sec" onclick="demo()">Demo: ${n} Punktrichter senden einen Kampf</button>`}
   ${archive}
-  ${done.length?`<button class="btn" onclick="askClose()">Veranstaltung abschließen &amp; PDF erstellen</button>`:''}`;
+  ${done.length?`<button class="btn sec" style="margin-top:34px;border:2px solid var(--red)" onclick="askClose()">Veranstaltung abschließen &amp; PDF erstellen</button>`:''}`;
 }
 function askClose(){
   const fs=fights(), open=fs.filter(f=>!f.meta.result).length;
   sheet(`<h2>Veranstaltung abschließen?</h2><p>${fs.length} Kämpfe werden in den Gesamtbericht übernommen.</p>
   ${open?`<p class="warn">Achtung: ${open} Kampf/Kämpfe noch ohne bestätigtes Ergebnis.</p>`:''}
-  <button class="btn" onclick="closeSheet();setEv('closed',true);S.view='report';render();window.scrollTo(0,0);resSubmit()">Ja, abschließen</button>
+  <button class="btn" onclick="askClose2()">Ja, abschließen</button>
   <button class="btn sec" onclick="closeSheet()">Abbrechen</button>`);
+}
+// zweite Bestätigung – Knöpfe absichtlich vertauscht, damit ein doppeltes Tippen nicht aus Versehen abschließt
+function askClose2(){
+  const open=fights().filter(f=>!f.meta.result).length;
+  sheet(`<h2 style="color:var(--red)">Letzte Bestätigung</h2>
+  <p>Die Veranstaltung wird abgeschlossen und die Ergebnisse gehen <b>an die WBU</b> (E-Mail ans Büro und Resultate-Seite).</p>
+  ${open?`<p class="warn">${open} Kampf/Kämpfe noch ohne Ergebnis.</p>`:''}<p class="muted">Kommen noch Kämpfe? Dann jetzt <b>abbrechen</b> und weiter werten.</p>
+  <button class="btn" onclick="closeSheet()">Abbrechen – weiter werten</button>
+  <button class="btn sec" style="margin-top:22px;border:2px solid var(--red);color:var(--red)" onclick="closeSheet();setEv('closed',true);S.view='report';render();window.scrollTo(0,0);resSubmit()">Endgültig abschließen &amp; senden</button>`);
 }
 function reset(){set('wbuInbox',[]);set('wbuMeta',{});set('wbuEvent',{});set('wbuWebSup',null);set('wbuChat',[]);closeSheet();S.view='sup';render()}
 function demo(){
@@ -875,7 +884,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('74')||0;
+const WEB_VERSION=Number('75')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
