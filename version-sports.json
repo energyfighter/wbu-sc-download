@@ -1,6 +1,6 @@
 {
-  "versionCode": 145,
-  "versionName": "1.145",
+  "versionCode": 148,
+  "versionName": "1.148",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Update läuft jetzt ohne Fehlermeldung durch (bricht Android den ersten Versuch ab, startet die App ihn still noch einmal); YouTube-Livestream-Feld."
+  "notes": "Supervisor: bei „Show auswählen“ stehen nur noch die Shows; Tablet/Laptop mit WBU Sports werden ohne Internet automatisch per Bluetooth gefunden. Update ohne Fehlermeldung."
 }
