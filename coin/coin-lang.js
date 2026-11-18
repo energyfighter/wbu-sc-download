@@ -209,25 +209,37 @@ var RD=[/^ROUND (\d+)$/,["RUNDE $1","ASALTO $1","ROUND $1","РАУНД $1"]];
 var cur='en',nodes=[],attrs=[];
 function norm(s){return s.replace(/\s+/g,' ').trim()}
 function tr(en,i){if(i<0)return null;var k=norm(en);if(D[k])return D[k][i];var m=k.match(RD[0]);if(m)return RD[1][i].replace('$1',m[1]);return null}
-function collect(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){var p=n.parentNode&&n.parentNode.nodeName;return(p==='SCRIPT'||p==='STYLE'||(n.parentNode.closest&&n.parentNode.closest('#wbuLang')))?2:1}});var n;while(n=w.nextNode()){var k=norm(n.nodeValue);if(k&&(D[k]||RD[0].test(k)))nodes.push([n,n.nodeValue])}
+function collect(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){var p=n.parentNode&&n.parentNode.nodeName;return(p==='SCRIPT'||p==='STYLE'||(n.parentNode.closest&&n.parentNode.closest('#wbuTop')))?2:1}});var n;while(n=w.nextNode()){var k=norm(n.nodeValue);if(k&&(D[k]||RD[0].test(k)))nodes.push([n,n.nodeValue])}
 document.querySelectorAll('[alt],[aria-label],[placeholder],[title]').forEach(function(e){['alt','aria-label','placeholder','title'].forEach(function(a){var v=e.getAttribute(a);if(v&&D[norm(v)])attrs.push([e,a,v])})})}
 var T0=document.title;
 function apply(l){cur=l;var i=L.indexOf(l)-1;nodes.forEach(function(x){var t=tr(x[1],i);if(t==null){x[0].nodeValue=x[1];return}var m=x[1].match(/^(\s*)[\s\S]*?(\s*)$/);x[0].nodeValue=m[1]+t+m[2]});
 attrs.forEach(function(x){var t=tr(x[2],i);x[0].setAttribute(x[1],t==null?x[2]:t)});var tt=tr(T0,i);document.title=tt==null?T0:tt;document.documentElement.lang=l;
-document.querySelectorAll('#wbuLang button[data-l]').forEach(function(b){var on=b.dataset.l===l;b.style.background=on?'#d4a537':'transparent';b.style.color=on?'#111':'#f4f1ea'});var mb=document.getElementById('wbuLangBtn');if(mb)mb.textContent='🌐 '+l.toUpperCase()+' ▾';fit();
+document.querySelectorAll('#wbuLang button[data-l]').forEach(function(b){b.className=b.dataset.l===l?'on':''});if(window.__wbuLinks)window.__wbuLinks(l);
 try{localStorage.setItem('wbuLang',l)}catch(e){}
 try{var u=new URL(location.href);if(l==='en')u.searchParams.delete('lang');else u.searchParams.set('lang',l);history.replaceState(null,'',u)}catch(e){}
 document.querySelectorAll('a[href*="fight-quiz"]').forEach(function(a){try{var u=new URL(a.href,location.href);if(l==='en')u.searchParams.delete('lang');else u.searchParams.set('lang',l);a.href=u.href}catch(e){}})}
-function ui(){var box=document.createElement('div');box.id='wbuLang';box.setAttribute('style','position:relative;flex:none');
-var main=document.createElement('button');main.type='button';main.id='wbuLangBtn';main.setAttribute('style','font:600 13px/1 Oswald,Inter,sans-serif;letter-spacing:.06em;padding:7px 10px;border:1px solid #d4a537;border-radius:8px;cursor:pointer;background:transparent;color:#f4f1ea;white-space:nowrap');
-var menu=document.createElement('div');menu.setAttribute('style','display:none;position:absolute;right:0;top:calc(100% + 6px);background:#15161a;border:1px solid #d4a537;border-radius:10px;padding:6px;z-index:999;min-width:150px;box-shadow:0 10px 30px rgba(0,0,0,.5)');
-var NM={en:'English',de:'Deutsch',es:'Español',fr:'Français',ru:'Русский'};
-L.forEach(function(l){var b=document.createElement('button');b.type='button';b.dataset.l=l;b.textContent=l.toUpperCase()+'  ·  '+NM[l];b.setAttribute('style','display:block;width:100%;text-align:left;font:500 14px/1 Inter,sans-serif;padding:9px 10px;border:0;border-radius:6px;cursor:pointer;background:transparent;color:#f4f1ea;white-space:nowrap');b.onclick=function(){apply(l);menu.style.display='none'};menu.appendChild(b)});
-main.onclick=function(e){e.stopPropagation();menu.style.display=menu.style.display==='none'?'block':'none'};document.addEventListener('click',function(){menu.style.display='none'});
-box.appendChild(main);box.appendChild(menu);
-var h=document.querySelector('header>div');if(h){var nav=h.querySelector('nav');if(nav&&nav.nextSibling)h.insertBefore(box,nav.nextSibling);else h.appendChild(box)}else{box.style.cssText+=';position:fixed;top:10px;right:10px;z-index:99';document.body.appendChild(box)}}
+function ui(){
+var TX={en:['Home','Rankings','WBU Coin','Live','Results'],de:['Startseite','Rangliste','WBU Coin','Live','Results'],es:['Inicio','Ranking','WBU Coin','Live','Resultados'],fr:['Accueil','Classement','WBU Coin','Live','Résultats'],ru:['Главная','Рейтинг','WBU Coin','Live','Результаты']};
+var URLS=['https://www.wbu-boxing.com/','https://www.wbu-boxing.com/rankings/','https://wbu.wbu-boxing.com/coin/','https://www.wbu-boxing.com/live/','https://www.wbu-boxing.com/results/'];
+var st=document.createElement('style');st.textContent='#wbuTop{position:sticky;top:0;z-index:1000;background:rgba(11,13,18,.94);backdrop-filter:blur(10px);border-bottom:1px solid #262b36;font-family:Inter,system-ui,Arial,sans-serif}'+
+'#wbuTop .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:26px;padding:12px 22px}#wbuTop .br{display:flex;align-items:center;gap:12px;color:#f4f1ea;text-decoration:none}#wbuTop .br img{width:46px;height:46px}'+
+'#wbuTop .br b{font:700 24px Oswald,Inter,sans-serif;text-transform:uppercase;letter-spacing:.5px}#wbuTop .br b span{color:#d8a93a}#wbuTop .lk{display:flex;gap:24px;flex:1;font-size:16px;font-weight:600}'+
+'#wbuTop .lk a{color:#f4f1ea;text-decoration:none;opacity:.92}#wbuTop .lk a:hover,#wbuTop .lk a.on{color:#f2cf6b;opacity:1}#wbuLang{display:flex;gap:4px;background:#1a1e27;border:1px solid #262b36;border-radius:10px;padding:3px}'+
+'#wbuLang button{background:none;border:0;color:#f4f1ea;font:700 13px Inter,sans-serif;padding:7px 9px;border-radius:7px;cursor:pointer}#wbuLang button.on{background:#d8a93a;color:#140e00}'+
+'@media(max-width:900px){#wbuTop .lk{display:none}#wbuTop .in{gap:12px;padding:10px 14px;justify-content:space-between}#wbuTop .br b{font-size:19px}}';
+document.head.appendChild(st);
+var lg=document.querySelector('img[alt="World Boxing Union"]')||document.querySelector('header img');
+var top=document.createElement('nav');top.id='wbuTop';
+top.innerHTML='<div class="in"><a class="br" href="https://www.wbu-boxing.com/">'+(lg?'<img src="'+lg.src+'" alt="WBU">':'')+'<b>WBU <span>Coin</span></b></a><div class="lk"></div><div id="wbuLang"></div></div>';
+document.body.insertBefore(top,document.body.firstChild);
+var lk=top.querySelector('.lk');
+function links(l){lk.innerHTML=URLS.map(function(u,i){return '<a href="'+u+(i&&i!==2?'?lang='+l:'')+'"'+(i===2?' class="on"':'')+'>'+TX[l][i]+'</a>'}).join('')}
+window.__wbuLinks=links;
+var box=document.getElementById('wbuLang');
+L.forEach(function(l){var b=document.createElement('button');b.type='button';b.dataset.l=l;b.textContent=l.toUpperCase();b.onclick=function(){apply(l)};box.appendChild(b)});
+var hb=document.querySelector('header>div>a');if(hb&&hb.querySelector('img'))hb.style.display='none';
+}
 var BASE=0,G0='',F0='';function fit(){var hd=document.querySelector('header'),n=hd&&hd.querySelector('nav');if(!n||!BASE)return;var g=parseFloat(G0)||22,f=parseFloat(F0)||15;var st=[[g,f],[Math.round(g*.7),f-1],[Math.round(g*.5),f-2],[Math.round(g*.35),f-3]];for(var j=0;j<st.length;j++){n.style.gap=st[j][0]+'px';n.style.fontSize=st[j][1]+'px';if(hd.getBoundingClientRect().height<=BASE+2)break}}
-function start(){var hd=document.querySelector('header');BASE=hd?hd.getBoundingClientRect().height:0;var nv=hd&&hd.querySelector('nav');if(nv){G0=getComputedStyle(nv).columnGap;F0=getComputedStyle(nv).fontSize}ui();collect();var q=null;try{q=new URLSearchParams(location.search).get('lang')}catch(e){}var s=null;try{s=localStorage.getItem('wbuLang')}catch(e){}var l=L.indexOf(q)>=0?q:(L.indexOf(s)>=0?s:'en');apply(l)}
-window.addEventListener('resize',fit);
+function start(){ui();collect();var q=null;try{q=new URLSearchParams(location.search).get('lang')}catch(e){}var s=null;try{s=localStorage.getItem('wbuLang')}catch(e){}var l=L.indexOf(q)>=0?q:(L.indexOf(s)>=0?s:'en');apply(l)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
