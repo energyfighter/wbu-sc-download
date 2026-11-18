@@ -56,6 +56,8 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .cdl{color:#d8a93a;font:800 12px Inter,sans-serif;letter-spacing:3px;text-transform:uppercase}.cdo{font:600 15px Inter,sans-serif;color:#f4f1ea}.cdx small{flex-basis:100%;font:600 13px Inter,sans-serif;color:#d8a93a}
 .cdz{display:flex;gap:6px}.cdz div{background:#0b0d12;border:1px solid #333;border-radius:8px;padding:3px 8px;text-align:center;min-width:52px}.cdz i{display:block;font:700 24px Oswald,sans-serif;font-style:normal;color:#f2cf6b;line-height:1.1}.cdz em{font:700 10px Inter,sans-serif;font-style:normal;color:#f4f1ea;letter-spacing:1px;text-transform:uppercase}
 @media(max-width:700px){.cd{padding:0 12px}.cdb{flex-wrap:wrap;gap:8px}.cdz{width:100%;justify-content:space-between}.cdz div{flex:1}.cdx b{font-size:19px}}
+.yt{max-width:1240px;margin:22px auto 0;padding:0 22px}.ytw:not(:empty)+.lmw .lm{margin-top:12px}.ytb{position:relative;aspect-ratio:16/9;background:#000;border:3px solid #000;border-radius:16px;overflow:hidden}.ytb iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+@media(max-width:900px){.yt{padding:0 12px}}
 .lm{max-width:1240px;margin:22px auto 0;padding:0 22px}.lm+.lm{margin-top:18px}.lmb{background:#e9ebef;color:#000;border:3px solid #000;border-radius:16px;overflow:hidden;font-family:system-ui,Arial,sans-serif}
 .lmh{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:3px solid #000}.lmh b{font-size:20px}.lmh span{font-size:15px}
 .lv{background:#d0021b;color:#fff;font-weight:800;padding:4px 12px;border-radius:8px;letter-spacing:1px;animation:lvb 1.6s infinite}@keyframes lvb{50%{opacity:.55}}
@@ -426,10 +428,22 @@ function cdTick(){document.querySelectorAll('#cdown .cdb').forEach(e=>{let r=Mat
 setInterval(cdDraw,1000);
 // Neue Webseiten-Version? Dann lädt sich die offene Seite von selbst neu (kein alter Stand im Browser)
 let WV0=null;setInterval(async()=>{try{const v=(await (await fetch('/scorecard/webversion.json',{cache:'no-store'})).json()).version;if(WV0==null)WV0=v;else if(v!==WV0)location.reload()}catch(e){}},120000);
+// YouTube-Livestream über dem Live-Monitor: nur das reine Bild (16:9, Vollbild möglich, ohne Vorschläge)
+function ytSrc(u){u=String(u||'').trim();if(!u)return '';let m;
+  if((m=u.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([\w-]{11})/)))return 'https://www.youtube-nocookie.com/embed/'+m[1]+'?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3';
+  if((m=u.match(/\/channel\/(UC[\w-]{22})/)))return 'https://www.youtube.com/embed/live_stream?channel='+m[1]+'&autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3';
+  return ''}
+function ytBox(id,u){const src=ytSrc(u);if(!src)return '';return `<div class="yt" data-yt="${esc(id)}"><div class="ytb"><iframe src="${esc(src)}" title="WBU Livestream" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div></div>`}
 function lmDraw(){cdDraw();const box=document.getElementById('lmon');if(!box)return;
- const ys={};box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l)ys[x.dataset.id]=l.scrollTop});
- box.innerHTML=LM.evs.map(e=>lmOne(e.id)).join('');
- box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l&&ys[x.dataset.id])l.scrollTop=ys[x.dataset.id]})}
+ // je Veranstaltung ein fester Block: oben das Video (wird nur bei neuem Link neu geladen), darunter der Monitor
+ const ids=LM.evs.map(e=>e.id);[...box.children].forEach(w=>{if(!ids.includes(w.dataset.ev))w.remove()});
+ ids.forEach((id,i)=>{let w=[...box.children].find(x=>x.dataset.ev===id);
+  if(!w){w=document.createElement('div');w.dataset.ev=id;w.innerHTML='<div class="ytw"></div><div class="lmw"></div>'}
+  if(box.children[i]!==w)box.insertBefore(w,box.children[i]||null);
+  const sn=(LM.D[id]||{}).snap||{},src=(sn.rows||[]).length?ytSrc(sn.yt):'',yw=w.querySelector('.ytw');
+  if(yw.dataset.src!==src){yw.dataset.src=src;yw.innerHTML=src?ytBox(id,sn.yt):''}
+  const lw=w.querySelector('.lmw'),l=lw.querySelector('.lmlist'),y=l?l.scrollTop:0;lw.innerHTML=lmOne(id);
+  const l2=lw.querySelector('.lmlist');if(l2&&y)l2.scrollTop=y})}
 // Uhren fein nachziehen, ohne die Listen neu zu zeichnen
 setInterval(()=>document.querySelectorAll('.lmclk').forEach(k=>{const d=LM.D[k.dataset.id];if(!d)return;const h=lmClockHtml(d,lmCur(d));if(k.innerHTML!==h)k.innerHTML=h}),250);
 lmList();setInterval(lmList,30000);setInterval(lmData,5000);setInterval(lmClock,1000);
