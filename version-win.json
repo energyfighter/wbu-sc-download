@@ -1,7 +1,7 @@
 {
-  "versionCode": 103,
-  "versionName": "1.103",
+  "versionCode": 105,
+  "versionName": "1.105",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Kämpfer-Datenbank: Kämpfer nach Gyms anklicken, Listen einspielen. Gym/Verein je Ecke."
+  "notes": "Veranstaltung erst nach „Veranstaltung erstellen“ (Internet + Veranstalter-Passwort) nutzbar. Kämpfer-Datenbank mit Namensvorschlägen."
 }

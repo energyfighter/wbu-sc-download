@@ -1,6 +1,6 @@
 {
-  "versionCode": 103,
-  "versionName": "1.103",
+  "versionCode": 105,
+  "versionName": "1.105",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Kämpfer-Datenbank: Kämpfer nach Gyms anklicken, Listen einspielen. Gym/Verein je Ecke."
+  "notes": "Veranstaltung erst nach „Veranstaltung erstellen“ (Internet + Veranstalter-Passwort) nutzbar. Kämpfer-Datenbank mit Namensvorschlägen."
 }
