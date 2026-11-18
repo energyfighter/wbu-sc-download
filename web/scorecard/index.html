@@ -343,9 +343,13 @@ function liveCard(no){const r=liveFor(no);if(!liveLid())return '';
    ${rg>1?`<label>Mein ${esc((S.live&&S.live.ringName)||'Ring')}</label><div class="chips">${Array.from({length:rg},(_,i)=>`<div class="chip ${myRing()===i+1?'on':''}" onclick="setRing(${i+1})">${esc((S.live&&S.live.ringName)||'Ring')} ${i+1}</div>`).join('')}</div>`:''}
    ${r?`<div style="font-size:18px;font-weight:800;margin-top:2px">Kampf ${r.no} · ${esc(r.kl)}</div><div class="muted">${esc(r.rd||'')}</div>
    <div class="row2" style="margin-top:6px"><div><div class="muted" style="color:#ff8a8a">ROTE ECKE</div><b style="color:#ff8a8a;font-size:17px">${esc(r.a)}</b><div class="muted">${esc(r.ac||'')}</div></div>
-   <div><div class="muted" style="color:#8dbcff">BLAUE ECKE</div><b style="color:#8dbcff;font-size:17px">${esc(r.b)}</b><div class="muted">${esc(r.bc||'')}</div></div></div>`:'<b>Keine offenen Kämpfe in WBU Sports.</b>'}
+   <div><div class="muted" style="color:#8dbcff">BLAUE ECKE</div><b style="color:#8dbcff;font-size:17px">${esc(r.b)}</b><div class="muted">${esc(r.bc||'')}</div></div></div>${wiegeHinweis(r)}`:'<b>Keine offenen Kämpfe in WBU Sports.</b>'}
    ${opts.length>1?`<label>Anderen Kampf nehmen</label><select onchange="if(this.value)assignLive(${no},this.value)"><option value="">– Kampf wählen –</option>${opts.map(x=>`<option value="${x.mid}">Kampf ${x.no} · ${esc(x.a)} vs. ${esc(x.b)}</option>`).join('')}</select>`:''}
    ${S.live&&S.live.type==='gala'?`<button class="btn sec" style="padding:9px;font-size:14px;margin-top:10px" onclick="fcOpen()">✎ Fight Card bearbeiten</button>`:''}</div>`}
+// Gala: fehlt Gewicht oder Gewichtsklasse, muss der Supervisor das vor dem Kampf nachtragen
+function wiegeHinweis(r){const f=r&&r.f;if(!f||!S.live||S.live.type!=='gala')return '';const fehlt=[];
+  if(!String(f.rw||'').trim())fehlt.push('Gewicht Rote Ecke');if(!String(f.bw||'').trim())fehlt.push('Gewicht Blaue Ecke');if(!String(f.cls||'').trim())fehlt.push('Gewichtsklasse');
+  return fehlt.length?`<div style="margin-top:8px;padding:9px 11px;border-radius:10px;background:#ffcc00;color:#000;font-weight:800">⚠ Bitte nachtragen: ${fehlt.join(', ')} – unten auf „✎ Fight Card bearbeiten“ tippen.</div>`:''}
 // Ring wechseln: noch nicht gewerteten Kampf neu zuordnen
 function setRing(n){set('wbuRing',n);const no=curNo(fights()),m=get('wbuMeta',{})[no];if(m&&m.mid&&!m.result){const all=get('wbuMeta',{});delete all[no].mid;set('wbuMeta',all)}render()}
 function curInfo(){const no=curNo(fights()),r=liveFor(no),m=get('wbuMeta',{})[no]||{};
@@ -884,7 +888,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('109')||0;
+const WEB_VERSION=Number('110')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

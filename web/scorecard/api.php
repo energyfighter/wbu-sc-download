@@ -252,6 +252,11 @@ function withLive($id, $fn, $write = false) {
     flock($h, LOCK_UN); fclose($h);
     return $res;
 }
+const SUPER_ADMINS = ['1229d6a92e8ee18ddc6e38a831aeb6f769c980fd19be0826f5d4f9f310bd13ce'];
+function isSuper($acc) { return $acc && in_array(hash('sha256', strtolower(trim((string)($acc['email'] ?? '')))), SUPER_ADMINS, true); }
+// Supervisor hat sich mit dieser Gala verbunden -> ab jetzt erscheint der Live-Monitor auf der Startseite
+function supTouch($lid) { if (!$lid || !file_exists(lvfile($lid))) return;
+    try { withLive($lid, function (&$l) { $l['sup'] = time(); }, true); } catch (Throwable $e) {} }
 function liveRows($lid) {
     $f = @file_get_contents(lvfile($lid));
     $l = json_decode((string)$f, true);
@@ -657,6 +662,7 @@ case 'sup_pull':
         $active = 0;
         foreach ((array)$ev['seen'] as $j => $t) if (time() - $t < 20) $active++;
         $live = !empty($ev['lid']) ? liveRows($ev['lid']) : null;
+        if (!empty($ev['lid'])) supTouch($ev['lid']);
         return ['cards' => array_values((array)$ev['cards']), 'msgs' => $ev['msgs'], 'judges' => $active, 'live' => $live];
     });
     out(['ok' => true] + $r);
@@ -886,7 +892,7 @@ case 'c_reset':    // Code + neues Passwort -> eingeloggt
 case 'c_me':
     $me = clubByToken($in['tok'] ?? '');
     if (!$me) fail('Bitte neu einloggen', 403);
-    out(['ok' => true, 'me' => $me]);
+    out(['ok' => true, 'me' => $me + ['super' => isSuper($me)]]);
 
 case 't_admin':      // WBU Sports: alle veröffentlichten Turniere (auch geschlossene) – nur für Veranstalter
 case 't_admin_del':  // … und ein Turnier löschen (nur mit WBU-Passwort)
@@ -1284,7 +1290,8 @@ case 't_del':
 
 
 case 'l_create':
-    if (!orgPassOk($in['pass'] ?? '')) fail('Falsches Passwort', 403);
+    // Veranstalter-Passwort – oder das Konto des WBU-Präsidenten (Superadmin) ohne Passwort
+    if (!orgPassOk($in['pass'] ?? '') && !isSuper(clubByToken($in['tok'] ?? ''))) fail('Falsches Passwort', 403);
     $l = ['id' => bin2hex(random_bytes(8)), 'key' => bin2hex(random_bytes(12)), 'created' => time(), 'updated' => time(), 'snap' => null, 'results' => new stdClass()];
     if (file_put_contents(lvfile($l['id']), json_encode($l, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
     out(['ok' => true, 'lid' => $l['id'], 'key' => $l['key']]);
@@ -1328,6 +1335,7 @@ case 'l_grant':
         $okAcc = $acc && isset($g[$acc['email']]);
         if (!$okPass && !$okEv && !$okAcc) fail('Nicht berechtigt – bitte als Supervisor mit dem WBU-Passwort anmelden', 403);
         if ($acc && ($okPass || $okEv)) { $g[$acc['email']] = time(); $l['grants'] = $g; }   // Konto für diese Veranstaltung freischalten
+        $l['sup'] = time();   // Supervisor ist verbunden -> Live-Monitor auf der Startseite
         if ($a === 'l_grant') return [];
         if (($l['snap']['type'] ?? '') !== 'gala') fail('Nur bei Galas möglich');
         $fs = [];
@@ -1513,8 +1521,10 @@ case 'l_get':
     $accG = $full ? null : clubByToken($in['tok'] ?? '');
     $r = withLive($lidG, function (&$l) use ($full, $accG) {
         $ok = $full || ($accG && isset(((array)($l['grants'] ?? []))[$accG['email']]));
-        return ['snap' => $ok ? $l['snap'] : liveOeffentlich($l['snap']), 'updated' => $l['updated']];
+        return ['snap' => $ok ? $l['snap'] : liveOeffentlich($l['snap']), 'updated' => $l['updated'], '_sup' => $ok];
     });
+    if (!empty($r['_sup'])) supTouch($lidG);
+    unset($r['_sup']);
     out(['ok' => true] + $r);
 
 case 'l_list':
@@ -1528,7 +1538,7 @@ case 'l_list':
         if (time() - ($l['updated'] ?? 0) > 3 * 86400 && !($evDay && $evDay >= strtotime('today') - 86400)) continue;
         $open = 0; foreach (($sn['rows'] ?? []) as $x) if (empty($x['done'])) $open++;
         $list[] = ['id' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $sn['date'] ?? '', 'arzt' => $sn['arzt'] ?? '',
-                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'rings' => $sn['rings'] ?? 1, 'ringName' => $sn['ringName'] ?? 'Ring'];
+                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'sup' => (int)($l['sup'] ?? 0), 'rings' => $sn['rings'] ?? 1, 'ringName' => $sn['ringName'] ?? 'Ring'];
     }
     usort($list, function ($x, $y) { return $y['updated'] - $x['updated']; });
     out(['ok' => true, 'live' => $list]);
