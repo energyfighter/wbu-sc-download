@@ -199,7 +199,7 @@ function startPoll(){clearInterval(pollT);pollT=setInterval(poll,2500);poll()}
 async function poll(){
   if(!S.web)return;
   try{
-    if(S.role==='sup'){
+    if(S.role==='sup'){fcRetry();
       flushOut();
       const j=await api('sup_pull',{ev:S.web.ev,key:S.web.key});let ch=false,nm=false;
       const ib=get('wbuInbox',[]);
@@ -270,7 +270,7 @@ function header(){
 }
 function logout(){clearInterval(nliveT);S.nlid='';if(NATIVE)WBU.stop();clearInterval(pollT);S.web=null;S.role=null;S.name='';S.view='start';S.openFight=null;render()}
 function render(){setTimeout(()=>{if(S.view==='start'&&(WEB||NATIVE))loadLives();if(S.role==='judge')showJCur()},0);
-  const v={start:vStart,pick:vPick,judge:vJudge,sent:vSent,sup:vSup,fight:vFight,final:vFinal,report:vReport}[S.view];
+  const v={start:vStart,pick:vPick,judge:vJudge,sent:vSent,sup:vSup,fight:vFight,final:vFinal,report:vReport,fc:vFc}[S.view];
   $('app').innerHTML=header()+v();
   if(S.view==='judge')initWheels();
   if(S.view==='pick')loadEvents();
@@ -344,7 +344,8 @@ function liveCard(no){const r=liveFor(no);if(!liveLid())return '';
    ${r?`<div style="font-size:18px;font-weight:800;margin-top:2px">Kampf ${r.no} · ${esc(r.kl)}</div><div class="muted">${esc(r.rd||'')}</div>
    <div class="row2" style="margin-top:6px"><div><div class="muted" style="color:#ff8a8a">ROTE ECKE</div><b style="color:#ff8a8a;font-size:17px">${esc(r.a)}</b><div class="muted">${esc(r.ac||'')}</div></div>
    <div><div class="muted" style="color:#8dbcff">BLAUE ECKE</div><b style="color:#8dbcff;font-size:17px">${esc(r.b)}</b><div class="muted">${esc(r.bc||'')}</div></div></div>`:'<b>Keine offenen Kämpfe in WBU Sports.</b>'}
-   ${opts.length>1?`<label>Anderen Kampf nehmen</label><select onchange="if(this.value)assignLive(${no},this.value)"><option value="">– Kampf wählen –</option>${opts.map(x=>`<option value="${x.mid}">Kampf ${x.no} · ${esc(x.a)} vs. ${esc(x.b)}</option>`).join('')}</select>`:''}</div>`}
+   ${opts.length>1?`<label>Anderen Kampf nehmen</label><select onchange="if(this.value)assignLive(${no},this.value)"><option value="">– Kampf wählen –</option>${opts.map(x=>`<option value="${x.mid}">Kampf ${x.no} · ${esc(x.a)} vs. ${esc(x.b)}</option>`).join('')}</select>`:''}
+   ${S.live&&S.live.type==='gala'?`<button class="btn sec" style="padding:9px;font-size:14px;margin-top:10px" onclick="fcOpen()">✎ Fight Card bearbeiten</button>`:''}</div>`}
 // Ring wechseln: noch nicht gewerteten Kampf neu zuordnen
 function setRing(n){set('wbuRing',n);const no=curNo(fights()),m=get('wbuMeta',{})[no];if(m&&m.mid&&!m.result){const all=get('wbuMeta',{});delete all[no].mid;set('wbuMeta',all)}render()}
 function curInfo(){const no=curNo(fights()),r=liveFor(no),m=get('wbuMeta',{})[no]||{};
@@ -360,6 +361,7 @@ async function nativeLive(){if(!S.nlid)return;
     if(out.length)set('wbuLiveOut',[]);sendCur();return}
   if(S.nlid==='hub'){const out=get('wbuLiveOut',[]);out.forEach(it=>WBU.hubResult(JSON.stringify({t:'res',id:'res-'+it.mid,mid:it.mid,res:it.res,judge:S.name})));
     if(out.length)set('wbuLiveOut',[]);sendCur();return}
+  fcRetry();
   try{const j=await lapi('l_get',{lid:S.nlid});if(j.snap){const js=JSON.stringify(j.snap.rows||[]);if(js!==S.liveJs){S.liveJs=js;S.live=j.snap;softRender()}}
     for(const it of get('wbuLiveOut',[])){await lapi('l_result',{lid:S.nlid,pass:S.npass||'',mid:it.mid,res:it.res});set('wbuLiveOut',get('wbuLiveOut',[]).filter(x=>x.mid!==it.mid))}
     S.liveErr=''}catch(e){S.liveErr=e.message}
@@ -388,7 +390,8 @@ async function webLogin(n){
     try{const j=await api('create',{name:e.name,ort:e.ort,date:e.date,sup:n,pin,pass,lid:S.lid||''});
       S.web={ev:j.id,key:j.key,name:e.name,ort:e.ort,date:e.date,sup:n,pin,lid:S.lid||''};set('wbuWebSup',S.web)}
     catch(err){$('err').textContent=/Passwort/.test(err.message)?err.message:'Keine Verbindung zum WBU-Server: '+err.message;return}}
-  set('wbuEvent',{...e,pin});S.view='sup';render();startPoll()}
+  set('wbuEvent',{...e,pin});S.view='sup';render();startPoll()
+  if(S.web.lid&&clubTok())lapi('l_grant',{lid:S.web.lid,ev:S.web.ev,key:S.web.key,tok:clubTok()}).catch(()=>{})}
 function doLogin(){
   const n=$('nm').value.trim();
   if(!S.role){$('err').textContent='Bitte Rolle wählen.';return}
@@ -779,11 +782,76 @@ async function makePdf(){
   catch(e){st.textContent=e&&e.code==='declined'?'Download abgebrochen.':'PDF konnte nicht gespeichert werden.'}
 }
 
+// ================= FIGHT CARD BEARBEITEN (nur Gala) =================
+// Der Supervisor (oder ein freigeschaltetes WBU-Sports-Konto) ändert die Fight Card – online, per Bluetooth über Tablet/Laptop oder später nachgesendet
+const FC_GEW=['Schwergewicht','Bridgergewicht','Cruisergewicht','Halbschwergewicht','Supermittelgewicht','Mittelgewicht','Superweltergewicht','Weltergewicht','Superleichtgewicht','Leichtgewicht','Superfedergewicht','Federgewicht','Superbantamgewicht','Bantamgewicht','Superfliegengewicht','Fliegengewicht','Halbfliegengewicht','Minimumgewicht','Vertragsgewicht'];
+const FC_TITEL=['Weltmeisterschaft','Interkontinentale Meisterschaft','Europameisterschaft','Internationale Meisterschaft','Deutsche Meisterschaft'];
+const FC_ART=['Profi','Semi-Pro','Master','Bare Knuckle','Hybrid','K1 / Kickboxen'],FC_DUR=['3 Min','2 Min','1,5 Min','1 Min'];
+function clubTok(){if(!WEB)return '';const m=document.cookie.match(/(?:^|; )wbuClub=([^;]*)/);try{const a=m?JSON.parse(decodeURIComponent(m[1])):null;return a&&a.tok&&!String(a.tok).startsWith('vk:')?a.tok:''}catch(e){return ''}}
+function clubMe(){const m=document.cookie.match(/(?:^|; )wbuClub=([^;]*)/);try{const a=m?JSON.parse(decodeURIComponent(m[1])):null;return a&&a.me||null}catch(e){return null}}
+function fcOpen(){const rows=(S.live&&S.live.rows)||[];
+  S.fc=rows.filter(r=>r.f).map(r=>({...r.f,_done:!!r.done}));S.fcOrig=JSON.stringify(S.fc);S.fcBack=S.view;S.fcMsg='';S.view='fc';render();scrollTo(0,0)}
+function fcSet(i,k,v){S.fc[i][k]=k==='rounds'?+v:v}
+function fcMove(i,d){const j=i+d;if(j<0||j>=S.fc.length)return;const a=S.fc;[a[i],a[j]]=[a[j],a[i]];render()}
+function fcDel(i){if(S.fc[i]._done){alert('Dieser Kampf ist schon gewertet und kann nicht gelöscht werden.');return}if(confirm('Kampf '+(i+1)+' wirklich streichen?')){S.fc.splice(i,1);render()}}
+function fcAdd(){const l=S.fc[S.fc.length-1]||{};S.fc.push({id:'k'+Date.now().toString(36),red:'',blue:'',rl:'',rg:'',rw:'',bl:'',bg:'',bw:'',cls:'',title:'',kind:l.kind||'Profi',rounds:l.rounds||6,dur:l.dur||'3 Min'});render();setTimeout(()=>scrollTo(0,document.body.scrollHeight),50)}
+function fcTitel(i,v){if(v==='*'){S.fc[i].title=S.fc[i].title&&!FC_TITEL.includes(S.fc[i].title)?S.fc[i].title:' ';render();return}S.fc[i].title=v;render()}
+function fcAge(gb,d){const b=new Date(gb),t=d?new Date(d):new Date();if(!gb||isNaN(b))return '';let a=t.getFullYear()-b.getFullYear();if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--;return a>0&&a<100?a:''}
+function fcInfo(f,s,d){const a=fcAge(f[s+'g'],d);return [f[s+'l'],a?a+' J.':'',f[s+'w']?String(f[s+'w']).replace('.',',')+' kg':''].filter(Boolean).join(' · ')}
+function fcRows(fs,old,d){const o={};(old||[]).forEach(r=>o[r.mid]=r);const ids=new Set(fs.map(f=>f.id));
+  const rows=fs.map((f,i)=>{const x=o[f.id]||{};return {mid:f.id,no:i+1,rd:f.title,kl:[f.cls,f.kind].filter(Boolean).join(' · '),a:f.red,ac:'',b:f.blue,bc:'',done:!!x.done,ai:fcInfo(f,'r',d),bi:fcInfo(f,'b',d),rounds:f.rounds,dur:f.dur,kind:f.kind,res:x.res||'',f}});
+  (old||[]).forEach(r=>{if(r.done&&!ids.has(r.mid))rows.push(r)});return rows}
+async function fcSend(fights){const by=S.name||'Supervisor';
+  if(S.fcAlone){await lapi('l_fc',{lid:S.fcAlone,tok:clubTok(),by,fights});return}
+  if(WEB&&S.web&&S.web.lid){await lapi('l_fc',{lid:S.web.lid,ev:S.web.ev,key:S.web.key,tok:clubTok(),by,fights});return}
+  if(NATIVE&&S.nlid==='hub'){WBU.hubResult(JSON.stringify({t:'fc',id:'fc-'+Date.now(),by,fights,judge:S.name}));return}
+  if(NATIVE&&S.nlid==='pc'){WBU.sendMsg('WBU-Leitstand',JSON.stringify({t:'fc',by,fights}));return}
+  if(NATIVE&&S.nlid){await lapi('l_fc',{lid:S.nlid,pass:S.npass||'',by,fights});return}
+  throw new Error('Keine Verbindung zu WBU Sports')}
+function fcRetry(){const o=get('wbuFcOut',null);if(!o||S.fcBusy)return;S.fcBusy=true;fcSend(o).then(()=>set('wbuFcOut',null)).catch(()=>{}).finally(()=>S.fcBusy=false)}
+async function fcSave(){
+  const fs=S.fc.map(({_done,...f})=>({...f,title:(f.title||'').trim()}));
+  for(let i=0;i<fs.length;i++){if(!fs[i].red.trim()||!fs[i].blue.trim()){alert('Kampf '+(i+1)+': bitte beide Ecken eintragen.');return}if(!fs[i].cls){alert('Kampf '+(i+1)+': bitte die Gewichtsklasse wählen.');return}}
+  const orig=JSON.parse(S.fcOrig||'[]'),chDone=S.fc.filter(f=>f._done).filter(f=>{const o=orig.find(x=>x.id===f.id);return o&&JSON.stringify({...o,_done:0})!==JSON.stringify({...f,_done:0})});
+  if(chDone.length&&!confirm('Du änderst einen schon gewerteten Kampf. Trotzdem speichern?'))return;
+  if(S.live){S.live.rows=fcRows(fs,S.live.rows,S.live.date);S.liveJs=JSON.stringify(S.live.rows)}
+  try{await fcSend(fs);S.fcMsg='✓ Gespeichert – Veranstalter, Punktrichter, WBU Live und WBU Time haben die neue Fight Card.'}
+  catch(e){set('wbuFcOut',fs);S.fcMsg='Gespeichert. Gerade keine Verbindung – wird automatisch gesendet, sobald wieder Internet da ist.'}
+  S.fcOrig=JSON.stringify(S.fc);if(S.fcAlone){render();return}
+  S.view=S.fcBack||'sup';render();setTimeout(()=>alert(S.fcMsg),50)}
+function vFc(){const F=S.fc||[],d=S.live&&S.live.date;
+  const sel=(i,k,list,val)=>`<select onchange="fcSet(${i},'${k}',this.value)">${list.map(x=>`<option ${String(x)===String(val)?'selected':''}>${esc(String(x))}</option>`).join('')}${val&&!list.map(String).includes(String(val))?`<option selected>${esc(String(val))}</option>`:''}</select>`;
+  const inp=(i,k,ph,t)=>`<input ${t?`type="${t}"`:''} value="${esc(F[i][k]||'')}" placeholder="${ph}" onchange="fcSet(${i},'${k}',this.value)">`;
+  return `<h2>✎ Fight Card bearbeiten</h2><div class="muted" style="margin:-6px 0 10px">${esc((S.live&&S.live.name)||'')}${S.fcAlone?'':' – Änderungen gehen an den Veranstalter, die Punktrichter, WBU Live und WBU Time.'}</div>
+  ${S.fcMsg&&S.fcAlone?`<div class="card" style="border-color:var(--ok)"><b>${esc(S.fcMsg)}</b></div>`:''}
+  ${F.map((f,i)=>`<div class="card" ${f._done?'style="border-color:var(--ok)"':''}>
+    <div style="display:flex;align-items:center;gap:6px"><b style="font-size:18px;flex:1">Kampf ${i+1}${f._done?' <span style="color:var(--ok);font-size:14px">✓ gewertet</span>':''}</b>
+     <div class="chip" onclick="fcMove(${i},-1)">▲</div><div class="chip" onclick="fcMove(${i},1)">▼</div>${f._done?'':`<div class="chip" onclick="fcDel(${i})">✕</div>`}</div>
+    <div class="row2"><div><label style="color:#ff8a8a">Rote Ecke</label>${inp(i,'red','Name')}</div><div><label style="color:#8dbcff">Blaue Ecke</label>${inp(i,'blue','Name')}</div></div>
+    <div class="row2"><div><label style="color:#ff8a8a">Land</label>${inp(i,'rl','z. B. Deutschland')}</div><div><label style="color:#8dbcff">Land</label>${inp(i,'bl','z. B. Polen')}</div></div>
+    <div class="row2"><div><label style="color:#ff8a8a">Geburtsdatum</label>${inp(i,'rg','','date')}</div><div><label style="color:#8dbcff">Geburtsdatum</label>${inp(i,'bg','','date')}</div></div>
+    <div class="row2"><div><label style="color:#ff8a8a">Gewicht (kg)</label>${inp(i,'rw','z. B. 72,4')}</div><div><label style="color:#8dbcff">Gewicht (kg)</label>${inp(i,'bw','z. B. 72,1')}</div></div>
+    <label>Gewichtsklasse</label><select onchange="fcSet(${i},'cls',this.value)"><option value="">– wählen –</option>${FC_GEW.map(g=>`<option ${String(f.cls||'').startsWith(g)?'selected':''} value="${esc(String(f.cls||'').startsWith(g)?f.cls:g)}">${esc(g)}</option>`).join('')}${f.cls&&!FC_GEW.some(g=>String(f.cls).startsWith(g))?`<option selected>${esc(f.cls)}</option>`:''}</select>
+    <label>Titel</label><select onchange="fcTitel(${i},this.value)"><option value="" ${!f.title?'selected':''}>– kein Titelkampf –</option>${FC_TITEL.map(t=>`<option ${f.title===t?'selected':''}>${t}</option>`).join('')}<option value="*" ${f.title&&!FC_TITEL.includes(f.title)?'selected':''}>Anderer Titel – selbst eintragen</option></select>
+    ${f.title&&!FC_TITEL.includes(f.title)?inp(i,'title','Titel eintragen'):''}
+    <div class="row2"><div><label>Kampfart</label>${sel(i,'kind',FC_ART,f.kind)}</div><div><label>Runden</label>${sel(i,'rounds',[1,2,3,4,5,6,7,8,9,10,11,12],f.rounds)}</div></div>
+    <label>Rundendauer</label>${sel(i,'dur',FC_DUR,f.dur)}
+  </div>`).join('')}
+  <button class="btn sec" onclick="fcAdd()">+ Kampf hinzufügen</button>
+  <button class="btn ok" onclick="fcSave()">Speichern & senden</button>
+  ${S.fcAlone?'':`<button class="btn sec" onclick="S.view=S.fcBack||'sup';render()">Abbrechen</button>`}`}
+// WBU-Sports-Konto: Link „Fight Card bearbeiten“ (…/scorecard/?fc=<Gala>) – nur für freigeschaltete Konten
+async function fcStandalone(lid){
+  if(!clubTok()){$('app').innerHTML=header()+`<div class="card"><b>Bitte zuerst bei WBU Sports einloggen.</b><p class="muted">Danach den Link „Fight Card bearbeiten“ noch einmal öffnen.</p><a class="btn" style="text-align:center;text-decoration:none" href="../anmeldung/">Zur Anmeldung</a></div>`;return}
+  try{const j=await lapi('l_get',{lid});if(!j.snap||j.snap.type!=='gala')throw new Error('Diese Gala gibt es nicht (mehr).');
+    S.live=j.snap;S.fcAlone=lid;const me=clubMe();S.name=me?(me.trainer||me.club||'Supervisor'):'Supervisor';S.role='sup';fcOpen()}
+  catch(e){$('app').innerHTML=header()+`<div class="card"><b>${esc(e.message)}</b></div>`}}
+
 // Supervisor empfängt neue Scorecards sofort
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('72')||0;
+const WEB_VERSION=Number('73')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
@@ -794,6 +862,7 @@ setTimeout(checkWebVersion,3000);setInterval(checkWebVersion,5*60*1000);
 
 render();
 if(NATIVE&&WBU.checkUpdate)setTimeout(()=>WBU.checkUpdate(),800);
+{const q=new URLSearchParams(location.search).get('fc');if(WEB&&q)fcStandalone(q)}
 </script>
 </body>
 </html>

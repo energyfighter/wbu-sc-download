@@ -322,6 +322,15 @@ function nextInvoiceNo($ts) {
     $n = (int)stream_get_contents($h) + 1; ftruncate($h, 0); rewind($h); fwrite($h, (string)$n); flock($h, LOCK_UN); fclose($h);
     return date('ymd', $ts) . sprintf('%04d', $n);
 }
+/** Land · Alter · Gewicht eines Kämpfers (wie in WBU Sports) */
+function fcInfo($f, $s, $date) {
+    $p = [];
+    if (($f[$s . 'l'] ?? '') !== '') $p[] = $f[$s . 'l'];
+    $gb = strtotime((string)($f[$s . 'g'] ?? '')); $t = strtotime((string)$date) ?: time();
+    if ($gb) { $age = (int)date('Y', $t) - (int)date('Y', $gb); if (date('md', $t) < date('md', $gb)) $age--; if ($age > 0 && $age < 100) $p[] = $age . ' J.'; }
+    if (($f[$s . 'w'] ?? '') !== '') $p[] = str_replace('.', ',', (string)$f[$s . 'w']) . ' kg';
+    return implode(' · ', $p);
+}
 function needLogin($tok) { $c = clubByToken($tok); if (!$c) fail('Bitte einloggen', 401); return $c; }
 function newToken(&$a) { $tok = bin2hex(random_bytes(20)); $a['tok'] = array_slice(array_merge($a['tok'] ?? [], [hash('sha256', $tok)]), -10); return $tok; }
 /** Eingeloggter Club zum Token (oder null) */
@@ -1190,6 +1199,7 @@ case 'l_push':
     if (strlen($js) > 1500000) fail('Stand zu groß');
     withLive($in['lid'] ?? '', function (&$l) use ($in, $snap) {
         if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        if (!empty($l['fc']) && (int)($snap['fcv'] ?? 0) < (int)$l['fc']['v'] && !empty($l['snap']['rows'])) { $snap['rows'] = $l['snap']['rows']; $snap['fcv'] = $l['fc']['v']; }
         $l['snap'] = $snap; $l['updated'] = time();
     }, true);
     out(['ok' => true]);
@@ -1197,9 +1207,63 @@ case 'l_push':
 case 'l_pull':
     $r = withLive($in['lid'] ?? '', function (&$l) use ($in) {
         if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
-        return ['results' => $l['results']];
+        return ['results' => $l['results'], 'fc' => $l['fc'] ?? null];
     });
     out(['ok' => true] + $r);
+
+// ---- Gala: Fight Card vom Supervisor ändern (Scorecard oder WBU-Sports-Konto) ----
+case 'l_fc':
+case 'l_grant':
+    $lid = (string)($in['lid'] ?? '');
+    $okPass = hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')));
+    $okEv = false;   // Supervisor im Browser: seine Scorecard-Veranstaltung (mit WBU-Passwort angelegt) gehört zu dieser Gala
+    if (!$okPass && !empty($in['ev'])) { $e = json_decode((string)@file_get_contents(evfile((string)$in['ev'])), true); $okEv = is_array($e) && tKeyOk($e, $in['key'] ?? '') && ($e['lid'] ?? '') === $lid; }
+    $acc = clubByToken($in['tok'] ?? '');
+    $r = withLive($lid, function (&$l) use ($in, $a, $okPass, $okEv, $acc) {
+        $g = (array)($l['grants'] ?? []);
+        $okAcc = $acc && isset($g[$acc['email']]);
+        if (!$okPass && !$okEv && !$okAcc) fail('Nicht berechtigt – bitte als Supervisor mit dem WBU-Passwort anmelden', 403);
+        if ($acc && ($okPass || $okEv)) { $g[$acc['email']] = time(); $l['grants'] = $g; }   // Konto für diese Veranstaltung freischalten
+        if ($a === 'l_grant') return [];
+        if (($l['snap']['type'] ?? '') !== 'gala') fail('Nur bei Galas möglich');
+        $fs = [];
+        foreach (array_slice((array)($in['fights'] ?? []), 0, 80) as $f) {
+            if (!is_array($f)) continue;
+            $x = ['id' => preg_replace('/[^A-Za-z0-9_-]/', '', (string)($f['id'] ?? '')) ?: bin2hex(random_bytes(5))];
+            foreach (['red', 'blue', 'rl', 'rg', 'rw', 'bl', 'bg', 'bw', 'cls', 'title', 'kind', 'dur'] as $k) $x[$k] = txt($f[$k] ?? '', 120);
+            $x['rounds'] = max(1, min(12, (int)($f['rounds'] ?? 6)));
+            $fs[] = $x;
+        }
+        $v = (int)round(microtime(true) * 1000);
+        $by = txt($in['by'] ?? ($acc['trainer'] ?? 'Supervisor'));
+        $l['fc'] = ['v' => $v, 'by' => $by, 'fights' => $fs];
+        // Stand für Punktrichter, WBU Live und WBU Time sofort anpassen (auch wenn der Veranstalter gerade nicht online ist)
+        $old = []; foreach (($l['snap']['rows'] ?? []) as $row) $old[$row['mid'] ?? ''] = $row;
+        $rows = [];
+        foreach ($fs as $i => $f) {
+            $o = $old[$f['id']] ?? [];
+            $rows[] = ['mid' => $f['id'], 'no' => $i + 1, 'rd' => $f['title'], 'kl' => implode(' · ', array_filter([$f['cls'], $f['kind']])), 'a' => $f['red'], 'ac' => '',
+                       'b' => $f['blue'], 'bc' => '', 'done' => !empty($o['done']), 'ai' => fcInfo($f, 'r', $l['snap']['date'] ?? ''), 'bi' => fcInfo($f, 'b', $l['snap']['date'] ?? ''),
+                       'rounds' => $f['rounds'], 'dur' => $f['dur'], 'kind' => $f['kind'], 'res' => $o['res'] ?? '', 'f' => $f];
+        }
+        foreach ($old as $mid => $o) if (!empty($o['done']) && !in_array($mid, array_column($fs, 'id'), true)) $rows[] = $o;   // gewertete Kämpfe bleiben
+        $l['snap']['rows'] = $rows; $l['snap']['fcv'] = $v; $l['snap']['fcBy'] = $by; $l['updated'] = time();
+        return ['v' => $v];
+    }, $a === 'l_fc' || ($acc && ($okPass || $okEv)));
+    out(['ok' => true] + $r);
+
+// ---- WBU-Sports-Konto: Galas, für die dieses Konto als Supervisor freigeschaltet ist ----
+case 'l_mine':
+    $acc = needLogin($in['tok'] ?? '');
+    $list = [];
+    foreach (glob("$DIR/lv_*.json") as $f) {
+        $l = json_decode(@file_get_contents($f), true);
+        if (!is_array($l) || empty($l['snap']) || ($l['snap']['type'] ?? '') !== 'gala' || !isset(((array)($l['grants'] ?? []))[$acc['email']])) continue;
+        $d = strtotime((string)($l['snap']['date'] ?? '')) ?: 0;
+        if ($d && $d < strtotime('today') - 86400) continue;   // nach der Veranstaltung endet die Freigabe
+        $list[] = ['id' => $l['id'], 'name' => $l['snap']['name'] ?? '', 'ort' => $l['snap']['ort'] ?? '', 'date' => $l['snap']['date'] ?? '', 'kampfe' => count($l['snap']['rows'] ?? [])];
+    }
+    out(['ok' => true, 'list' => $list]);
 
 case 'l_result':
     // Ergebnis von der Android-App (Supervisor per Bluetooth): mit WBU-Passwort
