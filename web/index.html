@@ -10,7 +10,10 @@
 <style>
 :root{--bg:#0b0d12;--card:#151922;--line:#262b36;--gold:#d8a93a;--gold2:#f2cf6b;--red:#e0262e;--blue:#1f6fe5;--txt:#f4f1ea}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
-.nwl{padding:14px}
+.nwl{padding:14px}.nc{cursor:default}.npg{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 4px}.npg button{background:#1d2230;color:var(--txt);border:1px solid #2a3040;border-radius:10px;padding:10px 14px;font:700 15px Inter,sans-serif;cursor:pointer}.npg button.on{background:var(--gold);color:#111;border-color:var(--gold)}.npg button:hover{border-color:var(--gold)}
+.allp{display:block;margin:0 14px 16px;text-align:center}
+.plk{max-width:1240px;margin:0 auto;padding:26px 22px 70px}.plk p{color:#c9c5bd;margin:6px 0 20px}.plg{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}.plg a{display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#151922;text-decoration:none}.plg img{display:block;width:100%;aspect-ratio:3/4;object-fit:contain;background:#0b0d12}.plg span{display:block;padding:6px 10px;color:var(--gold);font:700 13px Inter,sans-serif}
+@media(max-width:1000px){.plg{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.plg{grid-template-columns:repeat(2,1fr);gap:10px}}
 .nwe{color:#c9c5bd;padding:10px}.nc{background:#151922;border:1px solid #2a3040;border-radius:14px;overflow:hidden;margin-bottom:16px;cursor:pointer}.nc>img{width:100%;aspect-ratio:16/8;object-fit:cover;display:block}
 .nc .nb{padding:14px 18px}.nd{color:var(--gold);font:700 12px Inter,sans-serif;letter-spacing:2px}.nc h4{margin:4px 0 6px;font:700 22px Oswald,Inter,sans-serif;color:var(--txt);text-transform:uppercase}
 .nc p{margin:0 0 10px;color:#d9d6cf;font:15px/1.5 Inter,sans-serif;white-space:pre-line}.ng{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}.ng img{height:130px;width:auto;max-width:100%;object-fit:contain;border-radius:6px;background:#0b0d12;cursor:zoom-in;border:1px solid #2a3040}.ng .more{height:130px;min-width:90px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#1d2230;color:var(--gold);font:700 20px Inter,sans-serif}@media(max-width:600px){.ng img,.ng .more{height:95px}}
@@ -147,6 +150,9 @@ const T={
   pass:'Получи свой Sportpass!',passT:'Официальный международный спортивный паспорт WBU – для боксёров всех видов спорта WBU.',passB:'Заказать',more:'Быстрые ссылки',
   t1:'Мировой рейтинг',t1s:'Чемпионы и Топ-15 в 18 категориях',t2:'Результаты',t2s:'Все результаты гал и турниров',t3:'WBU Live',t3s:'Список боёв и результаты онлайн',foot:'Официальный сайт World Boxing Union.'}};
 let L=(()=>{const q=new URLSearchParams(location.search).get('lang');if(LANGS.includes(q))return q;try{const s=localStorage.getItem('wbuLang');if(LANGS.includes(s))return s}catch(e){}return 'en'})();
+Object.assign(T.de,{older:'Ältere Beiträge',newer:'Neuere Beiträge',page:'Seite',allp:'Alle Plakate ansehen',plt:'WBU Plakate',pls:'Alle Shows und Veranstaltungen – Plakat antippen zum Vergrößern.'});
+Object.assign(T.en,{older:'Older posts',newer:'Newer posts',page:'Page',allp:'See all posters',plt:'WBU Posters',pls:'All shows and events – tap a poster to enlarge.'});
+Object.assign(T.es,{older:'Publicaciones anteriores',newer:'Publicaciones recientes',page:'Página',allp:'Ver todos los carteles',plt:'Carteles WBU',pls:'Todos los shows y eventos – toca un cartel para ampliarlo.'});
 const t=k=>(T[L]||T.en)[k]||T.en[k];
 const lq=u=>u.startsWith(WWW)?u+(u.includes('?')?'&':'?')+'lang='+L:u;
 // Neue WBU-Seiten werden UNTER Kopf, Banner und Menü angezeigt (Menü bleibt immer stehen)
@@ -185,7 +191,7 @@ function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
    <section class="fb nw"><h3 class="H">WBU News</h3><div id="nwl" class="nwl"><p class="nwe">…</p></div></section></div>
   <aside class="side">
    <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
-   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.length?SHOWS.map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div></div>
+   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.length?SHOWS.slice(0,20).map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div><a class="btn allp" href="#plakate">${t('allp')} ›</a></div>
   </aside></div>`}
 // Seite im Rahmen: Pfad + Sprache; deren eigenes Kopf-Menü wird ausgeblendet, Untermenüs (z. B. Fight Quiz) bleiben
 const FBOX=()=>`<h3 class="H">${t('fb')}</h3><div class="tg"><iframe title="WBU News" src="https://widget.tagembed.com/339487?website=1" allow="fullscreen" loading="lazy"></iframe></div><a class="btn" href="https://www.facebook.com/WorldBoxingUnionV" target="_blank" rel="noopener">${t('fbb')} ›</a>`;
@@ -194,6 +200,7 @@ let frameTimer=0;
 function view(){const r=route(),k=rootOf(r),v=document.getElementById('view');clearInterval(frameTimer);document.querySelectorAll('.nov').forEach(x=>x.remove());
  if(r.startsWith('p/'))return wpPage(r.slice(2),v);
  if(k==='intern')return adView(v);
+ if(k==='plakate'){v.innerHTML=plakView();scrollTo(0,0);return}
  if(!ROUTES.includes(k)){v.innerHTML=home();if(typeof lmDraw==='function')lmDraw();newsLoad();if(k==='news'&&r.split('/')[1])newsOpen(r.split('/')[1]);return}
  const rest=r.slice(k.length).replace(/^\//,'');let p='/'+k+'/'+rest;
  const u=new URL(p,location.origin);u.searchParams.set('lang',L);
@@ -397,10 +404,21 @@ async function newsLoad(){const el=document.getElementById('nwl');if(!el)return;
  if(!NW.list){try{NW.list=(await nApi('n_list')).news}catch(e){NW.list=[]}}
  const box=document.getElementById('nwl');if(!box)return;
  if(!NW.list.length){box.parentNode.classList.remove('nw');box.parentNode.innerHTML=FBOX();return}
- box.innerHTML=NW.list.slice(0,20).map(p=>{const kurz=p.x.length>260?p.x.slice(0,260).replace(/\s+\S*$/,'')+' …':p.x;
+ const PER=20,pg=Math.max(1,Math.min(NW.page||1,Math.ceil(NW.list.length/PER)));NW.page=pg;
+ box.innerHTML=NW.list.slice((pg-1)*PER,pg*PER).map(p=>{const kurz=p.x;
   const MX=6,sh=Math.min(p.n,MX);
-  return `<article class="nc" onclick="location.hash='news/${p.id}'"><div class="nb"><div class="nd">${nDate(p.d)}</div><h4>${nEsc(p.t)}</h4><p>${nEsc(kurz)}</p>
-  ${p.n?`<div class="ng">${Array.from({length:sh},(_,i)=>`<img src="${nImg(p.id,i)}" alt="" loading="lazy" onclick="event.stopPropagation();zoomU(this.src)">`).join('')}${p.n>MX?`<span class="more">+${p.n-MX}</span>`:''}</div>`:''}<div class="nm">${L==='de'?'Weiterlesen':'Read more'} ›${p.n?`<span>📷 ${p.n}</span>`:''}</div></div></article>`}).join('')}
+  return `<article class="nc" id="n-${p.id}"><div class="nb"><div class="nd">${nDate(p.d)}</div><h4>${nEsc(p.t)}</h4><p>${nEsc(kurz)}</p>
+  ${p.n?`<div class="ng">${Array.from({length:sh},(_,i)=>`<img src="${nImg(p.id,i)}" alt="" loading="lazy" onclick="event.stopPropagation();zoomU(this.src)">`).join('')}${p.n>MX?`<span class="more">+${p.n-MX}</span>`:''}</div>`:''}</div></article>`}).join('')+newsPager(pg,Math.ceil(NW.list.length/PER))}
+function newsPager(pg,n){if(n<2)return'';let h='<nav class="npg">';
+ if(pg>1)h+=`<button onclick="newsPage(${pg-1})">‹ ${t('newer')}</button>`;
+ for(let i=1;i<=n;i++)h+=`<button class="${i===pg?'on':''}" onclick="newsPage(${i})">${i}</button>`;
+ if(pg<n)h+=`<button onclick="newsPage(${pg+1})">${t('older')} ›</button>`;return h+'</nav>'}
+function newsPage(n){NW.page=n;newsLoad();const s=document.querySelector('.nw');if(s)scrollTo({top:s.getBoundingClientRect().top+scrollY-110,behavior:'smooth'})}
+// ---- Plakat-Seite (nur über „Alle Plakate ansehen“ erreichbar): kommende + vergangene Shows + Archiv ----
+const PLAKAT_ARCHIV=[ // {d:'JJJJ-MM-TT',img:'/start/img/plakate/…jpg',t:'Titel'}
+];
+function plakView(){const all=[...SHOWS_ALL,...PLAKAT_ARCHIV].sort((a,b)=>a.d<b.d?1:-1);
+ return `<div class="plk"><h2 class="H">${t('plt')}</h2><p>${t('pls')}</p><div class="plg">${all.map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${nEsc(x.t)}"><img src="${x.img}" alt="${nEsc(x.t)}" loading="lazy"><span>${nDate(x.d)}</span></a>`).join('')}</div></div>`}
 async function newsOpen(id){if(!NW.list){try{NW.list=(await nApi('n_list')).news}catch(e){NW.list=[]}}
  const p=NW.list.find(x=>x.id===id);if(!p)return;document.querySelectorAll('.nov').forEach(x=>x.remove());
  const d=document.createElement('div');d.className='nov';
