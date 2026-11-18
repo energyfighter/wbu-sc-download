@@ -1535,7 +1535,7 @@ function vLogin(){if(S.lmode==='forgot')return vForgot();const reg=S.lmode==='re
   <button class="btn full" onclick="doLogin()">${reg?'Konto anlegen':'Einloggen'}</button>
   <p class="muted" style="margin-bottom:0">${reg?'Das Konto gilt für alle WBU-Turniere. Mit E-Mail und Passwort kannst du dich jederzeit wieder einloggen.':`<a href="#" style="color:#000;font-weight:700" onclick="S.lmode='forgot';S.fstep=1;render();return false">Passwort vergessen?</a>`}</p></div>${praesBox()}`}
 // ---- Präsentation „Was ist WBU Sports?“ zum Durchklicken (Folien als Bilder) ----
-const PRAES_N=32,praesSrc=i=>`../veranstalter/docs/praes-${String(i).padStart(2,'0')}.jpg`;
+const PRAES_N=35,praesSrc=i=>`../veranstalter/docs/praes-${String(i).padStart(2,'0')}.jpg`;
 function praesBox(){const i=S.ps||0;
   return `<a id="ps_anker"></a><div class="card praes" style="width:min(1180px,96vw);position:relative;left:50%;transform:translateX(-50%);margin-top:22px">
    <h2 style="margin:0 0 4px">Was ist WBU Sports?</h2><p class="muted" style="margin:0 0 12px">Das System für Turniere und Profi-Galas – Seite für Seite durchklicken: mit den Pfeilen, per Wischen am Handy oder mit den Pfeiltasten.</p>
@@ -1851,7 +1851,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('96')||0;
+const WEB_VERSION=Number('97')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
