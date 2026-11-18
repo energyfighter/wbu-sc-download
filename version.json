@@ -1,6 +1,6 @@
 {
-  "versionCode": 101,
-  "versionName": "1.101",
+  "versionCode": 102,
+  "versionName": "1.102",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Neuer Menüpunkt „Results“ (öffentliche Ergebnisseite)."
+  "notes": "Kämpfer-Datenbank: Kämpfer nach Gyms anklicken statt neu eintippen. Gym/Verein je Ecke."
 }
