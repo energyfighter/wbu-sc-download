@@ -206,7 +206,7 @@ async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'
   const seen=new Set();tmp.querySelectorAll('.wp-block-gallery img,.blocks-gallery-grid img').forEach(i=>{const src=i.getAttribute('src')||'',k=src.split('/').pop().replace(/-\d+x\d+(?=\.)/,'').replace(/-scaled(?=\.)/,'').toLowerCase();
    const box=i.closest('li,.blocks-gallery-item,.wp-block-gallery>figure')||i.closest('figure')||i;if(seen.has(k)){box.remove();return}seen.add(k);
    if(!i.getAttribute('srcset')&&/-\d+x\d+\.(jpe?g|png|webp)$/i.test(src))i.setAttribute('src',src.replace(/-\d+x\d+(?=\.)/,''));i.removeAttribute('width');i.removeAttribute('height')});
-  tmp.querySelectorAll('table').forEach(t=>{const rows=[...t.querySelectorAll('tr')].filter(r=>r.textContent.trim());if(rows.length<=1){const h=t.previousElementSibling;if(h&&/^H[1-6]$/.test(h.tagName)&&h.textContent.trim().length<30)h.remove();const w=t.closest('figure,.wp-block-table');(w||t).remove()}});
+  tmp.querySelectorAll('table').forEach(t=>{const rows=[...t.querySelectorAll('tr')].filter(r=>r.textContent.trim());if(rows.length<=1){const h=t.previousElementSibling;if(h&&/^H[1-6]$/.test(h.tagName)&&h.textContent.trim().length<30)h.remove();const w=t.closest('figure.wp-block-table');(w||t).remove()}});
   tmp.querySelectorAll('p,div,figure').forEach(x=>{if(!x.textContent.trim()&&!x.querySelector('img,iframe,video,form,input,hr,br'))x.remove()});
   tmp.querySelectorAll('form').forEach(f=>{if(!f.getAttribute('action'))f.setAttribute('action',old);f.setAttribute('target','_top')});
   tmp.querySelectorAll('img[srcset]').forEach(i=>i.setAttribute('sizes','(max-width:900px) 100vw, 900px'));
