@@ -50,7 +50,7 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .wp .wp-block-gallery>.blocks-gallery-grid{grid-column:1/-1}
 .wpmsg{padding:60px 22px;text-align:center;font-size:18px}
 /* Live-Monitor (heller Hintergrund wie WBU Live / WBU Time) */
-.lm{max-width:1240px;margin:22px auto 0;padding:0 22px}.lmb{background:#e9ebef;color:#000;border:3px solid #000;border-radius:16px;overflow:hidden;font-family:system-ui,Arial,sans-serif}
+.lm{max-width:1240px;margin:22px auto 0;padding:0 22px}.lm+.lm{margin-top:18px}.lmb{background:#e9ebef;color:#000;border:3px solid #000;border-radius:16px;overflow:hidden;font-family:system-ui,Arial,sans-serif}
 .lmh{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:3px solid #000}.lmh b{font-size:20px}.lmh span{font-size:15px}
 .lv{background:#d0021b;color:#fff;font-weight:800;padding:4px 12px;border-radius:8px;letter-spacing:1px;animation:lvb 1.6s infinite}@keyframes lvb{50%{opacity:.55}}
 .lmg{display:grid;grid-template-columns:1.25fr 1fr;height:clamp(420px,46vw,560px)}
@@ -337,7 +337,7 @@ function clkSignals(prev,v,snd){if(!prev||!v)return;
 
 // ---------- WBU Live-Monitor: erscheint automatisch, wenn eine Gala live ist ----------
 const API='/scorecard/api.php';
-const LM={ev:null,snap:null,st:null,off:0,t:{}};
+const LM={evs:[],D:{}};   // D[lid] = {snap, st, off}
 const LT={en:{last:'Last result',fc:'Fight card',fight:'Fight',rd:'Round',time:'Time',pause:'Break',to:'Timeout',rnds:'rounds',min:'min',next:'Next',now:'live now',done:'All fights finished',win:'Winner',title:'Title fight',soon:'Fight is about to start',end:'Fight over – result follows'},
  de:{last:'Letztes Ergebnis',fc:'Fight Card',fight:'Kampf',rd:'Runde',time:'Zeit',pause:'Pause',to:'Timeout',rnds:'Runden',min:'Min.',next:'Als Nächstes',now:'läuft gerade',done:'Alle Kämpfe beendet',win:'Sieger',title:'Titelkampf',soon:'Kampf beginnt gleich',end:'Kampf beendet – Wertung folgt'},
  es:{last:'Último resultado',fc:'Cartelera',fight:'Combate',rd:'Asalto',time:'Tiempo',pause:'Descanso',to:'Tiempo muerto',rnds:'asaltos',min:'min',next:'Siguiente',now:'en vivo',done:'Todos los combates terminados',win:'Ganador',title:'Combate por título',soon:'El combate empieza enseguida',end:'Combate terminado – resultado pronto'},
@@ -347,38 +347,41 @@ const lt=k=>(LT[L]||LT.en)[k];
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function lmApi(a,b){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,...b})});return r.json()}
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-async function lmList(){try{const L0=(await lmApi('l_list',{})).live||[];
-  // „live“: Gala mit offenen Kämpfen (heute oder in den letzten 6 Std. bearbeitet); sind alle Kämpfe fertig, bleibt der Monitor noch 30 Min. mit den Ergebnissen stehen, dann ist er weg
-  const now=Date.now()/1000;LM.ev=L0.find(e=>e.type==='gala'&&(e.offen>0?(e.date===today()||now-e.updated<6*3600):now-e.updated<1800))||null}catch(e){}
- if(LM.ev)lmData();else{LM.snap=null;lmDraw()}}
-async function lmData(){if(!LM.ev)return;try{const j=await lmApi('l_get',{lid:LM.ev.id});if(j.snap)LM.snap=j.snap}catch(e){}lmDraw()}
-async function lmClock(){if(!LM.ev)return;try{const t=Date.now(),j=await lmApi('l_clockget',{lid:LM.ev.id,ring:1});LM.off=j.srv-(t+Date.now())/2;LM.st=j.st||null}catch(e){}}
-function lmCur(rows){const st=LM.st;let c=st&&st.mid&&rows.find(r=>r.mid===st.mid&&!r.done);return c||rows.find(r=>!r.done)||null}
-function lmClockHtml(r){const st=LM.st;if(!st||!r||st.mid!==r.mid)return '';const v=clkAt(st,Date.now()+LM.off);if(!v)return '';
+// „live“: jede Gala mit offenen Kämpfen (heute oder in den letzten 6 Std. bearbeitet); sind alle Kämpfe fertig, bleibt ihr Monitor noch 30 Min. mit den Ergebnissen stehen.
+// Laufen mehrere gleichzeitig, erscheinen mehrere Monitore untereinander.
+async function lmList(){try{const L0=(await lmApi('l_list',{})).live||[],now=Date.now()/1000;
+  LM.evs=L0.filter(e=>e.type==='gala'&&(e.offen>0?(e.date===today()||now-e.updated<6*3600):now-e.updated<1800));
+  for(const k in LM.D)if(!LM.evs.some(e=>e.id===k))delete LM.D[k]}catch(e){}
+ await lmData()}
+async function lmData(){await Promise.all(LM.evs.map(async e=>{try{const j=await lmApi('l_get',{lid:e.id});if(j.snap)(LM.D[e.id]=LM.D[e.id]||{}).snap=j.snap}catch(x){}}));lmDraw()}
+async function lmClock(){await Promise.all(LM.evs.map(async e=>{try{const t=Date.now(),j=await lmApi('l_clockget',{lid:e.id,ring:1});const d=LM.D[e.id]=LM.D[e.id]||{};d.off=j.srv-(t+Date.now())/2;d.st=j.st||null}catch(x){}}))}
+function lmCur(d){const rows=(d.snap&&d.snap.rows)||[],st=d.st;let c=st&&st.mid&&rows.find(r=>r.mid===st.mid&&!r.done);return c||rows.find(r=>!r.done)||null}
+function lmClockHtml(d,r){const st=d.st;if(!st||!r||st.mid!==r.mid)return '';const v=clkAt(st,Date.now()+(d.off||0));if(!v)return '';
  if(v.medOn)return `<div class="lmk to"><div><small>${lt('to')}</small><b>${clkFmtUp(v.med)}</b></div><div><small>${lt('rd')}</small><b>${v.round}/${st.rounds}</b></div></div>`;
  if(v.phase==='idle')return `<div class="lmk"><div><small>${lt('soon')}</small></div></div>`;
  if(v.phase==='done')return `<div class="lmk"><div><small>${lt('end')}</small></div></div>`;
  if(v.phase==='pause')return `<div class="lmk pa"><div><small>${lt('pause')}</small><b>${clkFmt(v.rem)}</b></div><div><small>${lt('rd')}</small><b>${v.round}/${st.rounds}</b></div></div>`;
  return `<div class="lmk"><div><small>${lt('rd')}</small><b>${v.round}/${st.rounds}</b></div><div><small>${lt('time')}</small><b>${clkFmt(v.rem)}</b></div></div>`}
-function lmDraw(){const box=document.getElementById('lmon');if(!box)return;const sn=LM.snap;
- if(!LM.ev||!sn||!(sn.rows||[]).length){box.innerHTML='';return}
- const rows=sn.rows,c=lmCur(rows),gym=(r,s)=>esc([(r.f||{})[s+'v'],(r.f||{})[s+'l']].filter(Boolean).join(' · '));
+function lmOne(id){const d=LM.D[id],sn=d&&d.snap;if(!sn||!(sn.rows||[]).length)return '';
+ const rows=sn.rows,c=lmCur(d),gym=(r,s)=>esc([(r.f||{})[s+'v'],(r.f||{})[s+'l']].filter(Boolean).join(' · '));
  const left=c?`<div><span class="no">${lt('fight')} ${c.no}</span>${c.rd?`<span class="tt">${esc(c.rd)}</span>`:''}</div>
    <div class="lmv"><div class="lmc r"><b>${esc(c.a)}</b><span>${gym(c,'r')}</span></div><div class="vs">VS</div><div class="lmc b"><b>${esc(c.b)}</b><span>${gym(c,'b')}</span></div></div>
    <div class="lmi">${[(c.f||{}).cls,c.kind,c.rounds?c.rounds+' '+lt('rnds')+(c.dur?' × '+esc(c.dur)+' '+lt('min'):''):''].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div>
-   <div id="lmclk" style="display:contents">${lmClockHtml(c)}</div>
+   <div class="lmclk" data-id="${id}" style="display:contents">${lmClockHtml(d,c)}</div>
    ${(()=>{const i=rows.indexOf(c),nx=rows.slice(i+1).find(r=>!r.done),ls=rows.slice(0,i).reverse().find(r=>r.res);
      return (ls?`<div class="lmx ok"><small>${lt('last')} · ${lt('fight')} ${ls.no}</small><b><span class="rr">${esc(ls.a)}</span> vs <span class="bb">${esc(ls.b)}</span></b><div>${esc(ls.res)}</div></div>`:'')
       +(nx?`<div class="lmx"><small>${lt('next')} · ${lt('fight')} ${nx.no}</small><b><span class="rr">${esc(nx.a)}</span> vs <span class="bb">${esc(nx.b)}</span></b><div>${esc([(nx.f||{}).cls,nx.kind].filter(Boolean).join(' · '))}</div></div>`:'')})()}`
   :`<div class="lmk"><div><small>${lt('done')}</small></div></div>${(()=>{const l=[...rows].reverse().find(r=>r.res);return l?`<div class="res">${lt('fight')} ${l.no}: ${esc(l.res)}</div>`:''})()}`;
- const sc=box.querySelector('.lmlist'),y=sc?sc.scrollTop:0;
- box.innerHTML=`<section class="lm"><div class="lmb"><div class="lmh"><span class="lv">LIVE</span><b>${esc(sn.name)}</b><span>${esc([sn.ort,sn.date&&sn.date.split('-').reverse().join('.')].filter(Boolean).join(' · '))}</span></div>
+ return `<section class="lm" data-id="${id}"><div class="lmb"><div class="lmh"><span class="lv">LIVE</span><b>${esc(sn.name)}</b><span>${esc([sn.ort,sn.date&&sn.date.split('-').reverse().join('.')].filter(Boolean).join(' · '))}</span></div>
   <div class="lmg"><div class="lml">${left}</div><div class="lmr"><h4>${lt('fc')}</h4><div class="lmlist">${rows.map(r=>`<div class="lmf ${c&&r.mid===c.mid?'cur':''}"><div class="n">${r.no}</div><div>
    <span class="rr">${esc(r.a)}</span> vs <span class="bb">${esc(r.b)}</span>${r.rd?` · <b>${esc(r.rd)}</b>`:''}<small>${esc([(r.f||{}).cls,r.kind,r.rounds?r.rounds+' '+lt('rnds'):''].filter(Boolean).join(' · '))}</small>
-   <div class="e">${r.res?esc(r.res):c&&r.mid===c.mid?'▶ '+lt('now'):''}</div></div></div>`).join('')}</div></div></div></div></section>`;
- const s2=box.querySelector('.lmlist');if(s2)s2.scrollTop=y}
-// Uhr fein nachziehen, ohne die ganze Liste neu zu zeichnen
-setInterval(()=>{const k=document.getElementById('lmclk');if(!k||!LM.snap)return;const c=lmCur(LM.snap.rows||[]);const h=lmClockHtml(c);if(k.innerHTML!==h)k.innerHTML=h},250);
+   <div class="e">${r.res?esc(r.res):c&&r.mid===c.mid?'▶ '+lt('now'):''}</div></div></div>`).join('')}</div></div></div></div></section>`}
+function lmDraw(){const box=document.getElementById('lmon');if(!box)return;
+ const ys={};box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l)ys[x.dataset.id]=l.scrollTop});
+ box.innerHTML=LM.evs.map(e=>lmOne(e.id)).join('');
+ box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l&&ys[x.dataset.id])l.scrollTop=ys[x.dataset.id]})}
+// Uhren fein nachziehen, ohne die Listen neu zu zeichnen
+setInterval(()=>document.querySelectorAll('.lmclk').forEach(k=>{const d=LM.D[k.dataset.id];if(!d)return;const h=lmClockHtml(d,lmCur(d));if(k.innerHTML!==h)k.innerHTML=h}),250);
 lmList();setInterval(lmList,30000);setInterval(lmData,5000);setInterval(lmClock,1000);
 function setLang(l){L=l;try{localStorage.setItem('wbuLang',l)}catch(e){}const u=new URL(location.href);u.searchParams.set('lang',l);history.replaceState(null,'',u);draw()}
 addEventListener('hashchange',()=>{draw();const mn=document.getElementById('menu');mn.classList.remove('open');
