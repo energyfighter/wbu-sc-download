@@ -211,10 +211,10 @@ const WPC={};
 // Plakate „WBU Shows“ (neueste zuerst) – Dateien in start/img/show-*.jpg
 // d = letzter Veranstaltungstag. Angezeigt werden nur kommende Shows, die nächste immer oben; vergangene verschwinden von selbst.
 const SHOWS_ALL=[
- // n/ort = Countdown-Text, st = Beginn je Showtag (ohne Uhrzeit: nur Datum)
+ // n/ort = Countdown-Text, st = Beginn je Showtag (ohne Uhrzeit gilt 19:00 Uhr)
  {d:'2026-11-21',img:'/start/img/show-2026-11-21-steel-warriors.jpg',t:'Steel Warriors – Lokschuppen Dillingen',n:'Steel Warriors',ort:'Lokschuppen Dillingen',st:['2026-11-20T19:00','2026-11-21T19:00']},
- {d:'2027-02-27',img:'/start/img/show-2027-02-27-bayerische-ringnacht.jpg',t:'Bayerische Ringnacht – Manzau Gym Olching',n:'Bayerische Ringnacht',ort:'Manzau Gym Olching',st:['2027-02-27']},
- {d:'2027-05-29',img:'/start/img/show-2027-05-29-wadersloh.jpg',t:'WBU Deutsche Meisterschaft – Wadersloh',n:'WBU Deutsche Meisterschaft',ort:'Wadersloh',st:['2027-05-29']},
+ {d:'2027-02-27',img:'/start/img/show-2027-02-27-bayerische-ringnacht.jpg',t:'Bayerische Ringnacht – Manzau Gym Olching',n:'Bayerische Ringnacht',ort:'Manzau Gym Olching',st:['2027-02-27T19:00']},
+ {d:'2027-05-29',img:'/start/img/show-2027-05-29-wadersloh.jpg',t:'WBU Deutsche Meisterschaft – Wadersloh',n:'WBU Deutsche Meisterschaft',ort:'Wadersloh',st:['2027-05-29T19:00']},
 ];
 const SHOWS=(()=>{const n=new Date(),h=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
  return SHOWS_ALL.filter(x=>x.d>=h).sort((a,b)=>a.d<b.d?-1:1)})();
@@ -412,18 +412,20 @@ const CDT={en:['Next show','Days','Hrs','Min','Sec','Live monitor with all fight
  es:['Próximo show','Días','Hrs','Min','Seg','Desde el inicio aquí: el monitor en vivo con todos los combates y resultados','h'],
  fr:['Prochain show','Jours','H','Min','Sec','Dès le début ici : le moniteur live avec tous les combats et résultats','h'],
  ru:['Следующее шоу','Дн','Час','Мин','Сек','С начала шоу здесь: Live-монитор со всеми боями и результатами','']};
-function cdStarts(x){return (x.st||[x.d]).map(v=>({v,t:new Date(v.length>10?v:v+'T00:00').getTime(),zeit:v.length>10}))}
-function cdList(){const now=Date.now();return SHOWS_ALL.map(x=>{const S=cdStarts(x),f=new Date(S[0].t);f.setHours(0,0,0,0);f.setDate(f.getDate()-((f.getDay()+6)%7));
-  if(now<f.getTime())return null;if(S.some(s=>now>=s.t&&now<s.t+6*3600e3))return null;const nx=S.find(s=>s.t>now);return nx?{x,S,nx}:null}).filter(Boolean)}
+// Jeder Showtag bekommt einen eigenen Countdown-Balken. Ohne Uhrzeit gilt Beginn 19:00 Uhr.
+function cdStarts(x){return (x.st||[x.d]).map(v=>{const w=v.length>10?v:v+'T19:00';return {v:w,t:new Date(w).getTime()}})}
+function cdList(){const now=Date.now(),R=[];SHOWS_ALL.forEach(x=>cdStarts(x).forEach(s=>{const f=new Date(s.t);f.setHours(0,0,0,0);f.setDate(f.getDate()-((f.getDay()+6)%7));
+  if(now>=f.getTime()&&now<s.t)R.push({x,s})}));return R.sort((a,b)=>a.s.t-b.s.t)}
 function cdHtml(){const c=CDT[L]||CDT.en,L2=cdList();if(!L2.length)return '';
-  const dt=t=>new Date(t).toLocaleDateString(L,{weekday:'short',day:'2-digit',month:'2-digit'});
-  return L2.map(({x,S,nx})=>{const tage=S.map(s=>dt(s.t)).join(' + '),z=nx.zeit?' · '+nx.v.slice(11,16)+(c[6]?' '+c[6]:''):'';
-   return `<div class="cd"><div class="cdb" data-t="${nx.t}"><div class="cdx"><span class="cdl">${c[0]}</span><b>${esc(x.n||x.t)}</b><span class="cdo">${esc(x.ort||'')} · ${tage}${z}</span><small>📡 ${c[5]}</small></div>
+  return L2.map(({x,s})=>{const tag=new Date(s.t).toLocaleDateString(L,{weekday:'short',day:'2-digit',month:'2-digit'}),z=s.v.slice(11,16)+(c[6]?' '+c[6]:'');
+   return `<div class="cd"><div class="cdb" data-t="${s.t}"><div class="cdx"><span class="cdl">${c[0]}</span><b>${esc(x.n||x.t)}</b><span class="cdo">${esc(x.ort||'')} · ${tag} · ${z}</span><small>📡 ${c[5]}</small></div>
     <div class="cdz">${[1,2,3,4].map(i=>`<div><i>--</i><em>${c[i]}</em></div>`).join('')}</div></div></div>`}).join('')}
 function cdDraw(){const b=document.getElementById('cdown');if(!b)return;const h=cdHtml();if(b.dataset.h!==h){b.innerHTML=h;b.dataset.h=h}cdTick()}
 function cdTick(){document.querySelectorAll('#cdown .cdb').forEach(e=>{let r=Math.max(0,Math.floor((+e.dataset.t-Date.now())/1000));
   const v=[Math.floor(r/86400),Math.floor(r%86400/3600),Math.floor(r%3600/60),r%60];e.querySelectorAll('.cdz i').forEach((i,k)=>i.textContent=String(v[k]).padStart(2,'0'))})}
-setInterval(()=>{if(document.querySelector('#cdown .cdb')&&!cdList().length||Date.now()%60000<1000)cdDraw();else cdTick()},1000);
+setInterval(cdDraw,1000);
+// Neue Webseiten-Version? Dann lädt sich die offene Seite von selbst neu (kein alter Stand im Browser)
+let WV0=null;setInterval(async()=>{try{const v=(await (await fetch('/scorecard/webversion.json',{cache:'no-store'})).json()).version;if(WV0==null)WV0=v;else if(v!==WV0)location.reload()}catch(e){}},120000);
 function lmDraw(){cdDraw();const box=document.getElementById('lmon');if(!box)return;
  const ys={};box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l)ys[x.dataset.id]=l.scrollTop});
  box.innerHTML=LM.evs.map(e=>lmOne(e.id)).join('');
