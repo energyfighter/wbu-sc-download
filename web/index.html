@@ -481,8 +481,8 @@ async function adAutoTr(t,x){try{const d=await gTrB(t+'\n'+x.slice(0,400),'en');
 async function adSave(){const t=document.getElementById('nt').value.trim(),x=document.getElementById('nx').value,fbBox=document.getElementById('nfb');
  if(!t){AD.msg='Bitte eine Überschrift eintragen';AD.msgErr=1;return adDraw()}
  AD.busy=1;AD.msg='Übersetze in alle Sprachen …';adDraw();const tr=await adAutoTr(t,x);AD.msg='';
- try{const j=await nApi('n_save',{tok:adTok(),id:AD.edit?AD.edit.id:'',t,x,keep:AD.keep,img:AD.img,fb:fbBox&&fbBox.checked?1:0,...(tr?{tr}:{})});
-  AD.msg=(AD.edit?'✓ Gespeichert.':'✓ Veröffentlicht auf der Webseite.')+(fbBox&&fbBox.checked?(j.fbErr?'':' Auch auf Facebook gepostet.'):'');AD.msgErr=0;
+ try{const j=await nApi('n_save',{tok:adTok(),id:AD.edit?AD.edit.id:'',t,x,keep:AD.keep,img:AD.img,altn:AD.edit?(AD.edit.n||0):-1,fb:fbBox&&fbBox.checked?1:0,...(tr?{tr}:{})});
+  AD.msg=(AD.edit?'✓ Gespeichert.'+(AD.edit.fb&&!j.fbErr?' Auch auf Facebook geändert.':''):'✓ Veröffentlicht auf der Webseite.')+(!AD.edit&&fbBox&&fbBox.checked?(j.fbErr?'':' Auch auf Facebook gepostet.'):'');AD.msgErr=0;
   if(j.fbErr){AD.msg+=' Achtung – Facebook: '+j.fbErr;AD.msgErr=1}
   AD.edit=null;AD.keep=[];AD.img=[];AD.dt='';AD.dx='';NW.list=null;AD.mine=(await nApi('n_mine',{tok:adTok()})).news}
  catch(e){AD.msg=e.message;AD.msgErr=1}AD.busy=0;adDraw()}

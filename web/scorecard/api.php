@@ -653,6 +653,21 @@ function fbPublish($p) {
     return ['id' => $r['post_id'] ?? ($r['id'] ?? '')];
 }
 
+// Geänderten Bericht auch auf Facebook ändern: Text direkt; geänderte Bilder → alter Beitrag weg, neu gepostet
+function fbUpdate($p, $imgNeu) {
+    $fb = json_decode((string)@file_get_contents(fbFile()), true);
+    if (!is_array($fb) || empty($fb['tok']) || empty($p['fb'])) return ['err' => 'Facebook ist noch nicht verbunden'];
+    if ($imgNeu) {
+        fbHttp('POST', $p['fb'], ['method' => 'delete', 'access_token' => $fb['tok']]);
+        return fbPublish($p);
+    }
+    $en = $p['tr']['en'] ?? ['t' => $p['t'], 'x' => $p['x']];
+    $msg = trim($en['t'] . "\n\n" . $en['x']) . "\n\nhttps://www.wbu-boxing.com/#news/" . $p['id'];
+    $r = fbHttp('POST', $p['fb'], ['message' => $msg, 'access_token' => $fb['tok']]);
+    if (!empty($r['error'])) return ['err' => 'Facebook: ' . ($r['error']['message'] ?? 'Fehler')];
+    return ['id' => $p['fb']];
+}
+
 function newsSecret() { global $DIR; $f = "$DIR/news.key"; if (!file_exists($f)) file_put_contents($f, bin2hex(random_bytes(32))); return trim((string)file_get_contents($f)); }
 function newsOkSig($em) { return hash_hmac('sha256', 'news-ok|' . mb_strtolower($em), newsSecret()); }
 /** Facebook-Beiträge der Seite als Berichte übernehmen (Bilder werden auf den eigenen Server kopiert) */
@@ -1088,6 +1103,7 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
         if (strlen($d) > 4000000) fail('Ein Bild ist zu groß');
         $bilder[] = $d;
     }
+    $bearb = $id !== ''; $imgNeu = $bearb && ($bilder || $keep !== range(0, max(0, count($keep) - 1)) || !empty($in['imgchg']));
     $sup = isSuper($me); $tr = isset($in['tr']) && is_array($in['tr']) ? newsTr($in['tr']) : null;
     $p = withNews(function (&$n) use ($id, $t, $x, $keep, $bilder, $me, $sup, $tr) {
         $i = $id === '' ? -1 : array_search($id, array_column($n, 'id'));
@@ -1108,6 +1124,12 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
         if (is_array($auto)) { $p['tr'] = $auto; $pid = $p['id']; withNews(function (&$n) use ($pid, $auto) { foreach ($n as &$q) if ($q['id'] === $pid) $q['tr'] = $auto; }, true); }
     }
     $fbErr = '';
+    if ($bearb && !empty($p['fb']) && empty($in['nofb'])) {   // schon auf Facebook → dort mit ändern
+        $altAnz = (int)($in['altn'] ?? -1); if ($altAnz >= 0 && count($keep) !== $altAnz) $imgNeu = true;
+        $r = fbUpdate($p, $imgNeu);
+        if (!empty($r['id'])) { if ($r['id'] !== $p['fb']) { $nid = $r['id']; $pid = $p['id']; withNews(function (&$n) use ($pid, $nid) { foreach ($n as &$q) if ($q['id'] === $pid) $q['fb'] = $nid; }, true); $p['fb'] = $nid; } }
+        else $fbErr = $r['err'] ?? 'Facebook-Fehler';
+    }
     if (!empty($in['fb']) && empty($p['fb'])) {
         $r = fbPublish($p);
         if (!empty($r['id'])) withNews(function (&$n) use ($p, $r) { foreach ($n as &$q) if ($q['id'] === $p['id']) $q['fb'] = $r['id']; }, true);
