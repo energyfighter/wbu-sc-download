@@ -1,6 +1,6 @@
 {
-  "versionCode": 98,
-  "versionName": "1.98",
+  "versionCode": 99,
+  "versionName": "1.99",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Neu: Beim Abschließen gehen die Ergebnisse automatisch an die WBU (E-Mail + Resultate-Seite)."
+  "notes": "Veranstaltung abschließen jetzt mit doppelter Bestätigung."
 }
