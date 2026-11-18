@@ -297,13 +297,13 @@ function chFromResults(L){const out=[];
 async function champBlock(host){if(!host)return;const T3=CH_T[L]||CH_T.en;const box=document.createElement('section');box.className='chb';box.innerHTML=`<h2 class="H">${T3.h}</h2><p class="chs">${T3.s}</p><div class="chl">…</div>`;host.appendChild(box);
  let R=[];try{R=(await nApi('r_list',{})).list||[]}catch(e){}
  const A=[...CH_HIST,...chFromResults(R)],heute=new Date().toISOString().slice(0,10);
- const row=x=>{const v=x.d?chPlus(x.d,x.sp==='Profi'?6:3):'',vak=v&&v<=heute;return `<tr><td><b>${nEsc(x.n)}</b>${x.c?`<small>${nEsc(chWort(x.c))}</small>`:''}</td><td>${nEsc(x.tu?T3.dmc:chTitel(x.t))}${x.ev&&!x.tu?`<small>${nEsc(x.ev)}</small>`:''}</td><td>${nEsc(chWort(x.w)||'–')}</td><td>${nEsc(chWort(x.a)||'–')}</td><td>${chFmt(x.d)}</td><td class="${vak?'vk':'ok'}">${v?(vak?T3.vak+' '+chFmt(v):T3.bis+' '+chFmt(v)):''}</td></tr>`};
- const tab=(h,L2)=>`<h4>${h}</h4><div class="chw"><table class="cht"><thead><tr><th>${T3.c}</th><th>${T3.t}</th><th>${T3.w}</th><th>${T3.a}</th><th>${T3.d}</th><th>${T3.st}</th></tr></thead><tbody>${L2.map(row).join('')}</tbody></table></div>`;
+ const row=x=>{const v=x.d?chPlus(x.d,x.sp==='Profi'?6:3):'',vak=v&&v<=heute;return `<tr><td><b>${nEsc(x.n)}</b>${x.c?`<small>${nEsc(chWort(x.c))}</small>`:''}</td><td>${nEsc(x.tu?T3.dmc:chTitel(x.t))}${x.ev&&!x.tu?`<small>${nEsc(x.ev)}</small>`:''}</td><td>${nEsc(chWort(x.w)||'–')}</td><td>${nEsc(chWort(x.a)||'–')}</td><td>${chFmt(x.d)}</td>${x.tu?'':`<td class="${vak?'vk':'ok'}">${v?(vak?T3.vak+' '+chFmt(v):T3.bis+' '+chFmt(v)):''}</td>`}</tr>`};
+ const tab=(h,L2,tu)=>`<h4>${h}</h4><div class="chw"><table class="cht"><thead><tr><th>${T3.c}</th><th>${T3.t}</th><th>${T3.w}</th><th>${T3.a}</th><th>${T3.d}</th>${tu?'':`<th>${T3.st}</th>`}</tr></thead><tbody>${L2.map(row).join('')}</tbody></table></div>`;
  let h='';for(const sp of CH_SP){const tf=A.filter(x=>x.sp===sp&&!x.tu).sort((a,b)=>chRank(a.t)-chRank(b.t)||(b.d||'').localeCompare(a.d||''));if(!tf.length)continue;
   h+=`<div class="chsp"><h3>${(T3.sp[sp]||sp)}</h3>${tab(T3.ti,tf)}</div>`}
  const TU=[...new Map(A.filter(x=>x.tu).map(x=>[x.tu,x.d])).entries()].sort((a,b)=>(b[1]||'').localeCompare(a[1]||''));
  for(const [n] of TU){const X=A.filter(x=>x.tu===n);const y=(n.match(/(\d{4})\s*$/)||[])[1]||(X[0].d||'').slice(0,4);const sp=X[0].sp;
-  h+=`<div class="chsp"><h3>${T3.dmt} ${y} · ${T3.sp[sp]||sp}</h3>${tab(T3.tu,X.sort((a,b)=>(a.a||'').localeCompare(b.a||'',undefined,{numeric:true})||(a.w||'').localeCompare(b.w||'',undefined,{numeric:true})))}</div>`}
+  h+=`<div class="chsp"><h3>${T3.dmt} ${y} · ${T3.sp[sp]||sp}</h3>${tab(T3.tu,X.sort((a,b)=>(a.a||'').localeCompare(b.a||'',undefined,{numeric:true})||(a.w||'').localeCompare(b.w||'',undefined,{numeric:true})),1)}</div>`}
  box.querySelector('.chl').innerHTML=h||'<p>–</p>'}
 async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'/'+slug+'/';
  if(slug==='belt')return guertelSeite(v);
