@@ -1507,6 +1507,15 @@ case 'k_save':     // Kämpfer von Hand eintragen oder korrigieren (Veranstalter
     });
     out(['ok' => true]);
 
+case 'k_import':   // Liste einspielen (z. B. Starterliste eines früheren Turniers) – nur Name, Gym, Land
+    if (!kAllowed($in)) fail('Nicht berechtigt', 403);
+    $list = $in['list'] ?? []; if (!is_array($list) || !$list) fail('Die Liste ist leer');
+    $src = 'import:' . preg_replace('/[^A-Za-z0-9_.-]/', '', (string)($in['label'] ?? 'liste'));
+    $n = withKaempfer(function (&$k) use ($list, $src) { $vor = count($k);
+        foreach (array_slice($list, 0, 3000) as $x) if (is_array($x)) kPut($k, ['vn' => $x['vn'] ?? '', 'nn' => $x['nn'] ?? '', 'name' => $x['name'] ?? '', 'gym' => $x['gym'] ?? '', 'land' => $x['land'] ?? ''], $src);
+        return [count($k) - $vor, count($k)]; });
+    out(['ok' => true, 'neu' => $n[0], 'gesamt' => $n[1]]);
+
 case 'k_del':      // Eintrag löschen (nur WBU-Passwort)
     if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Löschen nur mit dem WBU-Passwort', 403);
     withKaempfer(function (&$k) use ($in) { unset($k[(string)($in['id'] ?? '')]); });
