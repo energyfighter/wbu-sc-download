@@ -1138,6 +1138,16 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
     }
     out(['ok' => true, 'post' => newsPublic($p), 'fbErr' => $fbErr]);
 
+case 'fb_texts':   // Superadmin: Texte älterer Facebook-Beiträge lesen (nur lesen, nichts übernehmen)
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    $fb = json_decode((string)@file_get_contents(fbFile()), true); if (!is_array($fb) || empty($fb['tok'])) fail('Facebook nicht verbunden');
+    $out = []; $after = (string)($in['after'] ?? '');
+    $q = ['fields' => 'id,message,created_time', 'limit' => 100, 'access_token' => $fb['tok']]; if ($after !== '') $q['after'] = $after;
+    $r = fbHttp('GET', $fb['page'] . '/posts', $q);
+    if (!empty($r['error'])) fail('Facebook: ' . ($r['error']['message'] ?? 'Fehler'));
+    foreach ((array)($r['data'] ?? []) as $po) if (!empty($po['message'])) $out[] = ['d' => substr((string)$po['created_time'], 0, 10), 'm' => (string)$po['message']];
+    out(['ok' => true, 'posts' => $out, 'after' => $r['paging']['cursors']['after'] ?? '', 'more' => !empty($r['paging']['next'])]);
+
 case 'n_tr':       // Superadmin: Übersetzungen eines Berichts setzen (Bilder und Facebook bleiben unberührt)
     $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
     $id = preg_replace('/[^a-f0-9]/', '', (string)($in['id'] ?? '')); $tr = newsTr((array)($in['tr'] ?? []));
