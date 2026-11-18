@@ -1148,6 +1148,20 @@ case 'fb_texts':   // Superadmin: Texte älterer Facebook-Beiträge lesen (nur l
     foreach ((array)($r['data'] ?? []) as $po) if (!empty($po['message'])) $out[] = ['d' => substr((string)$po['created_time'], 0, 10), 'm' => (string)$po['message']];
     out(['ok' => true, 'posts' => $out, 'after' => $r['paging']['cursors']['after'] ?? '', 'more' => !empty($r['paging']['next'])]);
 
+case 'wp_despam':   // Superadmin: versteckte Spam-Links aus allen WordPress-Seiten und -Beiträgen löschen (dry=1: nur anzeigen)
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    $wpl = dirname(__DIR__) . '/wp-load.php'; if (!file_exists($wpl)) fail('WordPress nicht gefunden');
+    define('WP_USE_THEMES', false); require_once $wpl;
+    $re = '#<(p|div|span|section)\b[^>]*style="[^"]*(?:height:\s*[0-2]px|display:\s*none|visibility:\s*hidden|font-size:\s*0|left:\s*-\d{3,})[^"]*"[^>]*>.*?</\1>#is';
+    $rep = [];
+    foreach (get_posts(['post_type' => ['page', 'post'], 'post_status' => 'any', 'numberposts' => -1]) as $po) {
+        $c = $po->post_content; $n = 0;
+        $neu = preg_replace_callback($re, function ($m) use (&$n) { if (stripos($m[0], '<a ') === false) return $m[0]; $n++; return ''; }, $c);
+        if ($n) { $rep[] = ['id' => $po->ID, 'slug' => $po->post_name, 'raus' => $n];
+            if (empty($in['dry'])) wp_update_post(['ID' => $po->ID, 'post_content' => $neu]); }
+    }
+    out(['ok' => true, 'dry' => !empty($in['dry']), 'seiten' => $rep]);
+
 case 'n_tr':       // Superadmin: Übersetzungen eines Berichts setzen (Bilder und Facebook bleiben unberührt)
     $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
     $id = preg_replace('/[^a-f0-9]/', '', (string)($in['id'] ?? '')); $tr = newsTr((array)($in['tr'] ?? []));

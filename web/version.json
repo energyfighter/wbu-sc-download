@@ -1,14 +1,14 @@
 {
-  "version": 144,
+  "version": 145,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "scorecard/api.php": "c2b2757ef5b0984609e3de8b2878d4c7de9869b3a399533151bb13bd8544d8e1",
+    "scorecard/api.php": "c4af5c0ce3af2773de6bcea3fe0fa94898d16d8488ca987384d811efaf5ffcb7",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "47d1c61caae90889ec0beea701be25e5792969761e2929f579ef85852ea17fde",
+    "scorecard/index.html": "c6dce36205f5610215da672d947d3edc68c65c4f148c45749302ac3edb102e35",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "f117419502ad8f78a414fd98ef5e4facac3200100780ae9e7c4143fe8fd19bfa",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "a2270a16025c9163cc1d8081d65efbbad48f0d8a4af23f3dacdb69a2c52f7b14",
+    "veranstalter/index.html": "32c7a0f8673fe0f1340557492f7696811117607d0d881af513859bec4645f412",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
     "veranstalter/docs/Ablaufplan-WBU-2027.pdf": "6c3b939cdb704f45dd8a46dbd4df184ff6322595180b8d2dbf6418a2fe888ba3",
@@ -56,7 +56,7 @@
     "veranstalter/docs/praes-37.jpg": "d60ded2b1b12f32d1f6ec3c856ef4e989045b22e30585baa12617c2d28c7da63",
     "veranstalter/docs/praes-38.jpg": "3976045e7204a93f5be7d71ddbb42a5a297b1da3ca054905ccb0526568e8879a",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "48a1227e6715e0d492038bd929192882175eb6fdb6000982897b1c6387de5049",
+    "anmeldung/index.html": "c3111d7b410f012a19bffe5ff4b90069a452520d681efccedc05657d707f0737",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "live/index.html": "dff64a47480567e4fc7165d2592730e8cfa36e5cd0ec232f07d395f3506e565c",
     "results/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
@@ -64,7 +64,7 @@
     "rankings/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "rankings/index.html": "aec055172b1dc7a2f50bd9ec1c12325edb87cf7255fe444fc9a30a134257ae0d",
     "start/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "start/index.html": "812728df4ba1a01a2958064c6c7bf0a672b59fd19db560ad91622749a6782708",
+    "start/index.html": "3fa6bffffb763008edf2b044dd6e91c37a3801bd7aab633fcde5a3391669c241",
     "start/img/guertel-01.jpg": "2d607d2d3c299c8664bde6b55272ebea15e6c9ab4ecbf6ee2ba5a950d9c5fa38",
     "start/img/guertel-02.jpg": "1ef8db34d3b0dde4b787e01cef1608cd2846da7756b5e705d66542f1a0f30feb",
     "start/img/guertel-03.jpg": "8d5215b76cc98eb53f41a5ca8872525fe5cc4993db6b55980ecd3f910d351457",
@@ -78,7 +78,7 @@
     "start/img/show-2027-05-29-wadersloh.jpg": "1f27d862962b5a7e50b804447d01731f84880a4b82f9dd589777644af48eb3f3",
     "coin/fight-quiz.html": "44e4f58ab55223a738444d80833939b2ff1afb50c738b9e1c5bab94c08c96080",
     "coin/index.html": "d63955200e4e6c48140df1a33b08e49ff4703b83893abca42e2ce6ca05384146",
-    "index.html": "812728df4ba1a01a2958064c6c7bf0a672b59fd19db560ad91622749a6782708",
+    "index.html": "3fa6bffffb763008edf2b044dd6e91c37a3801bd7aab633fcde5a3391669c241",
     "datenschutz.html": "574e2d3e23733379147427999e2983eccdddcf5adf59fa7d48f639676f2a22f9"
   }
 }
