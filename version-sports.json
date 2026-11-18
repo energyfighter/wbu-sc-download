@@ -1,6 +1,6 @@
 {
-  "versionCode": 126,
-  "versionName": "1.126",
+  "versionCode": 139,
+  "versionName": "1.139",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Datenschutz: öffentliche Live-Anzeigen zeigen nur noch Alter statt Geburtsdatum; Supervisor bekommt die vollen Daten."
+  "notes": "Supervisor: Hinweis, wenn Gewicht oder Gewichtsklasse fehlen; Altersregel (Master max. 5 Jahre, Jugend max. 2 Jahre Unterschied); Superadmin-Upload ohne Passwort."
 }

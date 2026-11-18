@@ -1,7 +1,7 @@
 {
-  "versionCode": 126,
-  "versionName": "1.126",
+  "versionCode": 139,
+  "versionName": "1.139",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Datenschutz: öffentliche Live-Anzeigen zeigen nur noch Alter statt Geburtsdatum; Supervisor bekommt die vollen Daten."
+  "notes": "Supervisor: Hinweis, wenn Gewicht oder Gewichtsklasse fehlen; Altersregel (Master max. 5 Jahre, Jugend max. 2 Jahre Unterschied); Superadmin-Upload ohne Passwort."
 }
