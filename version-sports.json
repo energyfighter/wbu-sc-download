@@ -1,6 +1,6 @@
 {
-  "versionCode": 105,
-  "versionName": "1.105",
+  "versionCode": 108,
+  "versionName": "1.108",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Veranstaltung erst nach „Veranstaltung erstellen“ (Internet + Veranstalter-Passwort) nutzbar. Kämpfer-Datenbank mit Namensvorschlägen."
+  "notes": "Fehler behoben: Scorecard schloss sich nach Eingabe des Punktrichter-Namens."
 }
