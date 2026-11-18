@@ -1388,8 +1388,8 @@ case 'r_submit':
     $sent = @mail('info@wbu-boxing.com', '=?UTF-8?B?' . base64_encode(($again ? 'Korrektur: ' : '') . 'Ergebnisse ' . $title) . '?=', $msg, $hdr);
     out(['ok' => true, 'mail' => (bool)$sent]);
 
-case 'r_import':   // Ergebnisse einer früheren Veranstaltung (z. B. aus der Draw-Liste) – nur mit einmaligem Import-Schlüssel oder WBU-Passwort
-    $okI = hash_equals('9a6a303b240bd5cdacae86773f8425f1a3c561b33b506917add68c4bec0fbd9c', hash('sha256', (string)($in['imp'] ?? '')));
+case 'r_import':   // Ergebnisse einer früheren Veranstaltung (z. B. aus der Draw-Liste) – nur mit WBU-Passwort (der einmalige Import-Schlüssel ist verbraucht)
+    $okI = hash_equals('0000000000000000000000000000000000000000000000000000000000000000', hash('sha256', (string)($in['imp'] ?? '')));
     if (!$okI && !hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Nicht berechtigt', 403);
     $d = is_array($in['data'] ?? null) ? $in['data'] : fail('Keine Daten');
     $T = function ($k, $n = 120) use ($d) { return txt($d[$k] ?? '', $n); };
