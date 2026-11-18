@@ -293,7 +293,9 @@ function vStart(){
     <label>Ort <span class="muted">(nur Supervisor)</span></label><input id="evo" name="veranstaltungsort" autocomplete="address-level2" value="${esc(e.ort||'')}" placeholder="z. B. Hamburg">
     <label>Datum <span class="muted">(nur Supervisor)</span></label><input id="evd" type="date" value="${toIso(e.date||today())}">
     <label>Ringarzt <span class="muted">(Pflicht für Supervisor – gilt für alle Kämpfe)</span></label><input id="eva" autocomplete="off" value="${esc(e.arzt||'')}" placeholder="Name des Ringarztes">
-    <label>Turnier / Gala aus WBU Sports <span class="muted">(optional – Kämpfe und Namen werden übernommen${NATIVE?', Internet nötig':''})</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– ohne WBU Sports –</option>${NATIVE?'<option value="hub" '+(S.lid==='hub'?'selected':'')+'>📱 Tablet mit WBU Sports (Bluetooth, ohne Internet)</option><option value="pc" '+(S.lid==='pc'?'selected':'')+'>💻 Laptop mit WBU Sports (Bluetooth, ohne Internet)</option>':''}</select>
+    <label>Show auswählen <span class="muted">(Kämpfe und Namen werden übernommen)</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– Show auswählen –</option></select>
+    ${NATIVE?`<div style="margin-top:8px"><a href="#" style="font-size:14px;color:#e8b931" onclick="event.preventDefault();$('btw').style.display='block';this.parentNode.style.display='none'">📶 Kein Internet am Ring? Hier per Bluetooth mit Tablet/Laptop verbinden</a></div>
+    <div id="btw" style="display:${S.lid==='hub'||S.lid==='pc'?'block':'none'}"><label>Ohne Internet: Verbindung per Bluetooth</label><select id="evb" onchange="pickLive(this.value)"><option value="">– nein –</option><option value="hub" ${S.lid==='hub'?'selected':''}>📱 Tablet mit WBU Sports</option><option value="pc" ${S.lid==='pc'?'selected':''}>💻 Laptop mit WBU Sports</option></select></div>`:''}
     ${NATIVE?`<div id="npw" style="display:${S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
     ${WEB?`<label>WBU-Supervisor-Passwort <span class="muted">(nur Supervisor)</span></label><input type="text" name="username" autocomplete="username" value="WBU-Supervisor" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><input id="evpw" name="password" type="password" autocomplete="current-password" placeholder="Passwort">
     <label>PIN für die Punktrichter <span class="muted">(Pflicht, 4 Ziffern – die Punktrichter kommen nur damit rein)</span></label><input id="evp" inputmode="numeric" maxlength="8" value="${esc(e.pin||'')}" placeholder="z. B. 2468">`:''}`})()}</div>
@@ -317,8 +319,9 @@ async function lapi(a,body){const r=await fetch(LIVE_API+'?a='+a,{method:'POST',
 function liveLid(){return WEB?(S.web&&S.web.lid):S.nlid}
 async function loadLives(){const sel=$('evl');if(!sel)return;
   try{LIVES=(await lapi('l_list')).live||[];
-    sel.innerHTML='<option value="">– ohne WBU Sports –</option>'+(NATIVE?`<option value="hub" ${S.lid==='hub'?'selected':''}>📱 Tablet mit WBU Sports (Bluetooth, ohne Internet)</option><option value="pc" ${S.lid==='pc'?'selected':''}>💻 Laptop mit WBU Sports (Bluetooth, ohne Internet)</option>`:'')+LIVES.map(l=>`<option value="${l.id}" ${S.lid===l.id?'selected':''}>${esc(l.name)} · ${esc(l.ort||'')} · ${esc(fromIso(l.date)||l.date||'')}</option>`).join('')}catch(e){}}
-function pickLive(id){S.lid=id||'';if($('npw'))$('npw').style.display=S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l)return;
+    LIVES.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+    sel.innerHTML='<option value="">– Show auswählen –</option>'+LIVES.map(l=>`<option value="${l.id}" ${S.lid===l.id?'selected':''}>${esc(l.name)} · ${esc(l.ort||'')} · ${esc(fromIso(l.date)||l.date||'')}</option>`).join('')}catch(e){}}
+function pickLive(id){S.lid=id||'';const bt=S.lid==='hub'||S.lid==='pc';if($('evl')&&bt)$('evl').value='';if($('evb')&&!bt&&S.lid)$('evb').value='';if($('npw'))$('npw').style.display=S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l)return;
   if($('evn'))$('evn').value=l.name;if($('evo'))$('evo').value=l.ort||'';if($('eva')&&l.arzt&&!$('eva').value)$('eva').value=l.arzt;if($('evd')&&l.date)$('evd').value=l.date}
 function myRing(){return +get('wbuRing',1)}
 function liveRows(){const r=(S.live&&S.live.rows)||[];return (S.live&&S.live.rings||1)>1?r.filter(x=>(x.ring||1)===myRing()):r}
@@ -892,7 +895,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('117')||0;
+const WEB_VERSION=Number('118')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
