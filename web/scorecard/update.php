@@ -32,7 +32,7 @@ $ALLOWED = [
     'anmeldung/index.html', 'anmeldung/.htaccess', 'scorecard/update.php',
     'live/index.html', 'live/.htaccess', 'results/index.html', 'results/.htaccess', 'rankings/index.html', 'rankings/.htaccess', 'start/index.html', 'start/.htaccess', 'coin/index.html', 'coin/fight-quiz.html',
     'veranstalter/pdf.min.js', 'veranstalter/pdf.worker.min.js',
-    'index.html', '.htaccess',   // neue WBU-Hauptseite + Weiterleitungen (Webroot)
+    'index.html', '.htaccess', 'datenschutz.html',   // neue WBU-Hauptseite + Weiterleitungen (Webroot)
 ];
 
 function fetch($url) {

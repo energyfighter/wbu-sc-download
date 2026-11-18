@@ -157,7 +157,7 @@ function draw(){document.documentElement.lang=L;
  <nav class="menu" id="menu"><div class="mbar"><button class="burger" onclick="document.querySelector('.menu').classList.toggle('open')">☰ ${t('menu')}</button></div>
   <div class="in">${m}</div></nav>
  <div id="view"></div>
- <footer class="ft">© World Boxing Union · ${t('foot')} · <a href="#p/contact">${t('contact')}</a></footer>`;
+ <footer class="ft">© World Boxing Union · ${t('foot')} · <a href="#p/contact">${t('contact')}</a> · <a href="/datenschutz.html">${L==='de'?'Datenschutz':'Privacy Policy'}</a></footer>`;
  view()}
 // Handy: Untermenü (z. B. WBU Sports) klappt erst beim Antippen auf
 function ddTap(a){if(!matchMedia('(max-width:900px)').matches)return true;a.parentNode.classList.toggle('open');return false}

@@ -1851,7 +1851,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('119')||0;
+const WEB_VERSION=Number('120')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
