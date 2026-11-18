@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>World Boxing Union – Be the Best</title>
+<meta name="description" content="World Boxing Union (WBU) – world rankings, champions, results, events and the WBU Coin.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0d12;--card:#151922;--line:#262b36;--gold:#d8a93a;--gold2:#f2cf6b;--red:#e0262e;--blue:#1f6fe5;--txt:#f4f1ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.in{max-width:1240px;margin:0 auto;padding:0 22px}
+/* Kopf */
+.top{background:#0b0d12;border-bottom:1px solid var(--line)}
+.top .in{display:flex;align-items:center;gap:16px;padding-top:12px;padding-bottom:12px}
+.brand{display:flex;align-items:center;gap:12px;flex:1}.brand img{width:50px;height:50px}.brand b{font:700 24px Oswald,sans-serif;letter-spacing:1px}.brand b span{color:var(--gold)}
+.brand small{display:block;font:600 12px Inter,sans-serif;letter-spacing:3px;color:var(--gold)}
+.lang{display:flex;gap:4px;background:#1a1e27;border:1px solid var(--line);border-radius:10px;padding:3px}
+.lang button{background:none;border:0;color:var(--txt);font:700 13px Inter,sans-serif;padding:7px 9px;border-radius:7px;cursor:pointer}.lang button.on{background:var(--gold);color:#140e00}
+.menu{position:sticky;top:0;z-index:30;background:rgba(17,20,27,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.menu .in{display:flex;flex-wrap:wrap;gap:2px 2px;padding-top:6px;padding-bottom:6px}
+.menu a,.menu .dd>span{display:block;padding:8px 9px;border-radius:7px;font:700 13px Inter,sans-serif;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.menu a:hover,.menu .dd:hover>span{background:#1f2430;color:var(--gold2)}.menu a.on{color:var(--gold2)}
+.menu a.coin{color:#140e00;background:var(--gold)}.menu a.coin:hover{background:var(--gold2);color:#140e00}
+.dd{position:relative}.dd .sub{display:none;position:absolute;top:100%;left:0;min-width:180px;background:#151922;border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.dd:hover .sub{display:block}
+
+/* Gürtel-Banner */
+.belts{background:#000;border-bottom:1px solid var(--line)}.belts a{display:block;max-width:1240px;margin:0 auto}.belts img{display:block;width:100%}
+.menu .in{align-items:center}.menu .sp{flex:1}.menu .lang{margin-left:6px}
+.fb{background:linear-gradient(180deg,#171b25,#12151c);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:22px}.fb h3{margin:0;padding:14px 18px;font-size:20px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(24,119,242,.25),transparent 70%)}
+.fb .fr{display:flex;justify-content:center;padding:16px;background:#fff}.fb iframe{border:0;max-width:100%}.fb a.btn{margin:14px 18px}
+/* Verbände */
+.orgs{display:flex;justify-content:center;gap:clamp(10px,2.4vw,30px);flex-wrap:wrap;padding:28px 0 6px}
+.orgs a{display:block;width:clamp(78px,10vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
+/* Inhalt */
+.main{display:grid;grid-template-columns:1fr 330px;gap:26px;padding:26px 22px 60px;max-width:1240px;margin:0 auto}
+.ban{display:block;border-radius:16px;overflow:hidden;border:1px solid var(--line);margin-bottom:22px;box-shadow:0 20px 50px rgba(0,0,0,.45);transition:transform .15s}.ban:hover{transform:translateY(-3px)}
+.ban img{display:block;width:100%}
+.side .card{background:linear-gradient(180deg,#171b25,#12151c);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:22px}
+.side h3{margin:0;padding:14px 18px;font-size:20px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(216,169,58,.14),transparent 70%)}
+.side .card img{display:block;width:100%}.side .card p{margin:0;padding:12px 18px 0;font-size:15px;line-height:1.5}
+.btn{display:inline-block;margin:14px 18px 18px;background:var(--gold);color:#140e00;font:800 13px Inter,sans-serif;letter-spacing:1.5px;text-transform:uppercase;padding:11px 18px;border-radius:9px}
+.tile{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line)}.tile:last-child{border-bottom:0}.tile:hover{background:#1b2030}
+.tile .i{font-size:26px}.tile b{display:block;font:700 18px Oswald,sans-serif;text-transform:uppercase}.tile span{font-size:13px}
+.ft{border-top:1px solid var(--line);padding:30px 22px;text-align:center;font-size:14px}.ft a{color:var(--gold)}
+@media(max-width:900px){.main{grid-template-columns:1fr;padding:18px 14px 40px}
+ .mbar{display:flex!important}.menu .in{display:none}.menu.open .in{display:flex}}
+@media(max-width:900px){.lang.dl{display:none}}
+.mbar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px}
+.burger{background:#1a1e27;border:1px solid var(--line);color:var(--txt);font:700 14px Inter,sans-serif;padding:9px 12px;border-radius:9px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const W='https://wbu.wbu-boxing.com',WWW='https://www.wbu-boxing.com',UP=W+'/wp-content/uploads/';
+const LANGS=['en','de','es','fr','ru'];
+const T={
+ en:{sub:'Be the best',t4s:'Fight for the world title – coming soon',fb:'WBU on Facebook',fbb:'Open Facebook page',home:'Home',rank:'Rankings',champ:'Champions',res:'Results',rules:'Rules & Fees',belts:'Belts',dl:'Downloads',hist:'WBU History',dir:'Directory',contact:'Contact',shop:'Shop',bl:'Bundesliga',menu:'Menu',
+  pass:'Grab your Sportpass!',passT:'The official WBU international sports passport – for boxers of all WBU sports.',passB:'Order now',more:'Quick links',
+  t1:'World Rankings',t1s:'Champions and Top 15 of 18 weight classes',t2:'Results',t2s:'All results of galas and tournaments',t3:'WBU Live',t3s:'Live fight list and results',foot:'Official website of the World Boxing Union.'},
+ de:{sub:'Be the best',t4s:'Kämpfe um den Weltmeistertitel – bald',fb:'WBU auf Facebook',fbb:'Facebook-Seite öffnen',home:'Startseite',rank:'Rangliste',champ:'Champions',res:'Results',rules:'Regeln & Gebühren',belts:'Gürtel',dl:'Downloads',hist:'WBU-Geschichte',dir:'Verzeichnis',contact:'Kontakt',shop:'Shop',bl:'Bundesliga',menu:'Menü',
+  pass:'Hol dir deinen Sportpass!',passT:'Der offizielle internationale Sportpass der WBU – für Boxer aller WBU-Sportarten.',passB:'Jetzt bestellen',more:'Schnellzugriff',
+  t1:'Weltrangliste',t1s:'Weltmeister und Top 15 in 18 Gewichtsklassen',t2:'Results',t2s:'Alle Ergebnisse von Galas und Turnieren',t3:'WBU Live',t3s:'Kampfliste und Ergebnisse live',foot:'Offizielle Webseite der World Boxing Union.'},
+ es:{sub:'Be the best',t4s:'Lucha por el título mundial – pronto',fb:'WBU en Facebook',fbb:'Abrir página de Facebook',home:'Inicio',rank:'Ranking',champ:'Campeones',res:'Resultados',rules:'Reglas y tarifas',belts:'Cinturones',dl:'Descargas',hist:'Historia WBU',dir:'Directorio',contact:'Contacto',shop:'Tienda',bl:'Bundesliga',menu:'Menú',
+  pass:'¡Consigue tu Sportpass!',passT:'El pasaporte deportivo internacional oficial de la WBU – para boxeadores de todos los deportes WBU.',passB:'Pedir ahora',more:'Accesos rápidos',
+  t1:'Ranking mundial',t1s:'Campeones y Top 15 de 18 categorías',t2:'Resultados',t2s:'Todos los resultados de galas y torneos',t3:'WBU Live',t3s:'Cartelera y resultados en vivo',foot:'Sitio oficial de la World Boxing Union.'},
+ fr:{sub:'Be the best',t4s:'Bats-toi pour le titre mondial – bientôt',fb:'La WBU sur Facebook',fbb:'Ouvrir la page Facebook',home:'Accueil',rank:'Classement',champ:'Champions',res:'Résultats',rules:'Règles & tarifs',belts:'Ceintures',dl:'Téléchargements',hist:'Histoire WBU',dir:'Annuaire',contact:'Contact',shop:'Boutique',bl:'Bundesliga',menu:'Menu',
+  pass:'Obtiens ton Sportpass !',passT:'Le passeport sportif international officiel de la WBU – pour les boxeurs de tous les sports WBU.',passB:'Commander',more:'Accès rapide',
+  t1:'Classement mondial',t1s:'Champions et Top 15 de 18 catégories',t2:'Résultats',t2s:'Tous les résultats des galas et tournois',t3:'WBU Live',t3s:'Programme et résultats en direct',foot:'Site officiel de la World Boxing Union.'},
+ ru:{sub:'Be the best',t4s:'Борись за титул чемпиона – скоро',fb:'WBU в Facebook',fbb:'Открыть страницу Facebook',home:'Главная',rank:'Рейтинг',champ:'Чемпионы',res:'Результаты',rules:'Правила и взносы',belts:'Пояса',dl:'Загрузки',hist:'История WBU',dir:'Справочник',contact:'Контакты',shop:'Магазин',bl:'Бундеслига',menu:'Меню',
+  pass:'Получи свой Sportpass!',passT:'Официальный международный спортивный паспорт WBU – для боксёров всех видов спорта WBU.',passB:'Заказать',more:'Быстрые ссылки',
+  t1:'Мировой рейтинг',t1s:'Чемпионы и Топ-15 в 18 категориях',t2:'Результаты',t2s:'Все результаты гал и турниров',t3:'WBU Live',t3s:'Список боёв и результаты онлайн',foot:'Официальный сайт World Boxing Union.'}};
+let L=(()=>{const q=new URLSearchParams(location.search).get('lang');if(LANGS.includes(q))return q;try{const s=localStorage.getItem('wbuLang');if(LANGS.includes(s))return s}catch(e){}return 'en'})();
+const t=k=>(T[L]||T.en)[k]||T.en[k];
+const lq=u=>u.startsWith(WWW)?u+(u.includes('?')?'&':'?')+'lang='+L:u;
+function MENU(){return [[t('home'),'./',1],[t('rank'),WWW+'/rankings/'],[t('champ'),W+'/champions/'],[t('res'),WWW+'/results/'],[t('rules'),W+'/sample-page/'],[t('belts'),W+'/belt/'],
+ ['PBU',W+'/upcoming-fights/'],['EBO',W+'/ebo-2/'],['WFU',W+'/wfu/'],['K1',W+'/k1/'],['SemiPro',W+'/semipro/'],['Master',W+'/master/'],['BKB',W+'/bkb/'],['HYBB (4oz)',W+'/hbkb4oz/'],['Stress-Defense',W+'/sd/'],
+ [t('dl'),W+'/downloads/'],[t('hist'),W+'/about-wbu/'],[t('dir'),W+'/directory/'],[t('contact'),W+'/contact/'],[t('shop'),'https://wbu.printify.me/'],[t('bl'),W+'/bundesliga/'],
+ ['WBU Sports',WWW+'/anmeldung/',0,[['WBU Live',WWW+'/live/'],['WBU Time 1',WWW+'/live/?zeit=1&ring=1'],['WBU Time 2',WWW+'/live/?zeit=1&ring=2']]],['Scorecard',W+'/scorecard/'],['WBU Coin',W+'/coin/',0,0,'coin']]}
+const ORGS=[['WBU','2026/01/wbulogo-150x150.png',W+'/sample-page/'],['PBU','2026/01/PBULOGO-150x150.png',W+'/upcoming-fights/'],['EBO','2026/01/ebologo-150x150.png',W+'/ebo-2/'],
+ ['WFU','2026/01/wfunew-1-150x150.png',W+'/wfu/'],['Stress Defense','2026/01/SD_logo_freigestellt-150x150.png',W+'/sd/'],['WBU Bundesliga','2026/01/wbulogoBUNDESLIGA-1-150x150.png',W+'/bundesliga/']];
+function draw(){document.documentElement.lang=L;
+ const m=MENU().map(([n,u,on,sub,cls])=>sub?`<div class="dd"><span>${n} ▾</span><div class="sub">${[[n,u],...sub].map(([a,b])=>`<a href="${lq(b)}">${a}</a>`).join('')}</div></div>`:`<a class="${on?'on':''} ${cls||''}" href="${lq(u)}">${n}</a>`).join('');
+ const FB='https://www.facebook.com/WorldBoxingUnionV',fbw=Math.min(500,Math.max(280,(document.querySelector('.main>div')||{clientWidth:500}).clientWidth-34||500));
+ document.getElementById('app').innerHTML=`
+ <div class="belts"><a href="./"><img src="${UP}2026/11/cropped-banner-1.png" alt="World Boxing Union – World Champion Belts"></a></div>
+ <nav class="menu"><div class="mbar"><button class="burger" onclick="document.querySelector('.menu').classList.toggle('open')">☰ ${t('menu')}</button>
+   <div class="lang">${LANGS.map(l=>`<button class="${l===L?'on':''}" onclick="setLang('${l}')">${l.toUpperCase()}</button>`).join('')}</div></div>
+  <div class="in">${m}<span class="sp"></span><div class="lang dl">${LANGS.map(l=>`<button class="${l===L?'on':''}" onclick="setLang('${l}')">${l.toUpperCase()}</button>`).join('')}</div></div></nav>
+ <div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
+ <div class="main"><div>
+   <a class="ban" href="${lq(WWW+'/anmeldung/')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
+   <a class="ban" href="${W}/coin/"><img src="${UP}2021/01/wbu-coin-banner-850x300-4x.jpg" alt="WBU Coin – Coming Soon"></a>
+   <section class="fb"><h3 class="H">${t('fb')}</h3><div class="fr"><iframe title="Facebook" src="https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB)}&tabs=timeline&width=500&height=1400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false" width="500" height="1400" scrolling="no" allow="encrypted-media" loading="lazy"></iframe></div>
+    <a class="btn" href="${FB}" target="_blank" rel="noopener">${t('fbb')} ›</a></section></div>
+  <aside class="side">
+   <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
+   <div class="card"><h3 class="H">${t('more')}</h3>
+    <a class="tile" href="${lq(WWW+'/rankings/')}"><span class="i">🏆</span><div><b>${t('t1')}</b><span>${t('t1s')}</span></div></a>
+    <a class="tile" href="${lq(WWW+'/results/')}"><span class="i">🥊</span><div><b>${t('t2')}</b><span>${t('t2s')}</span></div></a>
+    <a class="tile" href="${lq(WWW+'/live/')}"><span class="i">📡</span><div><b>${t('t3')}</b><span>${t('t3s')}</span></div></a>
+    <a class="tile" href="${W}/coin/"><span class="i">🪙</span><div><b>WBU Coin</b><span>${t('t4s')}</span></div></a></div>
+   <div class="card"><h3 class="H">Facebook</h3><div class="fr" style="display:flex;justify-content:center;padding:12px;background:#fff"><iframe title="Facebook" src="https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB)}&tabs=&width=290&height=200&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true" width="290" height="200" style="border:0" scrolling="no" loading="lazy"></iframe></div></div>
+  </aside></div>
+ <footer class="ft">© World Boxing Union · ${t('foot')} · <a href="${W}/contact/">${t('contact')}</a></footer>`}
+function setLang(l){L=l;try{localStorage.setItem('wbuLang',l)}catch(e){}const u=new URL(location.href);u.searchParams.set('lang',l);history.replaceState(null,'',u);draw()}
+draw();
+</script>
+</body>
+</html>
