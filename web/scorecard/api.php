@@ -1116,6 +1116,12 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
     }
     out(['ok' => true, 'post' => newsPublic($p), 'fbErr' => $fbErr]);
 
+case 'n_trtest':   // Superadmin: Übersetzer-Verbindung prüfen
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    $c = curl_init('https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl=en');
+    curl_setopt_array($c, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['q' => 'Hallo Welt']), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
+    $raw = curl_exec($c); out(['ok' => true, 'code' => curl_getinfo($c, CURLINFO_HTTP_CODE), 'err' => curl_error($c), 'raw' => mb_substr((string)$raw, 0, 300)]);
+
 case 'n_tr':       // Superadmin: Übersetzungen eines Berichts setzen (Bilder und Facebook bleiben unberührt)
     $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
     $id = preg_replace('/[^a-f0-9]/', '', (string)($in['id'] ?? '')); $tr = newsTr((array)($in['tr'] ?? []));
