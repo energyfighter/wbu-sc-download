@@ -1,7 +1,7 @@
 {
-  "versionCode": 100,
-  "versionName": "1.100",
+  "versionCode": 101,
+  "versionName": "1.101",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Gala: Formular (Teilnahmeerklärung & Haftungsausschluss) zum Herunterladen."
+  "notes": "Neuer Menüpunkt „Results“ (öffentliche Ergebnisseite)."
 }

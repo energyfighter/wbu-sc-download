@@ -1,6 +1,6 @@
 {
-  "versionCode": 100,
-  "versionName": "1.100",
+  "versionCode": 101,
+  "versionName": "1.101",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Gala: Formular (Teilnahmeerklärung & Haftungsausschluss) zum Herunterladen."
+  "notes": "Neuer Menüpunkt „Results“ (öffentliche Ergebnisseite)."
 }
