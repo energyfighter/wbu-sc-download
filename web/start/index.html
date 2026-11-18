@@ -372,7 +372,7 @@ const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth
 // „live“: jede Gala mit offenen Kämpfen (heute oder in den letzten 6 Std. bearbeitet); sind alle Kämpfe fertig, bleibt ihr Monitor noch 30 Min. mit den Ergebnissen stehen.
 // Laufen mehrere gleichzeitig, erscheinen mehrere Monitore untereinander.
 async function lmList(){try{const L0=(await lmApi('l_list',{})).live||[],now=Date.now()/1000;
-  LM.evs=L0.filter(e=>e.type==='gala'&&(e.offen>0?(e.date===today()||now-e.updated<6*3600):now-e.updated<1800));
+  LM.evs=L0.filter(e=>e.type==='gala'&&!(e.date>today())&&(e.offen>0?(e.date===today()||now-e.updated<6*3600):now-e.updated<1800));   // Galas in der Zukunft nie
   for(const k in LM.D)if(!LM.evs.some(e=>e.id===k))delete LM.D[k]}catch(e){}
  await lmData()}
 async function lmData(){await Promise.all(LM.evs.map(async e=>{try{const j=await lmApi('l_get',{lid:e.id});if(j.snap)(LM.D[e.id]=LM.D[e.id]||{}).snap=j.snap}catch(x){}}));lmDraw()}
