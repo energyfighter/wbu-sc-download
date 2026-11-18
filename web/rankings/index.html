@@ -1663,6 +1663,26 @@ function draw(){document.documentElement.lang=L;const K=D.klassen,nC=K.filter(c=
 function setLang(l){L=l;try{localStorage.setItem('wbuLang',l)}catch(e){}const u=new URL(location.href);u.searchParams.set('lang',l);history.replaceState(null,'',u);draw()}
 function setUnit(u){U=u;try{localStorage.setItem('wbuUnit',u)}catch(e){}draw()}
 draw();
+// Profi-Titelkämpfe aus den offiziellen Ergebnissen (nach dem Stand der Liste) automatisch einrechnen – Regel aus „Rules & Fees“
+const RK_POS={intercontinental:3,continental:5,international:7,'youth-world':9,'youth-intercontinental':11,'youth-continental':13,'youth-international':15};
+function rkTitel(t){t=(t||'').toLowerCase();const y=/jugend|youth/.test(t);
+ if(/welt|world/.test(t))return [y?'youth-world':'world','',y?'World Youth Champion':''];
+ if(/interkont|intercont/.test(t))return [y?'youth-intercontinental':'intercontinental','',y?'Intercontinental Youth Champion':'Intercontinental Champion'];
+ const k=/asien|asia/.test(t)?'Asian':/afrika|africa/.test(t)?'African':/amerika|america/.test(t)?'American':/europa|euro|kontinent|contin/.test(t)?'European':'';
+ if(k)return [y?'youth-continental':'continental','',k+(y?' Youth Champion':' Champion')];
+ if(/internation/.test(t))return [y?'youth-international':'international','',y?'International Youth Champion':'International Champion'];return null}
+function rkApply(c,name,typ,tag){const L2=c.list,same=a=>a.trim().toLowerCase()===name.trim().toLowerCase();
+ if(typ==='world'){const alt=c.champ;for(let i=L2.length-1;i>=0;i--)if(same(L2[i].n))L2.splice(i,1);if(alt&&!/^vacant$/i.test(alt)&&!same(alt))L2.unshift({n:alt,t:'Former World Champion'});c.champ=name}
+ else{const ziel=RK_POS[typ];L2.forEach(x=>{if(x.t===tag&&!same(x.n))x.t='Former '+tag});const ist=L2.findIndex(x=>same(x.n));
+  if(ist>=0&&ist+1<=ziel)L2[ist].t=tag;else{if(ist>=0)L2.splice(ist,1);L2.splice(ziel-1,0,{n:name,t:tag})}}
+ L2.length=Math.min(L2.length,15);L2.forEach((x,i)=>x.r=i+1)}
+(async()=>{try{const j=await fetch('/scorecard/api.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a:'r_list'})}).then(r=>r.json());
+ const ev=[];for(const g of j.list||[]){if(g.type!=='gala')continue;const m=String(g.date||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/),d=m?`${m[3]}-${m[2]}-${m[1]}`:String(g.date||'').slice(0,10);if(!d||d<=(D.stand||''))continue;
+  for(const f of g.fights||[]){if(!f.w||!f.title)continue;const parts=String(f.title).split(' · ');const pro=parts.includes('Profi')||(!parts.some(x=>/semi|master|k1|knuckle|hybrid/i.test(x))&&/^3/.test(f.dur||''));if(!pro)continue;
+   const ti=rkTitel(parts.find(x=>/meisterschaft|champion|title|titel/i.test(x)));if(!ti)continue;const kl=(String(f.title).match(/\(([^)]+weight)\)/i)||[])[1];if(!kl)continue;
+   ev.push({d,no:f.no||0,kl,name:f.w==='R'?f.red:f.blue,typ:ti[0],tag:ti[2]})}}
+ if(!ev.length)return;ev.sort((a,b)=>a.d.localeCompare(b.d)||a.no-b.no);
+ for(const e of ev){const c=D.klassen.find(x=>x.kl.toLowerCase()===e.kl.toLowerCase());if(c)rkApply(c,e.name,e.typ,e.tag);if(e.d>D.stand)D.stand=e.d}draw()}catch(e){}})();
 </script>
 </body>
 </html>

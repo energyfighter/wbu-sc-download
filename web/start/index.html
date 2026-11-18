@@ -10,6 +10,9 @@
 <style>
 :root{--bg:#0b0d12;--card:#151922;--line:#262b36;--gold:#d8a93a;--gold2:#f2cf6b;--red:#e0262e;--blue:#1f6fe5;--txt:#f4f1ea}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.chb{margin-top:40px;border-top:2px solid var(--gold);padding-top:24px}.chs{color:#c9c5bd;margin:6px 0 18px}.chsp{margin:0 0 30px}.chsp h3{font:700 26px Oswald,Inter,sans-serif;text-transform:uppercase;color:var(--gold);margin:18px 0 8px}
+.chsp h4{font:700 16px Inter,sans-serif;margin:16px 0 8px;color:var(--txt)}.chw{overflow-x:auto}.cht{width:100%;border-collapse:collapse;font:14px Inter,sans-serif;min-width:720px}.cht th{text-align:left;background:#1d2230;color:var(--gold);padding:10px;font-size:12px;letter-spacing:1px;text-transform:uppercase}
+.cht td{padding:10px;border-bottom:1px solid #262b36;vertical-align:top}.cht tr:nth-child(even) td{background:#12151c}.cht td small{display:block;color:#9aa1b2;font-size:12px;margin-top:2px}.cht td.ok{color:#5fd38d;font-weight:700}.cht td.vk{color:#9aa1b2}
 .nwl{padding:14px}.nc{cursor:default}.npg{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 4px}.npg button{background:#1d2230;color:var(--txt);border:1px solid #2a3040;border-radius:10px;padding:10px 14px;font:700 15px Inter,sans-serif;cursor:pointer}.npg button.on{background:var(--gold);color:#111;border-color:var(--gold)}.npg button:hover{border-color:var(--gold)}
 .allp{display:block;margin:0 14px 16px;text-align:center}
 .plk{max-width:1240px;margin:0 auto;padding:26px 22px 70px}.plk p{color:#c9c5bd;margin:6px 0 20px}.plg{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}.plg a{display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#151922;text-decoration:none}.plg img{display:block;width:100%;aspect-ratio:3/4;object-fit:contain;background:#0b0d12}.plg span{display:block;padding:6px 10px;color:var(--gold);font:700 13px Inter,sans-serif}
@@ -248,6 +251,45 @@ const GUERTEL=[5,1,6,2,7,3,8,4].map(n=>'/start/img/guertel-'+String(n).padStart(
 function guertelSeite(v){v.innerHTML=`<div class="in wpw"><h1 class="H">${t('belts')}</h1><div class="bar"></div><div class="gg">${GUERTEL.map((u,i)=>`<a href="${u}" onclick="return zoom(${i})"><img src="${u}" alt="WBU ${t('belts')} ${i+1}" loading="lazy"></a>`).join('')}</div></div>`}
 function zoomU(u){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${u}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
 function zoom(i){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${GUERTEL[i]}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
+// ---- Champions: aktuelle WBU-Titelträger (automatisch aus den Ergebnissen + frühere Titel) ----
+const CH_SP=['Profi','Semi-Pro','Master','K1 / Kickboxen','Bare Knuckle','Hybrid'];
+const CH_T={de:{h:'Aktuelle WBU-Champions',s:'Alle Titelträger aus WBU-Veranstaltungen – automatisch aus den offiziellen Ergebnissen. Ein Titel wird 3 Monate nach dem Gewinn vakant, der Champion bleibt hier aufgeführt.',
+  ti:'Titelkämpfe',tu:'Turniermodus',c:'Champion',t:'Titel',w:'Gewichtsklasse',a:'Altersklasse',d:'Gewonnen',st:'Status',bis:'Titelträger bis',vak:'Titel vakant seit',sp:{Profi:'Profiboxen','Semi-Pro':'Semi-Pro-Boxen',Master:'Masterboxen','K1 / Kickboxen':'K1 / Kickboxen','Bare Knuckle':'Bare-Knuckle-Boxen',Hybrid:'Hybrid-Boxen'}},
+ en:{h:'Current WBU Champions',s:'All title holders from WBU events – taken automatically from the official results. A title becomes vacant 3 months after it was won; the champion stays listed here.',
+  ti:'Title fights',tu:'Tournament',c:'Champion',t:'Title',w:'Weight class',a:'Age class',d:'Won',st:'Status',bis:'Title holder until',vak:'Title vacant since',sp:{Profi:'Professional Boxing','Semi-Pro':'Semi-Pro Boxing',Master:'Masters Boxing','K1 / Kickboxen':'K1 / Kickboxing','Bare Knuckle':'Bare-Knuckle Boxing',Hybrid:'Hybrid Boxing'}},
+ es:{h:'Campeones WBU actuales',s:'Todos los campeones de eventos WBU, tomados automáticamente de los resultados oficiales. Un título queda vacante 3 meses después de ganarlo; el campeón sigue en la lista.',
+  ti:'Combates por el título',tu:'Modo torneo',c:'Campeón',t:'Título',w:'Categoría',a:'Categoría de edad',d:'Ganado',st:'Estado',bis:'Campeón hasta',vak:'Título vacante desde',sp:{Profi:'Boxeo profesional','Semi-Pro':'Boxeo semipro',Master:'Boxeo Masters','K1 / Kickboxen':'K1 / Kickboxing','Bare Knuckle':'Boxeo bare-knuckle',Hybrid:'Boxeo híbrido'}},
+ fr:{h:'Champions WBU actuels',s:'Tous les détenteurs de titres des événements WBU – repris automatiquement des résultats officiels. Un titre devient vacant 3 mois après la victoire ; le champion reste affiché ici.',
+  ti:'Combats pour le titre',tu:'Mode tournoi',c:'Champion',t:'Titre',w:'Catégorie',a:"Catégorie d'âge",d:'Gagné le',st:'Statut',bis:"Tenant du titre jusqu'au",vak:'Titre vacant depuis',sp:{Profi:'Boxe professionnelle','Semi-Pro':'Boxe semi-pro',Master:'Boxe Masters','K1 / Kickboxen':'K1 / Kickboxing','Bare Knuckle':'Boxe à mains nues',Hybrid:'Boxe hybride'}},
+ ru:{h:'Действующие чемпионы WBU',s:'Все обладатели титулов турниров WBU – автоматически из официальных результатов. Через 3 месяца после победы титул становится вакантным; чемпион остаётся в списке.',
+  ti:'Титульные бои',tu:'Турнир',c:'Чемпион',t:'Титул',w:'Весовая категория',a:'Возрастная группа',d:'Завоёван',st:'Статус',bis:'Чемпион до',vak:'Титул вакантен с',sp:{Profi:'Профессиональный бокс','Semi-Pro':'Полупрофессиональный бокс',Master:'Бокс мастеров','K1 / Kickboxen':'K1 / кикбоксинг','Bare Knuckle':'Бокс голыми кулаками',Hybrid:'Гибридный бокс'}}};
+// Frühere Titel (aus Berichten und Facebook) – Format: {sp,t,n,c,w,a,d:'JJJJ-MM-TT',ev}
+const CH_HIST=[];
+const chD=s=>{s=String(s||'');let m=s.match(/^(\d{2})[.-](\d{2})[.-](\d{4})$/);if(m)return `${m[3]}-${m[2]}-${m[1]}`;m=s.match(/^\d{4}-\d{2}-\d{2}/);return m?m[0]:''};
+const chFmt=d=>d?d.split('-').reverse().join('.'):'';
+const chPlus3=d=>{const x=new Date(d+'T12:00:00');x.setMonth(x.getMonth()+3);return x.toISOString().slice(0,10)};
+const chRank=t=>{t=(t||'').toLowerCase();return /welt|world/.test(t)?(/jugend|youth/.test(t)?5:0):/interkont|intercont/.test(t)?(/jugend|youth/.test(t)?6:1):/europa|euro|asien|asia|afrika|africa|amerika|america|kontinent|contin/.test(t)?(/jugend|youth/.test(t)?7:2):/internation/.test(t)?(/jugend|youth/.test(t)?8:3):/deutsch|german|national/.test(t)?4:9};
+function chFromResults(L){const out=[];
+ for(const g of L){const d=chD(g.date);
+  if(g.type==='turnier'){if(!/meister|champion/i.test(g.name))continue;
+   for(const p of g.places||[]){if(!p.first)continue;const parts=String(p.kl).split(' · ');
+    out.push({sp:CH_SP.find(x=>parts[0]&&parts[0].toLowerCase().startsWith(x.toLowerCase().slice(0,4)))||parts[0]||'Semi-Pro',t:g.name.replace(/\s*\d{4}$/,''),n:p.first.n,c:p.first.c,w:parts.slice(2).join(' · '),a:parts[1]||'',d,ev:g.name,tu:g.name})}
+   continue}
+  for(const f of g.fights||[]){if(!f.w||!f.title)continue;const parts=String(f.title).split(' · ').map(x=>x.trim());
+   const ti=parts.find(x=>/meisterschaft|champion|title|titel/i.test(x));if(!ti)continue;
+   const sp=parts.find(x=>CH_SP.includes(x))||(/3/.test(f.dur||'')?'Profi':'Semi-Pro');const w=parts.find(x=>/gewicht|weight|kg|lbs/i.test(x))||'';
+   const win=f.w==='R'?f.red:f.blue,inf=String((f.w==='R'?f.ri:f.bi)||'').split(' · '),age=inf.find(x=>/\d+ J\./.test(x))||'';
+   out.push({sp,t:ti,n:win,c:inf.filter(x=>x&&!/\d+ J\.|kg$/.test(x)).join(' · '),w:w.replace(/\s*·.*$/,''),a:sp==='Master'&&age?'Master · '+age.replace(' J.',' Jahre'):'',d,ev:g.name})}}
+ return out}
+async function champBlock(host){if(!host)return;const T3=CH_T[L]||CH_T.en;const box=document.createElement('section');box.className='chb';box.innerHTML=`<h2 class="H">${T3.h}</h2><p class="chs">${T3.s}</p><div class="chl">…</div>`;host.appendChild(box);
+ let R=[];try{R=(await nApi('r_list',{})).list||[]}catch(e){}
+ const A=[...CH_HIST,...chFromResults(R)],heute=new Date().toISOString().slice(0,10);
+ const row=x=>{const v=x.d?chPlus3(x.d):'',vak=v&&v<=heute;return `<tr><td><b>${nEsc(x.n)}</b>${x.c?`<small>${nEsc(x.c)}</small>`:''}</td><td>${nEsc(x.t)}</td><td>${nEsc(x.w||'–')}</td><td>${nEsc(x.a||'–')}</td><td>${chFmt(x.d)}</td><td class="${vak?'vk':'ok'}">${v?(vak?T3.vak+' '+chFmt(v):T3.bis+' '+chFmt(v)):''}</td></tr>`};
+ const tab=(h,L2)=>`<h4>${h}</h4><div class="chw"><table class="cht"><thead><tr><th>${T3.c}</th><th>${T3.t}</th><th>${T3.w}</th><th>${T3.a}</th><th>${T3.d}</th><th>${T3.st}</th></tr></thead><tbody>${L2.map(row).join('')}</tbody></table></div>`;
+ let h='';for(const sp of CH_SP){const X=A.filter(x=>x.sp===sp);if(!X.length)continue;
+  const tf=X.filter(x=>!x.tu).sort((a,b)=>chRank(a.t)-chRank(b.t)||(b.d||'').localeCompare(a.d||'')),tus=[...new Set(X.filter(x=>x.tu).map(x=>x.tu))];
+  h+=`<div class="chsp"><h3>${(T3.sp[sp]||sp)}</h3>${tf.length?tab(T3.ti,tf):''}${tus.map(n=>tab(n+' · '+T3.tu,X.filter(x=>x.tu===n).sort((a,b)=>(a.a||'').localeCompare(b.a||'',undefined,{numeric:true})||(a.w||'').localeCompare(b.w||'',undefined,{numeric:true})))).join('')}</div>`}
+ box.querySelector('.chl').innerHTML=h||'<p>–</p>'}
 async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'/'+slug+'/';
  if(slug==='belt')return guertelSeite(v);
  v.innerHTML=`<div class="wpmsg">…</div>`;
@@ -268,6 +310,7 @@ async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'
   tmp.querySelectorAll('img[srcset]').forEach(i=>i.setAttribute('sizes','(max-width:900px) 100vw, 900px'));
   v.innerHTML=`<div class="in wpw"><h1 class="H">${d.title.rendered}</h1><div class="bar"></div><div class="wp">${tmp.innerHTML}</div></div>`;
   v.querySelectorAll('.wp form').forEach(f=>{f.removeAttribute('target');f.addEventListener('submit',e=>cfSend(e,f,slug))});
+  if(slug==='champions')champBlock(v.querySelector('.wpw'));
  }catch(e){v.innerHTML=`<div class="wpmsg">⚠️ <a class="btn" href="${old}">${old}</a></div>`}}
 const CFT={en:['Sending …','Thank you – your message has been sent.','Message could not be sent. Please check your entries.'],de:['Wird gesendet …','Danke – deine Nachricht wurde gesendet.','Nachricht konnte nicht gesendet werden. Bitte Eingaben prüfen.'],
  es:['Enviando …','Gracias – tu mensaje ha sido enviado.','No se pudo enviar el mensaje. Revisa tus datos.'],fr:['Envoi …','Merci – ton message a été envoyé.',"Le message n'a pas pu être envoyé. Vérifie tes saisies."],ru:['Отправка …','Спасибо – сообщение отправлено.','Не удалось отправить сообщение. Проверьте данные.']};
