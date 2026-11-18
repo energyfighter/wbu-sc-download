@@ -11,10 +11,10 @@ var D={
 "Fight Quiz":["Fight-Quiz","Fight Quiz","Fight Quiz","Fight Quiz"],
 "WHITELIST SOON":["WHITELIST BALD","WHITELIST PRONTO","WHITELIST BIENTÔT","WHITELIST СКОРО"],
 "COMING SOON":["DEMNÄCHST","PRÓXIMAMENTE","BIENTÔT","СКОРО"],
-"WORLD BOXING UNION · PRO BOXING RANKING · ON SOLANA":["WORLD BOXING UNION · PROFIBOX-RANGLISTE · AUF SOLANA","WORLD BOXING UNION · RANKING DE BOXEO PROFESIONAL · EN SOLANA","WORLD BOXING UNION · CLASSEMENT DE BOXE PRO · SUR SOLANA","WORLD BOXING UNION · РЕЙТИНГ ПРОФИ-БОКСА · НА SOLANA"],
+"WORLD BOXING UNION · PRO BOXING RANKING · ON SOLANA":["WORLD BOXING UNION · PROFIBOX-RANGLISTE · AUF SOLANA","WORLD BOXING UNION · RANKING DE BOXEO PRO · EN SOLANA","WORLD BOXING UNION · CLASSEMENT DE BOXE PRO · SUR SOLANA","WORLD BOXING UNION · РЕЙТИНГ ПРОФИ-БОКСА · НА SOLANA"],
 "FIGHT FOR THE":["KÄMPFE UM DEN","LUCHA POR EL","BATS-TOI POUR LE","БОРИСЬ ЗА"],
 "WORLD TITLE.":["WELTMEISTERTITEL.","TÍTULO MUNDIAL.","TITRE MONDIAL.","ТИТУЛ ЧЕМПИОНА."],
-"FROM ANYWHERE.":["VON ÜBERALL.","DESDE CUALQUIER LUGAR.","OÙ QUE TU SOIS.","ОТКУДА УГОДНО."],
+"FROM ANYWHERE.":["VON ÜBERALL.","DESDE DONDE SEA.","OÙ QUE TU SOIS.","ОТКУДА УГОДНО."],
 "The first official world ranking of a professional boxing federation that anyone can enter. Play, collect ranking points in your weight class – and on Title Day the leader is crowned WBU World Champion and receives the real belt.":[
 "Die erste offizielle Weltrangliste eines Profibox-Verbands, in die jeder einsteigen kann. Spiele, sammle Ranglistenpunkte in deiner Gewichtsklasse – und am Titeltag wird der Führende zum WBU-Weltmeister gekürt und bekommt den echten Gürtel.",
 "El primer ranking mundial oficial de una federación de boxeo profesional en el que cualquiera puede participar. Juega, suma puntos de ranking en tu categoría de peso – y en el Día del Título el líder es coronado Campeón Mundial WBU y recibe el cinturón real.",
