@@ -14,7 +14,7 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .in{max-width:1240px;margin:0 auto;padding:0 22px}
 /* Kopf */
 .top{background:#0b0d12;border-bottom:1px solid var(--line)}
-.top .in{display:flex;align-items:center;gap:16px;padding-top:12px;padding-bottom:12px}
+.top .in{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-top:12px;padding-bottom:12px}
 .brand{display:flex;align-items:center;gap:12px;flex:1}.brand img{width:50px;height:50px}.brand b{font:700 24px Oswald,sans-serif;letter-spacing:1px}.brand b span{color:var(--gold)}
 .brand small{display:block;font:600 12px Inter,sans-serif;letter-spacing:3px;color:var(--gold)}
 .lang{display:flex;gap:4px;background:#1a1e27;border:1px solid var(--line);border-radius:10px;padding:3px}
@@ -26,12 +26,24 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .menu a.coin{color:#140e00;background:var(--gold)}.menu a.coin:hover{background:var(--gold2);color:#140e00}
 .dd{position:relative}.dd .sub{display:none;position:absolute;top:100%;left:0;min-width:180px;background:#151922;border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
 .dd:hover .sub{display:block}
+@media(max-width:900px){.top .in{padding-top:8px;padding-bottom:8px}.brand img{width:40px;height:40px}.brand b{font-size:18px}.brand small{font-size:10px;letter-spacing:2px}.top .lang button{padding:6px 6px;font-size:12px}.dd .sub{display:block;position:static;box-shadow:none;border:0;padding:0 0 0 10px;background:none}}
 
 /* Gürtel-Banner */
 .belts{background:#000;border-bottom:1px solid var(--line)}.belts a{display:block;max-width:1240px;margin:0 auto}.belts img{display:block;width:100%}
 .menu .in{align-items:center}.menu .sp{flex:1}.menu .lang{margin-left:6px}
 .fb{background:linear-gradient(180deg,#171b25,#12151c);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:22px}.fb h3{margin:0;padding:14px 18px;font-size:20px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(24,119,242,.25),transparent 70%)}
 .fb .fr{display:flex;justify-content:center;padding:16px;background:#fff}.fb iframe{border:0;max-width:100%}.fb a.btn{margin:14px 18px}
+.tr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.soc{display:flex;gap:6px}.soc a{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:9px;background:#1a1e27}.soc a:hover{background:var(--gold)}.soc a:hover svg{fill:#140e00}.soc svg{width:17px;height:17px;fill:var(--txt)}
+/* WordPress-Inhalte im neuen Design */
+.wpw{padding:30px 22px 60px}.wpw h1{font-size:clamp(28px,4vw,44px);margin:0 0 6px;color:var(--gold2)}.wpw .bar{height:3px;width:90px;background:linear-gradient(90deg,var(--gold),transparent);margin-bottom:24px}
+.wp{background:linear-gradient(180deg,#151922,#11141b);border:1px solid var(--line);border-radius:16px;padding:clamp(16px,3vw,34px);font-size:16px;line-height:1.65;overflow-wrap:anywhere}
+.wp *{color:inherit!important;background-color:transparent!important;font-family:inherit!important;max-width:100%}
+.wp h1,.wp h2,.wp h3,.wp h4{font-family:Oswald,Impact,sans-serif!important;text-transform:uppercase;letter-spacing:.5px;color:var(--gold2)!important;line-height:1.2}
+.wp a{color:var(--gold2)!important;text-decoration:underline}.wp img{height:auto;border-radius:10px}.wp figure{margin:18px auto}.wp .aligncenter{display:block;margin-left:auto;margin-right:auto}
+.wp table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px;display:block;overflow-x:auto}.wp td,.wp th{border:1px solid var(--line)!important;padding:8px 10px;vertical-align:top}.wp tr:nth-child(even) td{background:#1a1f2a!important}.wp tr:first-child td,.wp th{background:#222837!important;font-weight:700}
+.wp input,.wp textarea,.wp select{background:#0f1218!important;border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;color:var(--txt)!important;font-size:15px}.wp button,.wp input[type=submit]{background:var(--gold)!important;color:#140e00!important;border:0;border-radius:9px;padding:11px 18px;font-weight:800;width:auto;cursor:pointer}
+.wp iframe{max-width:100%;border:0}.wp .wp-block-gallery,.wp .blocks-gallery-grid{display:flex;flex-wrap:wrap;gap:12px;list-style:none;padding:0}.wp .blocks-gallery-item,.wp .wp-block-image{flex:1 1 220px}
+.wpmsg{padding:60px 22px;text-align:center;font-size:18px}
 /* Verbände */
 .orgs{display:flex;justify-content:center;gap:clamp(10px,2.4vw,30px);flex-wrap:wrap;padding:28px 0 6px}
 .orgs a{display:block;width:clamp(78px,10vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
@@ -48,7 +60,6 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .ft{border-top:1px solid var(--line);padding:30px 22px;text-align:center;font-size:14px}.ft a{color:var(--gold)}
 @media(max-width:900px){.main{grid-template-columns:1fr;padding:18px 14px 40px}
  .mbar{display:flex!important}.menu .in{display:none}.menu.open .in{display:flex}}
-@media(max-width:900px){.lang.dl{display:none}}
 .mbar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px}
 .burger{background:#1a1e27;border:1px solid var(--line);color:var(--txt);font:700 14px Inter,sans-serif;padding:9px 12px;border-radius:9px;cursor:pointer}
 </style>
@@ -77,37 +88,106 @@ const T={
 let L=(()=>{const q=new URLSearchParams(location.search).get('lang');if(LANGS.includes(q))return q;try{const s=localStorage.getItem('wbuLang');if(LANGS.includes(s))return s}catch(e){}return 'en'})();
 const t=k=>(T[L]||T.en)[k]||T.en[k];
 const lq=u=>u.startsWith(WWW)?u+(u.includes('?')?'&':'?')+'lang='+L:u;
-function MENU(){return [[t('home'),'./',1],[t('rank'),WWW+'/rankings/'],[t('champ'),W+'/champions/'],[t('res'),WWW+'/results/'],[t('rules'),W+'/sample-page/'],[t('belts'),W+'/belt/'],
- ['PBU',W+'/upcoming-fights/'],['EBO',W+'/ebo-2/'],['WFU',W+'/wfu/'],['K1',W+'/k1/'],['SemiPro',W+'/semipro/'],['Master',W+'/master/'],['BKB',W+'/bkb/'],['HYBB (4oz)',W+'/hbkb4oz/'],['Stress-Defense',W+'/sd/'],
- [t('dl'),W+'/downloads/'],[t('hist'),W+'/about-wbu/'],[t('dir'),W+'/directory/'],[t('contact'),W+'/contact/'],[t('shop'),'https://wbu.printify.me/'],[t('bl'),W+'/bundesliga/'],
- ['WBU Sports',WWW+'/anmeldung/',0,[['WBU Live',WWW+'/live/'],['WBU Time 1',WWW+'/live/?zeit=1&ring=1'],['WBU Time 2',WWW+'/live/?zeit=1&ring=2']]],['Scorecard',W+'/scorecard/'],['WBU Coin',W+'/coin/',0,0,'coin']]}
-const ORGS=[['WBU','2026/01/wbulogo-150x150.png',W+'/sample-page/'],['PBU','2026/01/PBULOGO-150x150.png',W+'/upcoming-fights/'],['EBO','2026/01/ebologo-150x150.png',W+'/ebo-2/'],
- ['WFU','2026/01/wfunew-1-150x150.png',W+'/wfu/'],['Stress Defense','2026/01/SD_logo_freigestellt-150x150.png',W+'/sd/'],['WBU Bundesliga','2026/01/wbulogoBUNDESLIGA-1-150x150.png',W+'/bundesliga/']];
+// Neue WBU-Seiten werden UNTER Kopf, Banner und Menü angezeigt (Menü bleibt immer stehen)
+const ROUTES=['rankings','results','live','coin','anmeldung'];
+const R=p=>'#'+p;               // Link auf eine eingebettete Seite
+function MENU(){return [[t('home'),'#',1],[t('rank'),R('rankings'),'rankings'],[t('champ'),R('p/champions'),'p/champions'],[t('res'),R('results'),'results'],[t('rules'),R('p/sample-page'),'p/sample-page'],[t('belts'),R('p/belt'),'p/belt'],
+ ['PBU',R('p/upcoming-fights'),'p/upcoming-fights'],['EBO',R('p/ebo-2'),'p/ebo-2'],['WFU',R('p/wfu'),'p/wfu'],['K1',R('p/k1'),'p/k1'],['SemiPro',R('p/semipro'),'p/semipro'],['Master',R('p/master'),'p/master'],['BKB',R('p/bkb'),'p/bkb'],['HYBB (4oz)',R('p/hbkb4oz'),'p/hbkb4oz'],['Stress-Defense',R('p/sd'),'p/sd'],
+ [t('dl'),R('p/downloads'),'p/downloads'],[t('hist'),R('p/about-wbu'),'p/about-wbu'],[t('dir'),R('p/directory'),'p/directory'],[t('contact'),R('p/contact'),'p/contact'],[t('shop'),'https://wbu.printify.me/',0,0,'',1],[t('bl'),R('p/bundesliga'),'p/bundesliga'],
+ ['WBU Sports',R('anmeldung'),'anmeldung',[['WBU Live',R('live')],['WBU Time 1',lq(WWW+'/live/?zeit=1&ring=1'),0,1],['WBU Time 2',lq(WWW+'/live/?zeit=1&ring=2'),0,1]]],['Scorecard',W+'/scorecard/'],['WBU Coin',R('coin'),'coin',0,'coin']]}
+const ORGS=[['WBU','2026/01/wbulogo-150x150.png',R('p/sample-page'),'p/sample-page'],['PBU','2026/01/PBULOGO-150x150.png',R('p/upcoming-fights'),'p/upcoming-fights'],['EBO','2026/01/ebologo-150x150.png',R('p/ebo-2'),'p/ebo-2'],
+ ['WFU','2026/01/wfunew-1-150x150.png',R('p/wfu'),'p/wfu'],['Stress Defense','2026/01/SD_logo_freigestellt-150x150.png',R('p/sd'),'p/sd'],['WBU Bundesliga','2026/01/wbulogoBUNDESLIGA-1-150x150.png',R('p/bundesliga'),'p/bundesliga']];
+const SOC=`<div class="soc"><a href="https://www.facebook.com/WorldBoxingUnionV" target="_blank" rel="noopener" title="Facebook"><svg viewBox="0 0 24 24"><path d="M14 8h3V4h-3c-2.8 0-4 1.7-4 4.2V10H7v4h3v8h4v-8h3l.6-4H14V8.6c0-.4.2-.6.6-.6z"/></svg></a><a href="https://twitter.com/WBU_Office" target="_blank" rel="noopener" title="X / Twitter"><svg viewBox="0 0 24 24"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z"/></svg></a><a href="mailto:ebp@gmx.de" title="E-Mail"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3zm2 2v.5l7 4.6 7-4.6V7zm14 2.9-7 4.6-7-4.6V17h14z"/></svg></a></div>`;
+const route=()=>decodeURIComponent(location.hash.slice(1));
+const rootOf=r=>r.split(/[\/?]/)[0];
+const langBox=cls=>`<div class="lang ${cls||''}">${LANGS.map(l=>`<button class="${l===L?'on':''}" onclick="setLang('${l}')">${l.toUpperCase()}</button>`).join('')}</div>`;
 function draw(){document.documentElement.lang=L;
- const m=MENU().map(([n,u,on,sub,cls])=>sub?`<div class="dd"><span>${n} ▾</span><div class="sub">${[[n,u],...sub].map(([a,b])=>`<a href="${lq(b)}">${a}</a>`).join('')}</div></div>`:`<a class="${on?'on':''} ${cls||''}" href="${lq(u)}">${n}</a>`).join('');
- const FB='https://www.facebook.com/WorldBoxingUnionV',fbw=Math.min(500,Math.max(280,(document.querySelector('.main>div')||{clientWidth:500}).clientWidth-34||500));
+ const cur=route().startsWith('p/')?route():(rootOf(route())||'#');
+ const isOn=k=>k&&(k===1?cur==='#':k===cur);
+ const m=MENU().map(([n,u,k,sub,cls,nw])=>sub?`<div class="dd"><a class="${isOn(k)?'on':''}" href="${u}">${n} ▾</a><div class="sub">${sub.map(([a,b,,nw])=>`<a href="${b}" ${nw?'target="_blank" rel="noopener"':''}>${a}</a>`).join('')}</div></div>`
+   :`<a class="${isOn(k)?'on':''} ${cls||''}" href="${u}" ${nw?'target="_blank" rel="noopener"':''}>${n}</a>`).join('');
  document.getElementById('app').innerHTML=`
- <div class="belts"><a href="./"><img src="${UP}2026/11/cropped-banner-1.png" alt="World Boxing Union – World Champion Belts"></a></div>
- <nav class="menu"><div class="mbar"><button class="burger" onclick="document.querySelector('.menu').classList.toggle('open')">☰ ${t('menu')}</button>
-   <div class="lang">${LANGS.map(l=>`<button class="${l===L?'on':''}" onclick="setLang('${l}')">${l.toUpperCase()}</button>`).join('')}</div></div>
-  <div class="in">${m}<span class="sp"></span><div class="lang dl">${LANGS.map(l=>`<button class="${l===L?'on':''}" onclick="setLang('${l}')">${l.toUpperCase()}</button>`).join('')}</div></div></nav>
- <div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
+ <header class="top"><div class="in"><a class="brand" href="#"><img src="${UP}2026/01/wbulogo-150x150.png" alt="WBU"><div><b>WORLD BOXING <span>UNION</span></b><small>${t('sub').toUpperCase()}</small></div></a><div class="tr">${SOC}${langBox()}</div></div></header>
+ <div class="belts"><a href="#"><img src="${UP}2026/11/cropped-banner-1.png" alt="World Boxing Union – World Champion Belts"></a></div>
+ <nav class="menu" id="menu"><div class="mbar"><button class="burger" onclick="document.querySelector('.menu').classList.toggle('open')">☰ ${t('menu')}</button></div>
+  <div class="in">${m}</div></nav>
+ <div id="view"></div>
+ <footer class="ft">© World Boxing Union · ${t('foot')} · <a href="#p/contact">${t('contact')}</a></footer>`;
+ view()}
+function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
+ return `<div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
  <div class="main"><div>
-   <a class="ban" href="${lq(WWW+'/anmeldung/')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
-   <a class="ban" href="${W}/coin/"><img src="${UP}2021/01/wbu-coin-banner-850x300-4x.jpg" alt="WBU Coin – Coming Soon"></a>
+   <a class="ban" href="${R('anmeldung')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
+   <a class="ban" href="${R('coin')}"><img src="${UP}2021/01/wbu-coin-banner-850x300-4x.jpg" alt="WBU Coin – Coming Soon"></a>
    <section class="fb"><h3 class="H">${t('fb')}</h3><div class="fr"><iframe title="Facebook" src="https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB)}&tabs=timeline&width=500&height=1400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false" width="500" height="1400" scrolling="no" allow="encrypted-media" loading="lazy"></iframe></div>
     <a class="btn" href="${FB}" target="_blank" rel="noopener">${t('fbb')} ›</a></section></div>
   <aside class="side">
    <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
    <div class="card"><h3 class="H">${t('more')}</h3>
-    <a class="tile" href="${lq(WWW+'/rankings/')}"><span class="i">🏆</span><div><b>${t('t1')}</b><span>${t('t1s')}</span></div></a>
-    <a class="tile" href="${lq(WWW+'/results/')}"><span class="i">🥊</span><div><b>${t('t2')}</b><span>${t('t2s')}</span></div></a>
-    <a class="tile" href="${lq(WWW+'/live/')}"><span class="i">📡</span><div><b>${t('t3')}</b><span>${t('t3s')}</span></div></a>
-    <a class="tile" href="${W}/coin/"><span class="i">🥇</span><div><b>WBU Coin</b><span>${t('t4s')}</span></div></a></div>
-   <div class="card"><h3 class="H">Facebook</h3><div class="fr" style="display:flex;justify-content:center;padding:12px;background:#fff"><iframe title="Facebook" src="https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB)}&tabs=&width=290&height=200&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true" width="290" height="200" style="border:0" scrolling="no" loading="lazy"></iframe></div></div>
-  </aside></div>
- <footer class="ft">© World Boxing Union · ${t('foot')} · <a href="${W}/contact/">${t('contact')}</a></footer>`}
+    <a class="tile" href="${R('rankings')}"><span class="i">🏆</span><div><b>${t('t1')}</b><span>${t('t1s')}</span></div></a>
+    <a class="tile" href="${R('results')}"><span class="i">🥊</span><div><b>${t('t2')}</b><span>${t('t2s')}</span></div></a>
+    <a class="tile" href="${R('live')}"><span class="i">📡</span><div><b>${t('t3')}</b><span>${t('t3s')}</span></div></a>
+    <a class="tile" href="${R('coin')}"><span class="i">🥇</span><div><b>WBU Coin</b><span>${t('t4s')}</span></div></a></div>
+  </aside></div>`}
+// Seite im Rahmen: Pfad + Sprache; deren eigenes Kopf-Menü wird ausgeblendet, Untermenüs (z. B. Fight Quiz) bleiben
+const HIDE={rankings:'.nav{display:none!important}',results:'.nav{display:none!important}',coin:'#wbuTop{display:none!important}',live:'',anmeldung:''};
+let frameTimer=0;
+function view(){const r=route(),k=rootOf(r),v=document.getElementById('view');clearInterval(frameTimer);
+ if(r.startsWith('p/'))return wpPage(r.slice(2),v);
+ if(!ROUTES.includes(k)){v.innerHTML=home();return}
+ const rest=r.slice(k.length).replace(/^\//,'');let p='/'+k+'/'+rest;
+ const u=new URL(p,location.origin);u.searchParams.set('lang',L);
+ v.innerHTML=`<iframe id="sub" title="WBU" src="${u.pathname+u.search}" style="display:block;width:100%;height:80vh;border:0;opacity:0;transition:opacity .2s"></iframe>`;
+ const f=document.getElementById('sub');let done=false,last=0,grow=0;
+ frameTimer=setInterval(()=>{let d;try{d=f.contentDocument}catch(e){return}
+  if(!d||!d.body||d.location.href==='about:blank')return;
+  if(!done&&d.readyState!=='loading'){done=true;prep(d,k);f.style.opacity=1}
+  if(done){const h=Math.max(d.documentElement.scrollHeight,d.body.scrollHeight);
+   if(Math.abs(h-last)>3){grow=h>last&&last?grow+1:0;last=h;if(grow<40&&h<60000)f.style.height=h+'px'}}},120);
+ f.addEventListener('load',()=>{done=false;last=0;f.style.opacity=0;
+  // Unterseite innerhalb des Rahmens gewechselt (z. B. Fight Quiz) → Adresse oben mitführen
+  try{const lp=f.contentWindow.location;const nr=routeOf(new URL(lp.href));if(nr!==null&&nr!==route())history.replaceState(null,'','#'+nr)}catch(e){}});
+}
+const ours=h=>h===location.hostname||/(^|\.)wbu-boxing\.com$/.test(h);
+function routeOf(u){if(!ours(u.hostname))return null;
+ if(u.pathname==='/'||u.pathname==='/start/'||u.pathname==='/start/index.html')return u.hash&&u.hash.length>1?null:'';
+ const m=u.pathname.match(/^\/(rankings|results|live|coin|anmeldung)\/(.*)$/);if(!m)return null;
+ if(m[1]==='live'&&u.searchParams.get('zeit'))return null;
+ u.searchParams.delete('lang');const rest=(m[2]&&m[2]!=='index.html'?'/'+m[2]:'')+(u.search&&u.search!=='?'?u.search:'');return m[1]+rest}
+function prep(d,k){try{const st=d.createElement('style');st.textContent=(HIDE[k]||'')+'html,body{overflow:hidden!important}';d.head.appendChild(st)}catch(e){}
+ d.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');if(!a)return;const h=a.getAttribute('href')||'';
+  if(h.startsWith('#')){const id=decodeURIComponent(h.slice(1)),el=id&&(d.getElementById(id)||d.querySelector('[name="'+id.replace(/"/g,'')+'"]'));
+   if(el){e.preventDefault();const f=document.getElementById('sub'),mh=document.getElementById('menu').offsetHeight;
+    window.scrollTo({top:f.getBoundingClientRect().top+scrollY+el.getBoundingClientRect().top-mh-10,behavior:'smooth'})}return}
+  let u;try{u=new URL(a.href)}catch(_){return}
+  const r=routeOf(u);
+  if(r!==null&&a.target!=='_blank'){e.preventDefault();if(r===route())view();else location.hash=r;return}
+  if(u.pathname.startsWith('/'+k+'/')&&ours(u.hostname))return;   // bleibt im Rahmen
+  if(a.target!=='_blank')a.target='_top'},true)}
+
+const WPC={};
+async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'/'+slug+'/';
+ v.innerHTML=`<div class="wpmsg">…</div>`;
+ try{let d=WPC[slug];
+  if(!d){for(const typ of ['pages','posts']){const j=await fetch(`/wp-json/wp/v2/${typ}?slug=${slug}&_fields=title,content`).then(x=>x.ok?x.json():[]);if(j.length){d=j[0];break}}WPC[slug]=d}
+  if(route()!=='p/'+slug)return;
+  if(!d)throw 0;
+  const tmp=document.createElement('div');tmp.innerHTML=d.content.rendered;
+  tmp.querySelectorAll('script,style').forEach(x=>x.remove());
+  tmp.querySelectorAll('[style]').forEach(x=>{x.style.removeProperty('color');x.style.removeProperty('background');x.style.removeProperty('background-color');x.style.removeProperty('font-family')});
+  tmp.querySelectorAll('form').forEach(f=>{if(!f.getAttribute('action'))f.setAttribute('action',old);f.setAttribute('target','_top')});
+  tmp.querySelectorAll('img[srcset]').forEach(i=>i.setAttribute('sizes','(max-width:900px) 100vw, 900px'));
+  v.innerHTML=`<div class="in wpw"><h1 class="H">${d.title.rendered}</h1><div class="bar"></div><div class="wp">${tmp.innerHTML}</div></div>`;
+ }catch(e){v.innerHTML=`<div class="wpmsg">⚠️ <a class="btn" href="${old}">${old}</a></div>`}}
+// Links in Inhalten (auch auf der Startseite) auf WBU-Seiten → unter dem Menü öffnen
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('#view a[href]');if(!a||a.target==='_blank')return;
+ let u;try{u=new URL(a.href)}catch(_){return}if(!ours(u.hostname)||u.hash&&u.pathname===location.pathname)return;
+ const r=routeOf(u);if(r!==null){e.preventDefault();location.hash=r;return}
+ const m=u.pathname.match(/^\/([a-z0-9-]+)\/?$/i);
+ if(m&&!/^(wp-|start$|scorecard$|veranstalter$)/.test(m[1])&&!u.search){e.preventDefault();location.hash='p/'+m[1].toLowerCase()}});
 function setLang(l){L=l;try{localStorage.setItem('wbuLang',l)}catch(e){}const u=new URL(location.href);u.searchParams.set('lang',l);history.replaceState(null,'',u);draw()}
+addEventListener('hashchange',()=>{draw();const mn=document.getElementById('menu');mn.classList.remove('open');
+ const top=document.querySelector('.belts').getBoundingClientRect().bottom+scrollY;if(scrollY>top)scrollTo({top})});
 draw();
 </script>
 </body>
