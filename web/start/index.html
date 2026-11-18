@@ -50,6 +50,12 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .wp .wp-block-gallery>.blocks-gallery-grid{grid-column:1/-1}
 .wpmsg{padding:60px 22px;text-align:center;font-size:18px}
 /* Live-Monitor (heller Hintergrund wie WBU Live / WBU Time) */
+.cd{max-width:1240px;margin:16px auto 0;padding:0 22px}.cd+.cd{margin-top:10px}
+.cdb{display:flex;align-items:center;gap:18px;background:linear-gradient(90deg,#1b1408,#151922 60%);border:2px solid #d8a93a;border-radius:12px;padding:8px 14px}
+.cdx{flex:1;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:12px;row-gap:2px;min-width:0}.cdx b{font:700 22px Oswald,sans-serif;text-transform:uppercase;color:#f4f1ea}
+.cdl{color:#d8a93a;font:800 12px Inter,sans-serif;letter-spacing:3px;text-transform:uppercase}.cdo{font:600 15px Inter,sans-serif;color:#f4f1ea}.cdx small{flex-basis:100%;font:600 13px Inter,sans-serif;color:#d8a93a}
+.cdz{display:flex;gap:6px}.cdz div{background:#0b0d12;border:1px solid #333;border-radius:8px;padding:3px 8px;text-align:center;min-width:52px}.cdz i{display:block;font:700 24px Oswald,sans-serif;font-style:normal;color:#f2cf6b;line-height:1.1}.cdz em{font:700 10px Inter,sans-serif;font-style:normal;color:#f4f1ea;letter-spacing:1px;text-transform:uppercase}
+@media(max-width:700px){.cd{padding:0 12px}.cdb{flex-wrap:wrap;gap:8px}.cdz{width:100%;justify-content:space-between}.cdz div{flex:1}.cdx b{font-size:19px}}
 .lm{max-width:1240px;margin:22px auto 0;padding:0 22px}.lm+.lm{margin-top:18px}.lmb{background:#e9ebef;color:#000;border:3px solid #000;border-radius:16px;overflow:hidden;font-family:system-ui,Arial,sans-serif}
 .lmh{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:3px solid #000}.lmh b{font-size:20px}.lmh span{font-size:15px}
 .lv{background:#d0021b;color:#fff;font-weight:800;padding:4px 12px;border-radius:8px;letter-spacing:1px;animation:lvb 1.6s infinite}@keyframes lvb{50%{opacity:.55}}
@@ -154,7 +160,7 @@ function draw(){document.documentElement.lang=L;
 // Handy: Untermenü (z. B. WBU Sports) klappt erst beim Antippen auf
 function ddTap(a){if(!matchMedia('(max-width:900px)').matches)return true;a.parentNode.classList.toggle('open');return false}
 function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
- return `<div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
+ return `<div id="cdown"></div><div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
  <div class="main"><div>
    <a class="ban" href="${R('anmeldung')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
    <a class="ban" href="${R('coin')}"><img src="${UP}2021/01/wbu-coin-banner-850x300-4x.jpg" alt="WBU Coin – Coming Soon"></a>
@@ -205,9 +211,10 @@ const WPC={};
 // Plakate „WBU Shows“ (neueste zuerst) – Dateien in start/img/show-*.jpg
 // d = letzter Veranstaltungstag. Angezeigt werden nur kommende Shows, die nächste immer oben; vergangene verschwinden von selbst.
 const SHOWS_ALL=[
- {d:'2026-11-21',img:'/start/img/show-2026-11-21-steel-warriors.jpg',t:'Steel Warriors – Lokschuppen Dillingen'},
- {d:'2027-02-27',img:'/start/img/show-2027-02-27-bayerische-ringnacht.jpg',t:'Bayerische Ringnacht – Manzau Gym Olching'},
- {d:'2027-05-29',img:'/start/img/show-2027-05-29-wadersloh.jpg',t:'WBU Deutsche Meisterschaft – Wadersloh'},
+ // n/ort = Countdown-Text, st = Beginn je Showtag (ohne Uhrzeit: nur Datum)
+ {d:'2026-11-21',img:'/start/img/show-2026-11-21-steel-warriors.jpg',t:'Steel Warriors – Lokschuppen Dillingen',n:'Steel Warriors',ort:'Lokschuppen Dillingen',st:['2026-11-20T19:00','2026-11-21T19:00']},
+ {d:'2027-02-27',img:'/start/img/show-2027-02-27-bayerische-ringnacht.jpg',t:'Bayerische Ringnacht – Manzau Gym Olching',n:'Bayerische Ringnacht',ort:'Manzau Gym Olching',st:['2027-02-27']},
+ {d:'2027-05-29',img:'/start/img/show-2027-05-29-wadersloh.jpg',t:'WBU Deutsche Meisterschaft – Wadersloh',n:'WBU Deutsche Meisterschaft',ort:'Wadersloh',st:['2027-05-29']},
 ];
 const SHOWS=(()=>{const n=new Date(),h=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
  return SHOWS_ALL.filter(x=>x.d>=h).sort((a,b)=>a.d<b.d?-1:1)})();
@@ -398,7 +405,26 @@ function lmOne(id){const d=LM.D[id],sn=d&&d.snap;if(!sn||!(sn.rows||[]).length)r
   <div class="lmg"><div class="lml">${left}</div><div class="lmr"><h4>${lt('fc')}</h4><div class="lmlist">${rows.map(r=>`<div class="lmf ${c&&r.mid===c.mid?'cur':''}"><div class="n">${r.no}</div><div>
    <span class="rr">${esc(r.a)}</span> vs <span class="bb">${esc(r.b)}</span>${r.rd?` · <b>${esc(r.rd)}</b>`:''}<small>${esc([(r.f||{}).cls,r.kind,r.rounds?r.rounds+' '+lt('rnds'):''].filter(Boolean).join(' · '))}</small>
    <div class="e">${r.res?esc(r.res):c&&r.mid===c.mid?'▶ '+lt('now'):''}</div></div></div>`).join('')}</div></div></div></div></section>`}
-function lmDraw(){const box=document.getElementById('lmon');if(!box)return;
+
+// ===== Countdown: ab Montag der Woche vor einer Show, bis zum Beginn; mehrere Shows untereinander =====
+const CDT={en:['Next show','Days','Hrs','Min','Sec','Live monitor with all fights & results right here from the start','h'],
+ de:['Nächste Show','Tage','Std','Min','Sek','Ab Showbeginn hier: der WBU Live-Monitor mit allen Kämpfen und Ergebnissen','Uhr'],
+ es:['Próximo show','Días','Hrs','Min','Seg','Desde el inicio aquí: el monitor en vivo con todos los combates y resultados','h'],
+ fr:['Prochain show','Jours','H','Min','Sec','Dès le début ici : le moniteur live avec tous les combats et résultats','h'],
+ ru:['Следующее шоу','Дн','Час','Мин','Сек','С начала шоу здесь: Live-монитор со всеми боями и результатами','']};
+function cdStarts(x){return (x.st||[x.d]).map(v=>({v,t:new Date(v.length>10?v:v+'T00:00').getTime(),zeit:v.length>10}))}
+function cdList(){const now=Date.now();return SHOWS_ALL.map(x=>{const S=cdStarts(x),f=new Date(S[0].t);f.setHours(0,0,0,0);f.setDate(f.getDate()-((f.getDay()+6)%7));
+  if(now<f.getTime())return null;if(S.some(s=>now>=s.t&&now<s.t+6*3600e3))return null;const nx=S.find(s=>s.t>now);return nx?{x,S,nx}:null}).filter(Boolean)}
+function cdHtml(){const c=CDT[L]||CDT.en,L2=cdList();if(!L2.length)return '';
+  const dt=t=>new Date(t).toLocaleDateString(L,{weekday:'short',day:'2-digit',month:'2-digit'});
+  return L2.map(({x,S,nx})=>{const tage=S.map(s=>dt(s.t)).join(' + '),z=nx.zeit?' · '+nx.v.slice(11,16)+(c[6]?' '+c[6]:''):'';
+   return `<div class="cd"><div class="cdb" data-t="${nx.t}"><div class="cdx"><span class="cdl">${c[0]}</span><b>${esc(x.n||x.t)}</b><span class="cdo">${esc(x.ort||'')} · ${tage}${z}</span><small>📡 ${c[5]}</small></div>
+    <div class="cdz">${[1,2,3,4].map(i=>`<div><i>--</i><em>${c[i]}</em></div>`).join('')}</div></div></div>`}).join('')}
+function cdDraw(){const b=document.getElementById('cdown');if(!b)return;const h=cdHtml();if(b.dataset.h!==h){b.innerHTML=h;b.dataset.h=h}cdTick()}
+function cdTick(){document.querySelectorAll('#cdown .cdb').forEach(e=>{let r=Math.max(0,Math.floor((+e.dataset.t-Date.now())/1000));
+  const v=[Math.floor(r/86400),Math.floor(r%86400/3600),Math.floor(r%3600/60),r%60];e.querySelectorAll('.cdz i').forEach((i,k)=>i.textContent=String(v[k]).padStart(2,'0'))})}
+setInterval(()=>{if(document.querySelector('#cdown .cdb')&&!cdList().length||Date.now()%60000<1000)cdDraw();else cdTick()},1000);
+function lmDraw(){cdDraw();const box=document.getElementById('lmon');if(!box)return;
  const ys={};box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l)ys[x.dataset.id]=l.scrollTop});
  box.innerHTML=LM.evs.map(e=>lmOne(e.id)).join('');
  box.querySelectorAll('.lm').forEach(x=>{const l=x.querySelector('.lmlist');if(l&&ys[x.dataset.id])l.scrollTop=ys[x.dataset.id]})}

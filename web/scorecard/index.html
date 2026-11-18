@@ -846,9 +846,13 @@ async function fcSend(fights){const by=S.name||'Supervisor';
   if(NATIVE&&S.nlid){await lapi('l_fc',{lid:S.nlid,pass:S.npass||'',by,fights});return}
   throw new Error('Keine Verbindung zu WBU Sports')}
 function fcRetry(){const o=get('wbuFcOut',null);if(!o||S.fcBusy)return;S.fcBusy=true;fcSend(o).then(()=>set('wbuFcOut',null)).catch(()=>{}).finally(()=>S.fcBusy=false)}
+// Altersregel: Master höchstens 5 Jahre Unterschied, Jugend (unter 18) höchstens 2 Jahre
+function fcAlter(f,d){const a=fcAge(f.rg,d),b=fcAge(f.bg,d);if(a===''||b==='')return '';const x=Math.abs(a-b);
+  if(/master/i.test(f.kind||'')&&x>5)return `Masterboxen – ${a} und ${b} Jahre, mehr als 5 Jahre Unterschied. Dieser Kampf ist nicht erlaubt.`;
+  if((a<18||b<18)&&x>2)return `Jugend – ${a} und ${b} Jahre, mehr als 2 Jahre Unterschied. Dieser Kampf ist nicht erlaubt.`;return ''}
 async function fcSave(){
   const fs=S.fc.map(({_done,...f})=>({...f,title:(f.title||'').trim()}));
-  for(let i=0;i<fs.length;i++){if(!fs[i].red.trim()||!fs[i].blue.trim()){alert('Kampf '+(i+1)+': bitte beide Ecken eintragen.');return}if(!fs[i].cls){alert('Kampf '+(i+1)+': bitte die Gewichtsklasse wählen.');return}}
+  for(let i=0;i<fs.length;i++){if(!fs[i].red.trim()||!fs[i].blue.trim()){alert('Kampf '+(i+1)+': bitte beide Ecken eintragen.');return}const ae=fcAlter(fs[i],S.live&&S.live.date);if(ae){alert('Kampf '+(i+1)+': '+ae);return}}
   const orig=JSON.parse(S.fcOrig||'[]'),chDone=S.fc.filter(f=>f._done).filter(f=>{const o=orig.find(x=>x.id===f.id);return o&&JSON.stringify({...o,_done:0})!==JSON.stringify({...f,_done:0})});
   if(chDone.length&&!confirm('Du änderst einen schon gewerteten Kampf. Trotzdem speichern?'))return;
   if(S.live){S.live.rows=fcRows(fs,S.live.rows,S.live.date);S.liveJs=JSON.stringify(S.live.rows)}
@@ -888,7 +892,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('110')||0;
+const WEB_VERSION=Number('111')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
