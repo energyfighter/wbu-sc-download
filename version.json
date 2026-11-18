@@ -1,6 +1,6 @@
 {
-  "versionCode": 102,
-  "versionName": "1.102",
+  "versionCode": 103,
+  "versionName": "1.103",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Kämpfer-Datenbank: Kämpfer nach Gyms anklicken statt neu eintippen. Gym/Verein je Ecke."
+  "notes": "Kämpfer-Datenbank: Kämpfer nach Gyms anklicken, Listen einspielen. Gym/Verein je Ecke."
 }
