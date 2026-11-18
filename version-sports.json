@@ -1,6 +1,6 @@
 {
-  "versionCode": 139,
-  "versionName": "1.139",
+  "versionCode": 145,
+  "versionName": "1.145",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Supervisor: Hinweis, wenn Gewicht oder Gewichtsklasse fehlen; Altersregel (Master max. 5 Jahre, Jugend max. 2 Jahre Unterschied); Superadmin-Upload ohne Passwort."
+  "notes": "Update läuft jetzt ohne Fehlermeldung durch (bricht Android den ersten Versuch ab, startet die App ihn still noch einmal); YouTube-Livestream-Feld."
 }
