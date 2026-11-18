@@ -180,7 +180,7 @@ const resName=k=>(RES.find(r=>r[0]===k)||[])[1]||'';
 
 // ===================== Startseite =====================
 // ---- Bereitgestellte Turniere (verschlüsselt mit dem WBU-Passwort, kommen mit dem automatischen Update) ----
-const VORLAGEN=[{"id": "dm20276afb59fa", "name": "WBU DM 2027 \u2013 Offene Deutsche Meisterschaft SemiPro Boxen", "date": "2027-05-29", "salt": "uL2R5nKk1XPXoCHaHuF/OQ==", "iv": "tElw+HMj85+5aD7I", "iter": 300000, "ct": "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"}];
+const VORLAGEN=[{"id": "dm20276afb59fa", "name": "WBU DM 2027 \u2013 Offene Deutsche Meisterschaft SemiPro Boxen", "date": "2027-05-29", "salt": "wSZ+ReVozi4ezNOmv6S9vw==", "iv": "ZKsF/1FSrvcATqoq", "iter": 300000, "ct": "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"}];
 function vorlagenBox(){const have=new Set(events().map(e=>e.id)),neu=VORLAGEN.filter(v=>!have.has(v.id));
   return neu.map(v=>`<div class="card" style="border:3px solid var(--gold);background:#fff7df"><div class="row" style="justify-content:space-between">
    <div><b style="font-size:18px">📥 Bereitgestellt: ${esc(v.name)}</b><div>${esc(deDate(v.date))} – fertig angelegt mit Startgeld, Fristen, Hinweisen und den schon gemeldeten Sportlern.</div></div>
@@ -201,6 +201,7 @@ function vHome(){
     <div class="choice" onclick="newEvent('gala')"><div class="i">🥊</div><b>Profi-Gala</b><span>Kampfabend mit Fight Card – Kampf für Kampf</span></div>
     <div class="choice" onclick="newEvent('turnier')"><div class="i">🏆</div><b>Turnier</b><span>Kategorien, Teilnehmer, Auslosung und Brackets</span></div>
   </div>
+  <div class="row" style="margin:14px 0 0"><button class="btn sec" onclick="kPick('')">📇 Kämpfer-Datenbank</button><span class="muted" style="font-size:13px">alle Kämpfer nach Gyms – nur für Veranstalter, Supervisor und WBU sichtbar</span></div>
   <h2>Gespeicherte Veranstaltungen</h2>
   <div class="card" style="padding:0">${ev.length?ev.map(e=>`<div class="evrow" onclick="openEvent('${e.id}')">
     <span style="font-size:26px">${e.type==='gala'?'🥊':'🏆'}</span>
@@ -296,8 +297,8 @@ function vCard(ev){
   const fs=ev.fights;
   return `<div class="card noprint"><b>Kampf hinzufügen</b>
     <div class="grid4" style="margin-top:6px">
-      <div><label style="color:var(--red)">Rote Ecke</label><input id="nf_red" placeholder="Name"></div>
-      <div><label style="color:var(--blue)">Blaue Ecke</label><input id="nf_blue" placeholder="Name"></div>
+      <div><label style="color:var(--red)">Rote Ecke</label><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="nf_red" placeholder="Name" style="flex:1"><button class="btn sec sm" title="Aus der Kämpfer-Datenbank" onclick="kPick('nf','r')">📇</button></div></div>
+      <div><label style="color:var(--blue)">Blaue Ecke</label><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="nf_blue" placeholder="Name" style="flex:1"><button class="btn sec sm" title="Aus der Kämpfer-Datenbank" onclick="kPick('nf','b')">📇</button></div></div>
       <div style="grid-column:span 2"><label>Gewichtsklasse (Profi)</label>${gewSelect('nf_cls','')}</div>
       ${fFields('nf')}
       <div style="grid-column:span 2">${titelBox('nf','')}</div>
@@ -322,13 +323,14 @@ function titelBox(p,val){val=val||'';const fix=TITEL.includes(val),eig=val&&!fix
    <option value="" ${!val?'selected':''}>– kein Titelkampf –</option>${TITEL.map(t=>`<option ${val===t?'selected':''}>${t}</option>`).join('')}<option value="*" ${eig?'selected':''}>Anderer Titel – selbst eintragen</option></select>
    <input id="${p}_title" style="flex:1;${eig?'':'display:none'}" value="${esc(val)}" placeholder="Titel eintragen"></div>`}
 function fAge(gb,d){if(!gb)return'';const b=new Date(gb),t=d?new Date(d):new Date();if(isNaN(b))return'';let a=t.getFullYear()-b.getFullYear();if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--;return a>0&&a<100?a:''}
-function fInfo(f,s){const a=fAge(f[s+'g'],(cur()||{}).date);return [f[s+'l'],a?a+' J.':'',f[s+'w']?String(f[s+'w']).replace('.',',')+' kg':''].filter(Boolean).join(' · ')}
+function fInfo(f,s){const a=fAge(f[s+'g'],(cur()||{}).date);return [f[s+'v'],f[s+'l'],a?a+' J.':'',f[s+'w']?String(f[s+'w']).replace('.',',')+' kg':''].filter(Boolean).join(' · ')}
 // Kämpferdaten je Ecke: Land, Geburtsdatum, Gewicht beim Wiegen
 function fFields(p,f){f=f||{};const c=(s,col,n)=>`<div><label style="color:var(--${col})">${n}: Land</label><input id="${p}_${s}l" value="${esc(f[s+'l']||'')}" placeholder="z. B. Deutschland"></div>
   <div><label style="color:var(--${col})">${n}: Geburtsdatum</label><input id="${p}_${s}g" type="date" value="${esc(f[s+'g']||'')}"></div>
-  <div><label style="color:var(--${col})">${n}: Gewicht beim Wiegen (kg)</label><input id="${p}_${s}w" type="number" step="0.1" value="${esc(f[s+'w']||'')}" placeholder="z. B. 72,4"></div>`;
-  return c('r','red','Rot')+'<div></div>'+c('b','blue','Blau')+'<div></div>'}
-function fRead(p){const v=k=>($(p+'_'+k)||{value:''}).value.trim();const o={};['rl','rg','rw','bl','bg','bw'].forEach(k=>o[k]=v(k));return o}
+  <div><label style="color:var(--${col})">${n}: Gewicht beim Wiegen (kg)</label><input id="${p}_${s}w" type="number" step="0.1" value="${esc(f[s+'w']||'')}" placeholder="z. B. 72,4"></div>
+  <div><label style="color:var(--${col})">${n}: Gym / Verein</label><input id="${p}_${s}v" value="${esc(f[s+'v']||'')}" placeholder="z. B. Boxgym Berlin"></div>`;
+  return c('r','red','Rot')+c('b','blue','Blau')}
+function fRead(p){const v=k=>($(p+'_'+k)||{value:''}).value.trim();const o={};['rl','rg','rw','rv','bl','bg','bw','bv'].forEach(k=>o[k]=v(k));return o}
 function addFight(){
   const v=id=>$(id).value.trim();
   if(!v('nf_red')||!v('nf_blue')){alertDlg('Bitte beide Ecken eintragen (rote und blaue Ecke).');return}
@@ -339,7 +341,7 @@ function moveFight(i,d){upd(e=>{const a=e.fights;[a[i],a[i+d]]=[a[i+d],a[i]]})}
 function editFight(id){
   const f=cur().fights.find(x=>x.id===id);
   dlg(`<h2 style="margin-top:0">Kampf bearbeiten</h2><div class="grid2">
-   <div><label style="color:var(--red)">Rote Ecke</label><input id="ef_red" value="${esc(f.red)}"></div><div><label style="color:var(--blue)">Blaue Ecke</label><input id="ef_blue" value="${esc(f.blue)}"></div>
+   <div><label style="color:var(--red)">Rote Ecke</label><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="ef_red" value="${esc(f.red)}" style="flex:1"><button class="btn sec sm" title="Aus der Kämpfer-Datenbank" onclick="kPick('ef','r')">📇</button></div></div><div><label style="color:var(--blue)">Blaue Ecke</label><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="ef_blue" value="${esc(f.blue)}" style="flex:1"><button class="btn sec sm" title="Aus der Kämpfer-Datenbank" onclick="kPick('ef','b')">📇</button></div></div>
    ${fFields('ef',f).replace(/<div><\/div>/g,'')}<div><label>Gewichtsklasse (Profi)</label>${gewSelect('ef_cls',f.cls)}</div><div style="grid-column:span 2">${titelBox('ef',f.title)}</div>
    <div><label>Kampfart</label><select id="ef_kind">${GALA_ART.map(k=>`<option ${f.kind===k?'selected':''}>${k}</option>`).join('')}</select></div>
    <div><label>Runden / Dauer</label><div class="row"><select id="ef_rounds" style="flex:1">${[1,2,3,4,5,6,7,8,9,10,11,12].map(r=>`<option ${f.rounds===r?'selected':''}>${r}</option>`).join('')}</select><select id="ef_dur" style="flex:1">${GALA_DUR.map(d=>`<option ${f.dur===d?'selected':''}>${d}</option>`).join('')}</select></div></div></div>
@@ -414,7 +416,7 @@ function catDetail(c){
    <select style="width:auto" onchange="upd(e=>e.cats.find(x=>x.id==='${c.id}').dur=this.value)">${['1 Min','1,5 Min','2 Min','3 Min'].map(d=>`<option ${c.dur===d?'selected':''}>${d}</option>`).join('')}</select>
    ${(ev.rings||1)>1?`<select style="width:auto" onchange="upd(e=>e.cats.find(x=>x.id==='${c.id}').ring=+this.value)">${ringList(ev).map(r=>`<option value="${r}" ${ringOf(ev,c)===r?'selected':''}>${RN(ev,r)}</option>`).join('')}</select>`:''}</div></div>
    <p class="note">${hasResults(c)?'Die Kategorie läuft schon (Ergebnisse eingetragen) – die Paarungen bleiben fest. Neu auslosen löscht die Ergebnisse dieser Kategorie.':c.players.length<2?'Wartet auf einen Gegner – die Paarung entsteht automatisch mit der nächsten Anmeldung.':'Paarungen entstehen automatisch nach der Anmeldung (Sportler desselben Vereins möglichst nicht gegeneinander) und sind schon jetzt unter „Brackets“ zu sehen.'}</p>
-   <div class="row" style="margin-top:8px"><input id="np_name" placeholder="Vor- und Nachname" style="flex:2" onkeydown="if(event.key==='Enter')addPlayer()"><input id="np_club" placeholder="Verein / Land" style="flex:1.4" onkeydown="if(event.key==='Enter')addPlayer()"><button class="btn" onclick="addPlayer()">+ Teilnehmer</button></div>
+   <div class="row" style="margin-top:8px"><input id="np_name" placeholder="Vor- und Nachname" style="flex:2" onkeydown="if(event.key==='Enter')addPlayer()"><input id="np_club" placeholder="Verein / Land" style="flex:1.4" onkeydown="if(event.key==='Enter')addPlayer()"><button class="btn sec" title="Aus der Kämpfer-Datenbank" onclick="kPick('np')">📇 Datenbank</button><button class="btn" onclick="addPlayer()">+ Teilnehmer</button></div>
    <table style="margin-top:10px"><tr><th>#</th><th>Name</th><th>Verein / Land</th><th></th></tr>
    ${c.players.map((p,i)=>`<tr><td>${i+1}</td><td><b style="${p.absent?'text-decoration:line-through':''}">${esc(p.name)}</b>${p.reg?' <span class="badge">online</span>':''}${p.absent?' <b style="color:#d0021b">nicht erschienen</b>':''}</td><td>${esc(p.club)}</td><td style="text-align:right">${p.absent?`<button class="btn sec sm" onclick="undoAbsent('${p.id}')">doch da</button>`:`<button class="btn sec sm" title="${hasResults(c)?'nicht erschienen':'entfernen'}" onclick="delPlayer('${p.id}')">${hasResults(c)?'nicht da':'✕'}</button>`}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Noch keine Teilnehmer.</td></tr>'}</table>
    <div class="row" style="margin-top:14px"><button class="btn ok" ${c.players.length<2?'disabled':''} onclick="askDraw()">Neu auslosen (zufällig)</button>
@@ -2112,7 +2114,7 @@ function publish(pass){
   if(!o.tid&&pass===undefined){dlg(`<h2 style="margin-top:0">Turnier veröffentlichen</h2><p>Zum Veröffentlichen bitte das WBU-Passwort eingeben.</p><input id="pw" type="password" onkeydown="if(event.key==='Enter')publish($('pw').value)"><div id="pwerr" class="note" style="color:#b26a00"></div>
     <div class="row" style="margin-top:12px"><button class="btn" onclick="publish($('pw').value)">Veröffentlichen</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);setTimeout(()=>$('pw')&&$('pw').focus(),0);return}
   const t={name:ev.name,ort:ev.ort,date:ev.date,promoter:ev.promoter,schluss:o.schluss,fee:o.fee,feeMore:o.feeMore,attest:!!o.attest,rings:ev.rings||1,grace:o.grace||3,inhaber:o.inhaber,iban:o.iban,bic:o.bic,info:o.info,sports:o.sports,open:o.open};
-  api('t_publish',{t,tid:o.tid,key:o.key,pass,tok:(wbuAuth()||{}).tok}).then(async j=>{closeDlg();upd(e=>{onl(e).tid=j.tid;onl(e).key=j.key});try{await syncManual()}catch(x){};onErr('✓ Veröffentlicht.')})
+  api('t_publish',{t,tid:o.tid,key:o.key,pass,eid:cur().id,tok:(wbuAuth()||{}).tok}).then(async j=>{closeDlg();upd(e=>{onl(e).tid=j.tid;onl(e).key=j.key});try{await syncManual()}catch(x){};onErr('✓ Veröffentlicht.')})
    .catch(e=>{if($('pwerr'))$('pwerr').textContent=e.message;else onErr(e.message)});
 }
 // ===================== Zahlungen (Überweisung mit Zahlungscode) =====================
@@ -2227,7 +2229,7 @@ function regsCsv(){const ev=cur(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
 // ===================== Fernseher-Anzeige (eigenes Fenster, heller Hintergrund) =====================
 function openTv(rg){window.open(location.pathname+'?tv='+encodeURIComponent(S.ev)+(rg?'&ring='+rg:''),'wbutv'+(rg||''),'width=1280,height=720')}
 // Rohdaten eines Gala-Kampfs – damit der Supervisor die Fight Card in der Scorecard bearbeiten kann
-const FC_KEYS=['red','blue','rl','rg','rw','bl','bg','bw','cls','title','kind','rounds','dur'];
+const FC_KEYS=['red','blue','rl','rg','rw','rv','bl','bg','bw','bv','cls','title','kind','rounds','dur'];
 function fRaw(f){const o={id:f.id};FC_KEYS.forEach(k=>o[k]=f[k]??'');return o}
 // Änderungen des Supervisors (Scorecard, Konto oder per Bluetooth) übernehmen
 function applyFc(e,fc){if(!e||e.type!=='gala'||!fc||!Array.isArray(fc.fights)||(fc.v||0)<=(e.fcv||0))return false;
@@ -2269,7 +2271,7 @@ function startTv(id){
 // ===================== Live: Server-Anbindung (Live-Seite, Fernseher, Supervisor) =====================
 const LIVE_URL=(/^https?:/.test(location.protocol)?location.origin:'https://www.wbu-boxing.com')+'/live/';
 function liveSnap(ev){
-  const snap={name:ev.name||'',ort:ev.ort||'',date:ev.date||'',arzt:ev.arzt||'',sup:ev.sup||'',fcv:ev.fcv||0,time:ev.time||'',type:ev.type,rings:ev.type==='gala'?1:Math.min(10,ev.rings||1),ringName:ev.ringName||'Ring',rows:tvRows(ev),at:Date.now()};
+  const snap={eid:ev.id,name:ev.name||'',ort:ev.ort||'',date:ev.date||'',arzt:ev.arzt||'',sup:ev.sup||'',fcv:ev.fcv||0,time:ev.time||'',type:ev.type,rings:ev.type==='gala'?1:Math.min(10,ev.rings||1),ringName:ev.ringName||'Ring',rows:tvRows(ev),at:Date.now()};
   if(ev.type==='turnier')snap.places=sortedCats(ev).map(c=>{const P=places(c),n=id=>id?{n:pname(c,id),c:pclub(c,id)}:null;
     return {kl:c.name,first:P.done?n(P.first):null,second:P.done?n(P.second):null,third:P.third.map(n)}});
   return snap;
@@ -2277,7 +2279,8 @@ function liveSnap(ev){
 let liveT=null,liveBusy=false;
 function livePushSoon(){clearTimeout(liveT);liveT=setTimeout(livePush,800)}
 async function livePush(){const ev=cur();if(!ev||!ev.live)return;
-  try{await api('l_push',{lid:ev.live.lid,key:ev.live.key,snap:liveSnap(ev)});S.liveErr=''}catch(e){S.liveErr=e.message}liveBadge()}
+  const k=kOfEvent(ev),kh=JSON.stringify(k),send=kh!==S.kSent;
+  try{await api('l_push',{lid:ev.live.lid,key:ev.live.key,snap:liveSnap(ev),k:send?k:undefined,tok:(wbuAuth()||{}).tok});S.liveErr='';if(send)S.kSent=kh}catch(e){S.liveErr=e.message}liveBadge()}
 // Ergebnisse vom Supervisor übernehmen
 async function livePull(){const ev=cur();if(!ev||!ev.live||liveBusy)return;liveBusy=true;
   try{const j=await api('l_pull',{lid:ev.live.lid,key:ev.live.key});S.liveErr='';applyLiveResults(cur(),j.results||{});
@@ -2413,6 +2416,67 @@ function liveOn(pass){
     <div class="row" style="margin-top:12px"><button class="btn" onclick="liveOn($('pw').value)">Hochladen</button><button class="btn sec" onclick="closeDlg()">Abbrechen</button></div>`);setTimeout(()=>$('pw')&&$('pw').focus(),0);return}
   api('l_create',{pass}).then(j=>{closeDlg();upd(e=>{e.live={lid:j.lid,key:j.key}});livePush()}).catch(e=>{if($('pwerr'))$('pwerr').textContent=e.message})}
 
+
+// ===================== Kämpfer-Datenbank (geschlossen: Veranstalter, Supervisor, WBU) =====================
+// Kämpfer dieser Veranstaltung für die Datenbank (wird beim Hochladen mitgeschickt – nicht öffentlich)
+function kOfEvent(ev){const L=[];
+  if(ev.type==='gala')(ev.fights||[]).forEach(f=>['r','b'].forEach(s=>{const n=s==='r'?f.red:f.blue;if(n)L.push({name:n,land:f[s+'l']||'',geb:f[s+'g']||'',kg:f[s+'w']||'',gym:f[s+'v']||'',klasse:f.cls||''})}));
+  else(ev.cats||[]).forEach(c=>c.players.forEach(p=>{if(!p.reg&&p.name)L.push({name:p.name,gym:p.club||'',klasse:c.name||''})}));
+  return L}
+const K={list:null,q:'',open:{},tgt:'',side:''};
+function kAuth(){const a=wbuAuth()||{};let t=a.tok||'';if(!t)try{t=localStorage.getItem('wbuKTok')||''}catch(e){}return {tok:t,pass:S.kPass||''}}
+async function kLoad(){const j=await api('k_list',kAuth());K.list=j.list||[];try{localStorage.setItem('wbuKDb',JSON.stringify({at:Date.now(),list:K.list}))}catch(e){}}
+async function kPick(tgt,side){K.tgt=tgt;K.side=side||'';K.q='';K.open={};K.ef=null;
+  if(tgt==='ef'){const b=document.querySelector('#modal [onclick^="saveFightEdit"]');const vals={};document.querySelectorAll('#modal [id^="ef_"]').forEach(el=>vals[el.id]=el.value);
+    K.ef={id:b?(b.getAttribute('onclick').match(/'([^']+)'/)||[])[1]:'',vals}}
+  try{if(!K.list)await kLoad()}catch(e){
+    let c=null;try{c=JSON.parse(localStorage.getItem('wbuKDb')||'null')}catch(x){}
+    if(c&&c.list&&!/403|berechtigt|einloggen/i.test(e.message)){K.list=c.list;K.offline=c.at}
+    else{kLogin(e.message);return}}
+  kDraw()}
+function kLogin(msg){dlg(`<h2 style="margin-top:0">📇 Kämpfer-Datenbank</h2><p>Die Datenbank ist geschlossen – nur Veranstalter, Supervisoren und die WBU sehen sie (auch Daten von Kindern).</p>
+  <label>WBU-Sports-Konto: E-Mail</label><input id="k_em" type="email"><label>Passwort</label><input id="k_pw" type="password" onkeydown="if(event.key==='Enter')kLoginGo()">
+  <p class="note">oder nur das <b>WBU-Passwort</b> (Supervisor / WBU) eingeben:</p><input id="k_wbu" type="password" placeholder="WBU-Passwort" onkeydown="if(event.key==='Enter')kLoginGo()">
+  <div id="k_err" class="note" style="color:#b00000;font-weight:700">${/^https?:/.test(location.protocol)||!/fetch|network|Failed/i.test(msg||'')?'':'Kein Internet – die Datenbank wird beim ersten Mal online geladen.'}</div>
+  <div class="row" style="margin-top:12px"><button class="btn" onclick="kLoginGo()">Öffnen</button><button class="btn sec" onclick="kClose()">Abbrechen</button></div>`);setTimeout(()=>$('k_em')&&$('k_em').focus(),0)}
+async function kLoginGo(){const em=$('k_em').value.trim(),pw=$('k_pw').value,wp=$('k_wbu').value;
+  try{if(wp){S.kPass=wp}else{const j=await api('c_login',{email:em,pw});ckSet({tok:j.tok,me:j.me});try{localStorage.setItem('wbuKTok',j.tok)}catch(x){}}
+    await kLoad();kDraw()}catch(e){$('k_err').textContent=e.message;if(wp)S.kPass=''}}
+function kAge(g){return fAge(g)}
+function kDraw(){const q=K.q.trim().toLowerCase(),L=(K.list||[]).filter(x=>!q||(x.name+' '+x.gym+' '+x.land+' '+x.trainer).toLowerCase().includes(q));
+  const G={};L.forEach(x=>{const g=x.gym||'– ohne Gym –';(G[g]=G[g]||[]).push(x)});const gyms=Object.keys(G);K.gyms=gyms;
+  const row=x=>{const a=kAge(x.geb);return `<div class="evrow" style="padding:8px 12px;gap:10px" ${K.tgt?`onclick="kTake('${x.id}')"`:''}><div style="flex:1"><b>${esc(x.name)}</b><div style="font-size:13px">${[x.land,a?a+' J.':'',x.kg?String(x.kg).replace('.',',')+' kg':'',x.klasse].filter(Boolean).map(esc).join(' · ')}</div></div>${K.tgt?'<span class="btn sm">Übernehmen</span>':`<button class="btn sec sm" onclick="event.stopPropagation();kEdit('${x.id}')">✎</button>`}</div>`};
+  dlg(`<div class="row" style="justify-content:space-between"><h2 style="margin:0">📇 Kämpfer-Datenbank</h2><span class="muted">${(K.list||[]).length} Kämpfer · ${new Set((K.list||[]).map(x=>x.gym)).size} Gyms</span></div>
+   ${K.offline?`<p class="note">Ohne Internet: Stand vom ${new Date(K.offline).toLocaleDateString('de-DE')}</p>`:''}
+   ${K.tgt?`<p class="note" style="margin:6px 0">Kämpfer anklicken – die Daten werden ${K.tgt==='np'?'als Teilnehmer':K.side==='r'?'in die <b style="color:var(--red)">rote Ecke</b>':'in die <b style="color:var(--blue)">blaue Ecke</b>'} übernommen.</p>`:''}
+   <input id="k_q" placeholder="🔍 Name, Gym oder Land suchen" value="${esc(K.q)}" oninput="K.q=this.value;kDraw();const i=$('k_q');i.focus();i.setSelectionRange(i.value.length,i.value.length)" style="margin:8px 0">
+   <div style="max-height:58vh;overflow:auto;border:1px solid #ccc;border-radius:8px;background:#fff">${gyms.length?gyms.map((g,gi)=>{const op=q||K.open[g]||gyms.length===1;
+     return `<div class="evrow" style="background:#e9e9e9;padding:9px 12px" onclick="kTog(${gi})"><b style="flex:1">🥊 ${esc(g)}</b><span>${G[g].length} ${op?'▾':'▸'}</span></div>${op?G[g].map(row).join(''):''}`}).join('')
+     :'<div style="padding:14px">Keine Kämpfer gefunden.</div>'}</div>
+   <div class="row" style="margin-top:12px"><button class="btn sec" onclick="kEdit('')">+ Kämpfer neu eintragen</button><button class="btn sec" onclick="kClose()">${K.ef?'Zurück zum Kampf':'Schließen'}</button></div>
+   <p class="note">Die Datenbank füllt sich von selbst aus allen Turnier-Anmeldungen und hochgeladenen Galas. Nicht öffentlich.</p>`);
+}
+function kTog(i){const g=K.gyms[i];K.open[g]=!K.open[g];kDraw()}
+function kClose(){if(K.ef&&K.ef.id){editFight(K.ef.id);const st=$('ef_title')&&K.ef.vals.ef_tsel==='*';Object.entries(K.ef.vals).forEach(([k,v])=>{const el=$(k);if(el)el.value=v});if(st)$('ef_title').style.display=''}else closeDlg()}
+function kTake(id){const x=K.list.find(y=>y.id===id);if(!x)return;kClose();K.ef=null;
+  if(K.tgt==='np'){$('np_name').value=x.name;$('np_club').value=x.gym||x.land||'';setTimeout(()=>$('np_name')&&$('np_name').focus(),0);return}
+  const p=K.tgt,s=K.side,set=(k,v)=>{const el=$(p+'_'+k);if(el)el.value=v||''};
+  const n=$(p+'_'+(s==='r'?'red':'blue'));if(n)n.value=x.name;set(s+'l',x.land);set(s+'g',x.geb);set(s+'w',x.kg);set(s+'v',x.gym)}
+function kEdit(id){const x=(K.list||[]).find(y=>y.id===id)||{};
+  dlg(`<h2 style="margin-top:0">${id?'Kämpfer bearbeiten':'Kämpfer neu eintragen'}</h2><div class="grid2">
+   <div><label>Vor- und Nachname</label><input id="ke_name" value="${esc(x.name||'')}"></div><div><label>Gym / Verein</label><input id="ke_gym" value="${esc(x.gym||'')}"></div>
+   <div><label>Land</label><input id="ke_land" value="${esc(x.land||'')}"></div><div><label>Geburtsdatum</label><input id="ke_geb" type="date" value="${esc(x.geb||'')}"></div>
+   <div><label>Gewicht (kg)</label><input id="ke_kg" type="number" step="0.1" value="${esc(x.kg||'')}"></div><div><label>Trainer</label><input id="ke_tr" value="${esc(x.trainer||'')}"></div></div>
+   <div id="k_err" class="note" style="color:#b00000;font-weight:700"></div>
+   <div class="row" style="margin-top:12px"><button class="btn" onclick="kSave('${id}')">Speichern</button><button class="btn sec" onclick="kDraw()">Zurück</button>
+   ${id?`<button class="btn red" style="margin-left:auto" onclick="kDel('${id}')">Löschen</button>`:''}</div>`)}
+async function kSave(id){const v=k=>$(k).value.trim();const x={id,name:v('ke_name'),gym:v('ke_gym'),land:v('ke_land'),geb:v('ke_geb'),kg:v('ke_kg'),trainer:v('ke_tr')};
+  if(x.name.length<3){$('k_err').textContent='Bitte den Namen eintragen.';return}
+  try{await api('k_save',{...kAuth(),x});await kLoad();kDraw()}catch(e){$('k_err').textContent=e.message}}
+function kDel(id){dlg(`<h2 style="margin-top:0">Kämpfer löschen</h2><p>Löschen geht nur mit dem <b>WBU-Passwort</b>.</p><input id="kd_pw" type="password"><div id="k_err" class="note" style="color:#b00000;font-weight:700"></div>
+  <div class="row" style="margin-top:12px"><button class="btn red" onclick="kDel2('${id}')">Endgültig löschen</button><button class="btn sec" onclick="kDraw()">Abbrechen</button></div>`)}
+async function kDel2(id){try{await api('k_del',{pass:$('kd_pw').value,id});await kLoad();kDraw()}catch(e){$('k_err').textContent=e.message}}
+
 // ===================== Sichern / Laden =====================
 function exportEvent(){
   const ev=cur(),blob=new Blob([JSON.stringify(ev,null,2)],{type:'application/json'});
@@ -2441,7 +2505,7 @@ function render(){
 }
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('77')||0;
+const WEB_VERSION=Number('78')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

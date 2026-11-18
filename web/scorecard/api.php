@@ -143,6 +143,78 @@ function tOffen($t) {
 }
 
 
+// ===================== Kämpfer-Datenbank (geschlossen: nur Veranstalter, Supervisor, WBU) =====================
+function kFile() { global $DIR; return "$DIR/kaempfer.json"; }
+function kNorm($s) { return mb_strtolower(preg_replace('/\s+/u', ' ', trim((string)$s))); }
+function withKaempfer($fn) {
+    $neu = !file_exists(kFile());
+    $h = fopen(kFile(), 'c+'); if (!$h) fail('Speicherfehler', 500);
+    flock($h, LOCK_EX);
+    $k = json_decode(stream_get_contents($h), true); if (!is_array($k)) $k = [];
+    if ($neu && !$k) kBackfill($k);
+    $res = $fn($k);
+    ftruncate($h, 0); rewind($h); fwrite($h, json_encode($k, JSON_UNESCAPED_UNICODE)); fflush($h);
+    flock($h, LOCK_UN); fclose($h);
+    return $res;
+}
+/** Einen Kämpfer eintragen oder ergänzen. Der Name ist eindeutig (mit Geburtsdatum, wenn bekannt). */
+function kPut(&$k, $x, $src) {
+    $vn = txt($x['vn'] ?? '', 60); $nn = txt($x['nn'] ?? '', 60); $full = txt($x['name'] ?? '', 120);
+    if ($full === '') $full = trim("$vn $nn");
+    if (mb_strlen($full) < 3 || !preg_match('/\p{L}/u', $full)) return;
+    $geb = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($x['geb'] ?? '')) ? $x['geb'] : '';
+    $n = kNorm($full); $key = null;
+    foreach ($k as $id => $o) if (kNorm($o['name']) === $n && ($geb === '' || ($o['geb'] ?? '') === '' || $o['geb'] === $geb)) { $key = $id; break; }
+    if ($key === null) { $key = substr(hash('sha256', $n . '|' . $geb . '|' . microtime()), 0, 12); $k[$key] = ['name' => $full, 'vn' => $vn, 'nn' => $nn, 'geb' => $geb, 'first' => time(), 'n' => 0, 'src' => []]; }
+    $o = &$k[$key];
+    foreach (['vn' => 60, 'nn' => 60, 'sex' => 2, 'gym' => 100, 'land' => 60, 'kg' => 8, 'sp' => 4, 'klasse' => 80, 'trainer' => 100] as $f => $max) {
+        $v = txt($x[$f] ?? '', $max); if ($v !== '' && $v !== '–') $o[$f] = $v;
+    }
+    if ($geb !== '') $o['geb'] = $geb;
+    if (!in_array($src, $o['src'], true)) { $o['src'] = array_slice(array_merge($o['src'], [$src]), -30); $o['n'] = count($o['src']); }
+    $o['at'] = time();
+}
+function kFromReg($r) {
+    return ['vn' => $r['vorname'] ?? '', 'nn' => $r['name'] ?? '', 'name' => trim(($r['vorname'] ?? '') . ' ' . ($r['name'] ?? '')), 'geb' => $r['geb'] ?? '', 'sex' => in_array($r['sex'] ?? '', ['m', 'w'], true) ? $r['sex'] : '',
+            'gym' => $r['verein'] ?? '', 'land' => $r['land'] ?? '', 'kg' => $r['kg'] ?? '', 'sp' => $r['sp'] ?? '', 'klasse' => $r['klasse'] ?? '', 'trainer' => $r['trainer'] ?? ''];
+}
+/** Beim ersten Mal: alle bisherigen Turnier-Anmeldungen und Galas übernehmen */
+function kBackfill(&$k) {
+    global $DIR;
+    foreach (glob("$DIR/tu_*.json") as $f) { $t = json_decode((string)@file_get_contents($f), true); if (!is_array($t)) continue;
+        foreach (($t['regs'] ?? []) as $r) if (empty($r['storno'])) kPut($k, kFromReg($r), 't:' . $t['id']); }
+    foreach (glob("$DIR/lv_*.json") as $f) { $l = json_decode((string)@file_get_contents($f), true); if (!is_array($l) || empty($l['snap']) || ($l['snap']['type'] ?? '') !== 'gala') continue;
+        foreach (($l['snap']['rows'] ?? []) as $row) { $x = $row['f'] ?? null; if (!is_array($x)) continue;
+            foreach (['r', 'b'] as $s) kPut($k, ['name' => $x[$s === 'r' ? 'red' : 'blue'] ?? '', 'land' => $x[$s . 'l'] ?? '', 'geb' => $x[$s . 'g'] ?? '', 'kg' => $x[$s . 'w'] ?? '', 'gym' => $x[$s . 'v'] ?? '', 'klasse' => $x['cls'] ?? ''], 'l:' . $l['id']); } }
+}
+/** Wer darf die Datenbank sehen? Veranstalter- und Supervisor-Konten sowie das WBU-Passwort (Superadmin) */
+function kAllowed($in) {
+    if (hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) return true;
+    $me = clubByToken($in['tok'] ?? '');
+    return $me && in_array($me['rolle'], ['veranstalter', 'sup'], true);
+}
+/** Info an die WBU: eine Veranstaltung wurde zum ersten Mal hochgeladen (einmal pro Veranstaltung) */
+function neueVeranstaltungMail($eid, $art, $name, $date, $ort, $anzahl, $link, $tok) {
+    global $DIR;
+    $eid = preg_replace('/[^A-Za-z0-9_-]/', '', (string)$eid);
+    $f = "$DIR/gemeldet.json";
+    $h = fopen($f, 'c+'); if (!$h) return;
+    flock($h, LOCK_EX);
+    $g = json_decode(stream_get_contents($h), true); if (!is_array($g)) $g = [];
+    $schon = $eid !== '' && isset($g[$eid]);
+    if (!$schon && $eid !== '') { $g[$eid] = time(); ftruncate($h, 0); rewind($h); fwrite($h, json_encode($g)); fflush($h); }
+    flock($h, LOCK_UN); fclose($h);
+    if ($schon) return;
+    $me = clubByToken($tok);
+    $wer = $me ? ($me['trainer'] . ($me['club'] && $me['club'] !== '–' ? " ({$me['club']})" : '') . " – {$me['email']}") : 'ohne Konto (Tablet / Windows-Programm)';
+    $d = $date ? date('d.m.Y', strtotime($date)) : '–';
+    $body = "Eine neue Veranstaltung wurde in WBU Sports hochgeladen.\n\nArt: $art\nName: $name\nDatum: $d\nOrt: " . ($ort ?: '–') . "\n$anzahl\nVeranstalter: $wer\n\n" . ($link ? "Live-Seite: $link\n\n" : '') . "World Boxing Union";
+    $host = preg_replace('/^www\./', '', preg_replace('/[^a-z0-9.\-]/i', '', $_SERVER['HTTP_HOST'] ?? '')) ?: 'wbu-boxing.com';
+    $hdr = "From: WBU Sports <noreply@$host>\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit";
+    @mail('info@wbu-boxing.com', '=?UTF-8?B?' . base64_encode("Neue Veranstaltung: $name ($d)") . '?=', $body, $hdr);
+}
+
+
 // ===================== Live =====================
 function lvfile($id) {
     global $DIR;
@@ -601,6 +673,7 @@ case 't_publish':
     $t = ['id' => bin2hex(random_bytes(8)), 'owner' => $own ? $own['email'] : '', 'key' => bin2hex(random_bytes(12)), 'created' => time(), 'regs' => [], 'nextNo' => 1];
     tMeta($t, $m);
     if (file_put_contents(tufile($t['id']), json_encode($t, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
+    neueVeranstaltungMail($in['eid'] ?? ('t' . $t['id']), 'Turnier (Online-Anmeldung)', $t['name'] ?? '', $t['date'] ?? '', $t['ort'] ?? '', 'Anmeldung online: ja', '', $in['tok'] ?? '');
     out(['ok' => true, 'tid' => $t['id'], 'key' => $t['key']]);
 
 
@@ -929,8 +1002,10 @@ case 't_register':
         } else $reg['fee'] = 0;
         $t['regs'][] = $reg;
         recalcFees($t);
-        return ['no' => $reg['no'], 'name' => $t['name']];
+        return ['no' => $reg['no'], 'name' => $t['name'], 'reg' => $reg, 'tid' => $t['id']];
     }, true);
+    $rg = $res['reg']; $tid0 = $res['tid']; unset($res['reg'], $res['tid']);
+    withKaempfer(function (&$k) use ($rg, $tid0) { kPut($k, kFromReg($rg), 't:' . $tid0); });
     out(['ok' => true] + $res);
 
 
@@ -939,7 +1014,7 @@ case 't_import':   // Veranstalter: in WBU Sports eingetragene / vorab gemeldete
     if (!is_array($list)) fail('Liste fehlt');
     $r = withTurnier($in['tid'] ?? '', function (&$t) use ($in, $list) {
         if (!tKeyOk($t, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
-        $ids = [];
+        $ids = []; $neu = [];
         foreach (array_slice($list, 0, 500) as $x) {
             $full = txt($x['name'] ?? '', 120); $vn = txt($x['vn'] ?? '', 60); $nn = txt($x['nn'] ?? '', 60);
             if ($vn === '' && $nn === '') { $p = strrpos($full, ' '); $vn = $p === false ? $full : substr($full, 0, $p); $nn = $p === false ? '' : substr($full, $p + 1); }
@@ -952,9 +1027,12 @@ case 't_import':   // Veranstalter: in WBU Sports eingetragene / vorab gemeldete
                     'club' => 'veranstalter', 'fee' => $t['fee']];
             $t['regs'][] = $reg;
             $ids[(string)($x['pid'] ?? '')] = $reg['id'];
+            $neu[] = $reg;
         }
-        return ['ids' => $ids];
+        return ['ids' => $ids, 'neu' => $neu, 'tid' => $t['id']];
     }, true);
+    $neu = $r['neu']; $tid0 = $r['tid']; unset($r['neu'], $r['tid']);
+    if ($neu) withKaempfer(function (&$k) use ($neu, $tid0) { foreach ($neu as $rg) kPut($k, kFromReg($rg), 't:' . $tid0); });
     out(['ok' => true] + $r);
 
 
@@ -1202,6 +1280,13 @@ case 'l_push':
         if (!empty($l['fc']) && (int)($snap['fcv'] ?? 0) < (int)$l['fc']['v'] && !empty($l['snap']['rows'])) { $snap['rows'] = $l['snap']['rows']; $snap['fcv'] = $l['fc']['v']; }
         $l['snap'] = $snap; $l['updated'] = time();
     }, true);
+    $sn = $snap; $lid = (string)$in['lid'];
+    if (trim((string)($sn['name'] ?? '')) !== '') {
+        $nk = count($sn['rows'] ?? []);
+        neueVeranstaltungMail($sn['eid'] ?? ('l' . $lid), ($sn['type'] ?? '') === 'turnier' ? 'Turnier' : 'Gala', txt($sn['name']), txt($sn['date'] ?? '', 20), txt($sn['ort'] ?? ''),
+            (($sn['type'] ?? '') === 'turnier' ? 'Kämpfe in der Kampfliste: ' : 'Kämpfe auf der Fight Card: ') . $nk, 'https://www.wbu-boxing.com/live/?l=' . $lid, $in['tok'] ?? '');
+    }
+    if (is_array($in['k'] ?? null) && $in['k']) withKaempfer(function (&$k) use ($in, $lid) { foreach (array_slice($in['k'], 0, 600) as $x) if (is_array($x)) kPut($k, $x, 'l:' . $lid); });
     out(['ok' => true]);
 
 case 'l_pull':
@@ -1230,7 +1315,7 @@ case 'l_grant':
         foreach (array_slice((array)($in['fights'] ?? []), 0, 80) as $f) {
             if (!is_array($f)) continue;
             $x = ['id' => preg_replace('/[^A-Za-z0-9_-]/', '', (string)($f['id'] ?? '')) ?: bin2hex(random_bytes(5))];
-            foreach (['red', 'blue', 'rl', 'rg', 'rw', 'bl', 'bg', 'bw', 'cls', 'title', 'kind', 'dur'] as $k) $x[$k] = txt($f[$k] ?? '', 120);
+            foreach (['red', 'blue', 'rl', 'rg', 'rw', 'rv', 'bl', 'bg', 'bw', 'bv', 'cls', 'title', 'kind', 'dur'] as $k) $x[$k] = txt($f[$k] ?? '', 120);
             $x['rounds'] = max(1, min(12, (int)($f['rounds'] ?? 6)));
             $fs[] = $x;
         }
@@ -1398,6 +1483,34 @@ case 'l_list':
     }
     usort($list, function ($x, $y) { return $y['updated'] - $x['updated']; });
     out(['ok' => true, 'live' => $list]);
+
+case 'k_list':     // Kämpfer-Datenbank lesen (geschlossen)
+    if (!kAllowed($in)) fail('Die Kämpfer-Datenbank sehen nur Veranstalter, Supervisoren und die WBU – bitte einloggen', 403);
+    $L = withKaempfer(function (&$k) { $o = [];
+        foreach ($k as $id => $x) $o[] = ['id' => $id, 'name' => $x['name'], 'vn' => $x['vn'] ?? '', 'nn' => $x['nn'] ?? '', 'geb' => $x['geb'] ?? '', 'sex' => $x['sex'] ?? '',
+            'gym' => $x['gym'] ?? '', 'land' => $x['land'] ?? '', 'kg' => $x['kg'] ?? '', 'sp' => $x['sp'] ?? '', 'klasse' => $x['klasse'] ?? '', 'trainer' => $x['trainer'] ?? '', 'n' => $x['n'] ?? 0, 'at' => $x['at'] ?? 0];
+        return $o; });
+    usort($L, function ($a, $b) { return strcasecmp($a['gym'] ?: 'zzz', $b['gym'] ?: 'zzz') ?: strcasecmp($a['name'], $b['name']); });
+    header('Cache-Control: no-store');
+    out(['ok' => true, 'list' => $L]);
+
+case 'k_save':     // Kämpfer von Hand eintragen oder korrigieren (Veranstalter / WBU)
+    if (!kAllowed($in)) fail('Nicht berechtigt', 403);
+    $x = $in['x'] ?? null; if (!is_array($x)) fail('Angaben fehlen');
+    withKaempfer(function (&$k) use ($x) {
+        $id = (string)($x['id'] ?? '');
+        if ($id !== '' && isset($k[$id])) { $name = txt($x['name'] ?? '', 120); if (mb_strlen($name) >= 3) $k[$id]['name'] = $name;
+            foreach (['gym' => 100, 'land' => 60, 'kg' => 8, 'trainer' => 100] as $f => $m) if (isset($x[$f])) $k[$id][$f] = txt($x[$f], $m);
+            if (isset($x['geb'])) $k[$id]['geb'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$x['geb']) ? $x['geb'] : '';
+            $k[$id]['at'] = time(); }
+        else kPut($k, $x, 'hand');
+    });
+    out(['ok' => true]);
+
+case 'k_del':      // Eintrag löschen (nur WBU-Passwort)
+    if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Löschen nur mit dem WBU-Passwort', 403);
+    withKaempfer(function (&$k) use ($in) { unset($k[(string)($in['id'] ?? '')]); });
+    out(['ok' => true]);
 
 default:
     fail('Unbekannte Aktion');
