@@ -68,7 +68,7 @@ const S={tab:'live',snap:null,err:'',ring:+(Q.get('ring')||0)};
 const uhr=()=>new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 const big=()=>innerWidth>=1100;
 
-function head(sn){return `${TV?'':`<div class="wnav" style="padding:6px 14px"><a href="https://www.wbu-boxing.com/">← WBU Startseite</a><a href="../anmeldung/">WBU Sports</a><a class="${ZEIT||Q.has('resultate')?'':'on'}" href="../live/">WBU Live</a><a href="../live/?zeit=1&ring=1">WBU Time 1</a><a href="../live/?zeit=1&ring=2">WBU Time 2</a><a class="${Q.has('resultate')?'on':''}" href="../results/">🏆 Results</a><a href="../anmeldung/?hilfe=1">📖 Gebrauchsanweisung</a></div>`}<div class="top">${TV?`<img src="${LOGO}">`:`<a href="https://www.wbu-boxing.com/" title="Zur WBU-Startseite"><img src="${LOGO}"></a>`}<div><h1>${esc(sn?sn.name:Q.has('resultate')?'WBU Resultate':'WBU Live')}</h1><span>${sn?esc([sn.ort,deDate(sn.date)].filter(Boolean).join(' · '))+((sn.rings||1)>1?' · '+esc(sn.ringName||'Ring')+' '+S.ring:'')+' · Kampfreihenfolge':'World Boxing Union · Turniere und Galas live'}</span></div><div class="sp"></div><div class="uhr">${uhr()}</div></div>`}
+function head(sn){return `${TV?'':`<div class="wnav" style="padding:6px 14px"><a href="https://www.wbu-boxing.com/">← WBU Startseite</a><a href="../anmeldung/">WBU Sports</a><a class="${ZEIT||Q.has('resultate')?'':'on'}" href="../live/">WBU Live</a><a href="../live/?zeit=1&ring=1">WBU Time 1</a><a href="../live/?zeit=1&ring=2">WBU Time 2</a><a class="${Q.has('resultate')?'on':''}" href="../results/">🏆 Results</a><a href="../anmeldung/?hilfe=1">📖 Gebrauchsanweisung</a></div>`}<div class="top">${TV?`<img src="${LOGO}">`:`<a href="https://www.wbu-boxing.com/" title="Zur WBU-Startseite"><img src="${LOGO}"></a>`}<div><h1>${esc(sn?sn.name:Q.has('resultate')?'WBU Ergebnisse':'WBU Live')}</h1><span>${sn?esc([sn.ort,deDate(sn.date)].filter(Boolean).join(' · '))+((sn.rings||1)>1?' · '+esc(sn.ringName||'Ring')+' '+S.ring:'')+' · Kampfreihenfolge':'World Boxing Union · Turniere und Galas live'}</span></div><div class="sp"></div><div class="uhr">${uhr()}</div></div>`}
 function card(f,i,showRes){
   const tag=showRes?`<span class="rd">${esc(f.rd)}</span>`:i===0?'<span class="tag">IM RING</span>':i<3?'<span class="tag y">BEREIT MACHEN</span>':`<span class="rd">${esc(f.rd)}</span>`;
   return `<div class="f ${showRes?'':i===0?'now':i<3?'next':''}"><div class="h"><span class="no">Kampf ${f.no}</span>${tag}</div><div class="kl">${esc(f.kl)}</div>
@@ -108,7 +108,7 @@ async function load(){
 addEventListener('resize',draw);
 // ---------- Resultate: alle abgeschlossenen Veranstaltungen (?resultate=1) ----------
 function startRes(){
-  document.title='WBU Resultate';
+  document.title='WBU Ergebnisse';
   document.head.insertAdjacentHTML('beforeend',`<style>.wrap.rs{max-width:1280px}.rs h2{margin:0 0 2px;font-size:22px}.rs .meta{font-size:14px;margin-bottom:10px}.rs .card{background:#f6f7f9;border:2px solid #cfd4dc;border-radius:12px;padding:14px;margin-bottom:16px}
    .rs .sc{overflow-x:auto}.rs table td,.rs table th{font-size:14px;white-space:nowrap}.rs .r{color:#c62828;font-weight:700}.rs .b{color:#1565c0;font-weight:700}.rs .w{font-weight:800}
    .rs .badge{display:inline-block;font-size:12px;font-weight:800;padding:2px 8px;border-radius:6px;background:#000;color:#fff;margin-right:6px}.rs .tt{font-size:12px;font-weight:700;color:#8a6d00}
@@ -127,7 +127,7 @@ function startRes(){
        <td class="w ${f.w==='R'?'r':f.w==='B'?'b':''}">${f.w==='R'?esc(f.red):f.w==='B'?esc(f.blue):(f.k?'–':'')}</td><td>${esc(f.kn||'kein Ergebnis')}</td>
        <td>${f.r?'Rd '+f.r+(f.t?' / '+esc(f.t):''):'–'}</td><td>${(f.judges||[]).map(j=>`${esc(j.n)}: <span class="r">${j.r}</span> : <span class="b">${j.b}</span>`).join('<br>')||'–'}</td></tr>`).join('')}</table></div>
      <button class="adm" onclick="resAdm('${g.id}',${g.hidden?0:1})">${g.hidden?'WBU: wieder einblenden':'WBU: ausblenden'}</button></div>`};
-  const draw=()=>{const y=scrollY;$('app').innerHTML=`${head(null)}<div class="wrap rs"><h1 style="margin:6px 0 4px">🏆 WBU Resultate</h1><p style="margin:0 0 12px">Alle Ergebnisse der WBU-Galas und -Turniere – automatisch vom Supervisor übermittelt.</p>
+  const draw=()=>{const y=scrollY;$('app').innerHTML=`${head(null)}<div class="wrap rs"><h1 style="margin:6px 0 4px">🏆 WBU Ergebnisse</h1><p style="margin:0 0 12px">Alle Ergebnisse der WBU-Galas und -Turniere – automatisch vom Supervisor übermittelt.</p>
     <input id="rq" placeholder="Suchen: Name, Veranstaltung, Ort …" value="${esc(q)}" oninput="window.__rq(this.value)">${L.length?L.map(ev).join('')||'<p>Nichts gefunden.</p>':'<p>Noch keine Resultate.</p>'}</div>`;
     const i=$('rq');if(i&&q){i.focus();i.setSelectionRange(q.length,q.length)}scrollTo(0,y)};
   window.__rq=v=>{q=v.trim().toLowerCase();draw()};

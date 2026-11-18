@@ -735,7 +735,7 @@ try{localStorage.setItem('wbuLang',l)}catch(e){}
 try{var u=new URL(location.href);if(l==='en')u.searchParams.delete('lang');else u.searchParams.set('lang',l);history.replaceState(null,'',u)}catch(e){}
 document.querySelectorAll('a[href*="fight-quiz"]').forEach(function(a){try{var u=new URL(a.href,location.href);if(l==='en')u.searchParams.delete('lang');else u.searchParams.set('lang',l);a.href=u.href}catch(e){}})}
 function ui(){
-var TX={en:['Home','Rankings','WBU Coin','Live','Results'],de:['Startseite','Rangliste','WBU Coin','Live','Results'],es:['Inicio','Ranking','WBU Coin','Live','Resultados'],fr:['Accueil','Classement','WBU Coin','Live','Résultats'],ru:['Главная','Рейтинг','WBU Coin','Live','Результаты']};
+var TX={en:['Home','Rankings','WBU Coin','Live','Results'],de:['Startseite','Rangliste','WBU Coin','Live','Ergebnisse'],es:['Inicio','Ranking','WBU Coin','Live','Resultados'],fr:['Accueil','Classement','WBU Coin','Live','Résultats'],ru:['Главная','Рейтинг','WBU Coin','Live','Результаты']};
 var URLS=['https://www.wbu-boxing.com/','https://www.wbu-boxing.com/rankings/','https://wbu.wbu-boxing.com/coin/','https://www.wbu-boxing.com/live/','https://www.wbu-boxing.com/results/'];
 var st=document.createElement('style');st.textContent='#wbuTop{position:sticky;top:0;z-index:1000;background:rgba(11,13,18,.94);backdrop-filter:blur(10px);border-bottom:1px solid #262b36;font-family:Inter,system-ui,Arial,sans-serif}'+
 '#wbuTop .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:26px;padding:12px 22px}#wbuTop .br{display:flex;align-items:center;gap:12px;color:#f4f1ea;text-decoration:none}#wbuTop .br img{width:46px;height:46px}'+
