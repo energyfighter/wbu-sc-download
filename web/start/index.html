@@ -79,6 +79,7 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .shows .sl a{flex:none;display:block;border-radius:10px;overflow:hidden;border:1px solid var(--line)}.shows .sl img{display:block;width:100%}.shows .sl p{padding:6px 4px}
 @media(max-width:900px){.side .shows{flex:none;max-height:640px}}
 .dd .sub a.mo{display:none}@media(max-width:900px){.dd .sub a.mo{display:block}}
+.fb .tg{background:#fff}.fb .tg iframe{display:block;width:100%;height:1600px;border:0}@media(max-width:900px){.fb .tg iframe{height:1100px}}
 /* Verbände */
 .orgs{display:flex;justify-content:center;gap:clamp(10px,2.4vw,30px);flex-wrap:wrap;padding:28px 0 6px}
 .orgs a{display:block;width:clamp(78px,10vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
@@ -157,7 +158,7 @@ function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
  <div class="main"><div>
    <a class="ban" href="${R('anmeldung')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
    <a class="ban" href="${R('coin')}"><img src="${UP}2021/01/wbu-coin-banner-850x300-4x.jpg" alt="WBU Coin – Coming Soon"></a>
-   <section class="fb"><h3 class="H">${t('fb')}</h3><div class="fr"><iframe title="Facebook" src="https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(FB)}&tabs=timeline&width=500&height=1400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false" width="500" height="1400" scrolling="no" allow="encrypted-media" loading="lazy"></iframe></div>
+   <section class="fb"><h3 class="H">${t('fb')}</h3><div class="tg"><iframe title="WBU News" src="https://widget.tagembed.com/339487?website=1" allow="fullscreen" loading="lazy"></iframe></div>
     <a class="btn" href="${FB}" target="_blank" rel="noopener">${t('fbb')} ›</a></section></div>
   <aside class="side">
    <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
