@@ -1519,6 +1519,29 @@ case 'k_import':   // Liste einspielen (z. B. Starterliste eines früheren Turni
         return [count($k) - $vor, count($k)]; });
     out(['ok' => true, 'neu' => $n[0], 'gesamt' => $n[1]]);
 
+case 'k_suggest':  // Namensvorschläge beim Eintippen – gegen Doppel-Einträge
+    $q = kNorm($in['q'] ?? ''); if (mb_strlen($q) < 3) out(['ok' => true, 'list' => [], 'andere' => 0]);
+    $tok = array_values(array_filter(explode(' ', $q)));
+    $hit = function ($name) use ($tok) { $w = explode(' ', kNorm($name)); foreach ($tok as $t) { $ok = false; foreach ($w as $x) if (mb_strpos($x, $t) === 0) { $ok = true; break; } if (!$ok) return false; } return true; };
+    $voll = function ($name) use ($q) { return kNorm($name) === $q; };
+    if (kAllowed($in)) {   // Veranstalter / Supervisor / WBU: ganze Datenbank
+        $L = withKaempfer(function (&$k) use ($hit) { $o = [];
+            foreach ($k as $id => $x) if ($hit($x['name'])) $o[] = ['id' => $id, 'name' => $x['name'], 'vn' => $x['vn'] ?? '', 'nn' => $x['nn'] ?? '', 'gym' => $x['gym'] ?? '', 'land' => $x['land'] ?? '', 'geb' => $x['geb'] ?? '', 'sex' => $x['sex'] ?? '', 'trainer' => $x['trainer'] ?? ''];
+            return $o; });
+        usort($L, function ($a, $b) { return strcasecmp($a['name'], $b['name']); });
+        out(['ok' => true, 'list' => array_slice($L, 0, 10), 'andere' => 0]);
+    }
+    $me = needLogin($in['tok'] ?? '');   // Verein / Trainer: nur die eigenen, früher gemeldeten Sportler – fremde Daten bleiben geschlossen
+    $own = []; $seen = [];
+    foreach (glob("$DIR/tu_*.json") as $f) { $t = json_decode((string)@file_get_contents($f), true); if (!is_array($t)) continue;
+        foreach (($t['regs'] ?? []) as $r) { if (($r['club'] ?? '') !== $me['email'] || !empty($r['storno'])) continue;
+            $n = trim(($r['vorname'] ?? '') . ' ' . ($r['name'] ?? '')); $key = kNorm($n) . '|' . ($r['geb'] ?? '');
+            if (isset($seen[$key]) || !$hit($n)) continue; $seen[$key] = 1;
+            $own[] = ['id' => '', 'name' => $n, 'vn' => $r['vorname'] ?? '', 'nn' => $r['name'] ?? '', 'gym' => $r['verein'] ?? '', 'land' => $r['land'] ?? '', 'geb' => $r['geb'] ?? '', 'sex' => $r['sex'] ?? '', 'trainer' => $r['trainer'] ?? ''];
+        } }
+    $andere = withKaempfer(function (&$k) use ($voll, $own) { $n = 0; foreach ($k as $x) if ($voll($x['name'])) { $mine = false; foreach ($own as $o) if (kNorm($o['name']) === kNorm($x['name']) && ($o['geb'] === ($x['geb'] ?? '') || ($x['geb'] ?? '') === '')) $mine = true; if (!$mine) $n++; } return $n; });
+    out(['ok' => true, 'list' => array_slice($own, 0, 10), 'andere' => $andere]);
+
 case 'k_del':      // Eintrag löschen (nur WBU-Passwort)
     if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Löschen nur mit dem WBU-Passwort', 403);
     withKaempfer(function (&$k) use ($in) { unset($k[(string)($in['id'] ?? '')]); });
