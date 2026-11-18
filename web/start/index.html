@@ -42,7 +42,12 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .wp a{color:var(--gold2)!important;text-decoration:underline}.wp img{height:auto;border-radius:10px}.wp figure{margin:18px auto}.wp .aligncenter{display:block;margin-left:auto;margin-right:auto}
 .wp table{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px;display:block;overflow-x:auto}.wp td,.wp th{border:1px solid var(--line)!important;padding:8px 10px;vertical-align:top}.wp tr:nth-child(even) td{background:#1a1f2a!important}.wp tr:first-child td,.wp th{background:#222837!important;font-weight:700}
 .wp input,.wp textarea,.wp select{background:#0f1218!important;border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;color:var(--txt)!important;font-size:15px}.wp button,.wp input[type=submit]{background:var(--gold)!important;color:#140e00!important;border:0;border-radius:9px;padding:11px 18px;font-weight:800;width:auto;cursor:pointer}
-.wp iframe{max-width:100%;border:0}.wp .wp-block-gallery,.wp .blocks-gallery-grid{display:flex;flex-wrap:wrap;gap:12px;list-style:none;padding:0}.wp .blocks-gallery-item,.wp .wp-block-image{flex:1 1 220px}
+.wp iframe{max-width:100%;border:0}
+.wp .wp-block-gallery,.wp .blocks-gallery-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;list-style:none;padding:0;margin:18px 0}
+.wp .wp-block-gallery>*,.wp .blocks-gallery-grid>*{margin:0!important;width:auto!important;display:block}
+.wp .wp-block-gallery figure,.wp .blocks-gallery-item figure{margin:0!important;height:100%}
+.wp .wp-block-gallery img,.wp .blocks-gallery-item img{width:100%!important;height:100%!important;aspect-ratio:3/2;object-fit:contain;background:#0d1016;padding:6px;border:1px solid var(--line);border-radius:10px;display:block}
+.wp .wp-block-gallery>.blocks-gallery-grid{grid-column:1/-1}
 .wpmsg{padding:60px 22px;text-align:center;font-size:18px}
 /* Live-Monitor (heller Hintergrund wie WBU Live / WBU Time) */
 .lm{max-width:1240px;margin:22px auto 0;padding:0 22px}.lmb{background:#e9ebef;color:#000;border:3px solid #000;border-radius:16px;overflow:hidden;font-family:system-ui,Arial,sans-serif}
@@ -60,6 +65,8 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .lmlist{overflow-y:auto;flex:1}.lmf{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:8px 12px;border-bottom:1px solid #bbb;font-size:15px}.lmf:nth-child(even){background:#f3f4f6}
 .lmf .n{font-weight:900;font-size:17px}.lmf .rr{color:#d0021b;font-weight:800}.lmf .bb{color:#0047bb;font-weight:800}.lmf small{display:block;font-size:13px}.lmf .e{color:#1e7a34;font-weight:800;font-size:14px}
 .lmf.cur{background:#fff3c4!important;outline:3px solid #d8a93a;outline-offset:-3px}.lmf.cur .e{color:#000}
+@media(max-width:900px){.wp .wp-block-gallery,.wp .blocks-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:520px){.wp .wp-block-gallery,.wp .blocks-gallery-grid{grid-template-columns:1fr!important}}
 @media(max-width:900px){.lm{padding:0 12px}.lmg{grid-template-columns:1fr;aspect-ratio:auto}.lmr{border-left:0;border-top:3px solid #000}.lmlist{max-height:420px}}
 .wa{position:fixed;right:18px;bottom:18px;z-index:60;width:60px;height:60px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .15s}.wa:hover{transform:scale(1.08)}.wa svg{width:34px;height:34px;fill:#fff}
 .cfm{margin:14px 0;padding:12px 14px;border-radius:10px;font-weight:700}.cfm.ok{background:#173d24;border:1px solid #2f9e57}.cfm.err{background:#4a1717;border:1px solid #c0392b}
@@ -195,6 +202,12 @@ async function wpPage(slug,v){slug=slug.replace(/[^a-z0-9-]/gi,'');const old=W+'
   const tmp=document.createElement('div');tmp.innerHTML=d.content.rendered;
   tmp.querySelectorAll('script,style').forEach(x=>x.remove());
   tmp.querySelectorAll('[style]').forEach(x=>{x.style.removeProperty('color');x.style.removeProperty('background');x.style.removeProperty('background-color');x.style.removeProperty('font-family')});
+  // Galerien: doppelte Bilder raus, große Bildversion nehmen
+  const seen=new Set();tmp.querySelectorAll('.wp-block-gallery img,.blocks-gallery-grid img').forEach(i=>{const src=i.getAttribute('src')||'',k=src.split('/').pop().replace(/-\d+x\d+(?=\.)/,'').replace(/-scaled(?=\.)/,'').toLowerCase();
+   const box=i.closest('li,.blocks-gallery-item,.wp-block-gallery>figure')||i.closest('figure')||i;if(seen.has(k)){box.remove();return}seen.add(k);
+   if(!i.getAttribute('srcset')&&/-\d+x\d+\.(jpe?g|png|webp)$/i.test(src))i.setAttribute('src',src.replace(/-\d+x\d+(?=\.)/,''));i.removeAttribute('width');i.removeAttribute('height')});
+  tmp.querySelectorAll('table').forEach(t=>{const rows=[...t.querySelectorAll('tr')].filter(r=>r.textContent.trim());if(rows.length<=1){const h=t.previousElementSibling;if(h&&/^H[1-6]$/.test(h.tagName)&&h.textContent.trim().length<30)h.remove();const w=t.closest('figure,.wp-block-table');(w||t).remove()}});
+  tmp.querySelectorAll('p,div,figure').forEach(x=>{if(!x.textContent.trim()&&!x.querySelector('img,iframe,video,form,input,hr,br'))x.remove()});
   tmp.querySelectorAll('form').forEach(f=>{if(!f.getAttribute('action'))f.setAttribute('action',old);f.setAttribute('target','_top')});
   tmp.querySelectorAll('img[srcset]').forEach(i=>i.setAttribute('sizes','(max-width:900px) 100vw, 900px'));
   v.innerHTML=`<div class="in wpw"><h1 class="H">${d.title.rendered}</h1><div class="bar"></div><div class="wp">${tmp.innerHTML}</div></div>`;
