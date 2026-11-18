@@ -162,7 +162,7 @@ function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
     <a class="btn" href="${FB}" target="_blank" rel="noopener">${t('fbb')} ›</a></section></div>
   <aside class="side">
    <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
-   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.length?SHOWS.map((u,i)=>`<a href="${u}" onclick="return zoomU('${u}')"><img src="${u}" alt="WBU Show ${i+1}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div></div>
+   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.length?SHOWS.map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div></div>
   </aside></div>`}
 // Seite im Rahmen: Pfad + Sprache; deren eigenes Kopf-Menü wird ausgeblendet, Untermenüs (z. B. Fight Quiz) bleiben
 const HIDE={rankings:'.nav{display:none!important}',results:'.nav{display:none!important}',coin:'#wbuTop{display:none!important}',live:'',anmeldung:''};
@@ -203,7 +203,14 @@ function prep(d,k){try{const st=d.createElement('style');st.textContent=(HIDE[k]
 const WPC={};
 // Eigene Seiten im neuen Design (statt WordPress-Inhalt)
 // Plakate „WBU Shows“ (neueste zuerst) – Dateien in start/img/show-*.jpg
-const SHOWS=[];
+// d = letzter Veranstaltungstag. Angezeigt werden nur kommende Shows, die nächste immer oben; vergangene verschwinden von selbst.
+const SHOWS_ALL=[
+ {d:'2026-11-21',img:'/start/img/show-2026-11-21-steel-warriors.jpg',t:'Steel Warriors – Lokschuppen Dillingen'},
+ {d:'2027-02-27',img:'/start/img/show-2027-02-27-bayerische-ringnacht.jpg',t:'Bayerische Ringnacht – Manzau Gym Olching'},
+ {d:'2027-05-29',img:'/start/img/show-2027-05-29-wadersloh.jpg',t:'WBU Deutsche Meisterschaft – Wadersloh'},
+];
+const SHOWS=(()=>{const n=new Date(),h=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+ return SHOWS_ALL.filter(x=>x.d>=h).sort((a,b)=>a.d<b.d?-1:1)})();
 const GUERTEL=[5,1,6,2,7,3,8,4].map(n=>'/start/img/guertel-'+String(n).padStart(2,'0')+'.jpg');
 function guertelSeite(v){v.innerHTML=`<div class="in wpw"><h1 class="H">${t('belts')}</h1><div class="bar"></div><div class="gg">${GUERTEL.map((u,i)=>`<a href="${u}" onclick="return zoom(${i})"><img src="${u}" alt="WBU ${t('belts')} ${i+1}" loading="lazy"></a>`).join('')}</div></div>`}
 function zoomU(u){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${u}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
