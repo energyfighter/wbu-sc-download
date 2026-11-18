@@ -588,6 +588,37 @@ function newsStatus($me) {
     return $c[$me['email']]['news'] ?? 'none';
 }
 function newsPublic($p) { return ['id' => $p['id'], 'd' => $p['d'], 't' => $p['t'], 'x' => $p['x'], 'n' => count($p['img'] ?? []), 'by' => $p['by'] ?? '', 'fb' => !empty($p['fb']), 'tr' => (object)($p['tr'] ?? [])]; }
+// Automatische Übersetzung (Google-Übersetzer, frei zugängliche Schnittstelle) – für Berichte der Admins
+function gTrPart($q, $tl, $sl) {
+    $c = curl_init('https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=' . $sl . '&tl=' . $tl);
+    curl_setopt_array($c, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['q' => $q]), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
+    $r = json_decode((string)curl_exec($c), true); curl_close($c);
+    if (!is_array($r) || !is_array($r[0] ?? null)) return null;
+    $o = ''; foreach ($r[0] as $seg) $o .= $seg[0] ?? '';
+    return ['t' => $o, 'src' => is_string($r[2] ?? null) ? $r[2] : ''];
+}
+function gTr($text, $tl, $sl = 'auto') {
+    $text = (string)$text; if (trim($text) === '') return ['t' => $text, 'src' => ''];
+    $teile = []; $buf = '';
+    foreach (preg_split('/(\n)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE) as $z) {
+        if (mb_strlen($buf . $z) > 3500 && $buf !== '') { $teile[] = $buf; $buf = ''; }
+        $buf .= $z;
+    }
+    if ($buf !== '') $teile[] = $buf;
+    $out = ''; $src = '';
+    foreach ($teile as $q) { $r = gTrPart($q, $tl, $sl); if (!$r) return null; $out .= $r['t']; if (!$src) $src = $r['src']; }
+    return ['t' => $out, 'src' => $src];
+}
+function newsAutoTr($t, $x) {
+    $d = gTr($t . "\n" . mb_substr($x, 0, 400), 'en'); if (!$d) return null;
+    $src = substr(strtolower($d['src'] ?: 'en'), 0, 2); $o = [];
+    foreach (['en','de','es','fr','ru'] as $l) {
+        if ($l === $src) continue;
+        $a = gTr($t, $l, $src); $b = gTr($x, $l, $src);
+        if ($a && $b) $o[$l] = ['t' => txt($a['t'], 160), 'x' => mb_substr(trim($b['t']), 0, 20000)];
+    }
+    return $o;
+}
 function newsTr($v) { $o = []; foreach (['en','de','es','fr','ru'] as $l) { $e = $v[$l] ?? null; if (is_array($e) && trim((string)($e['t'] ?? '')) !== '') $o[$l] = ['t' => txt($e['t'], 160), 'x' => mb_substr(trim((string)($e['x'] ?? '')), 0, 20000)]; } return $o; }
 function newsImgUrl($id, $i) { return 'https://www.wbu-boxing.com/scorecard/api.php?a=n_img&id=' . $id . '&i=' . $i; }
 function fbHttp($method, $path, $params) {
@@ -1072,6 +1103,10 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
         if ($i >= 0) $n[$i] = $p; else $n[] = $p;
         return $p;
     }, true);
+    if ($tr === null) {   // nicht von der WBU mitgeliefert → automatisch in alle Sprachen übersetzen (Facebook bekommt dann Englisch)
+        $auto = newsAutoTr($t, $x);
+        if (is_array($auto)) { $p['tr'] = $auto; $pid = $p['id']; withNews(function (&$n) use ($pid, $auto) { foreach ($n as &$q) if ($q['id'] === $pid) $q['tr'] = $auto; }, true); }
+    }
     $fbErr = '';
     if (!empty($in['fb']) && empty($p['fb'])) {
         $r = fbPublish($p);
