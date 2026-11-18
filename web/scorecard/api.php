@@ -1388,6 +1388,24 @@ case 'r_submit':
     $sent = @mail('info@wbu-boxing.com', '=?UTF-8?B?' . base64_encode(($again ? 'Korrektur: ' : '') . 'Ergebnisse ' . $title) . '?=', $msg, $hdr);
     out(['ok' => true, 'mail' => (bool)$sent]);
 
+case 'r_import':   // Ergebnisse einer früheren Veranstaltung (z. B. aus der Draw-Liste) – nur mit einmaligem Import-Schlüssel oder WBU-Passwort
+    $okI = hash_equals('9a6a303b240bd5cdacae86773f8425f1a3c561b33b506917add68c4bec0fbd9c', hash('sha256', (string)($in['imp'] ?? '')));
+    if (!$okI && !hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Nicht berechtigt', 403);
+    $d = is_array($in['data'] ?? null) ? $in['data'] : fail('Keine Daten');
+    $T = function ($k, $n = 120) use ($d) { return txt($d[$k] ?? '', $n); };
+    $grp = substr(sha1(mb_strtolower($T('name') . '|' . $T('date') . '|' . $T('ort'))), 0, 16);
+    $fs = [];
+    foreach (array_slice((array)($d['fights'] ?? []), 0, 400) as $f) { if (!is_array($f)) continue;
+        $x = ['no' => (int)($f['no'] ?? 0)]; foreach (['title', 'red', 'blue', 'ri', 'bi', 'dur', 'k', 'kn', 'w', 't', 'ref'] as $k) $x[$k] = txt($f[$k] ?? '', 160);
+        $x['rounds'] = (int)($f['rounds'] ?? 0); $x['r'] = (int)($f['r'] ?? 0); $x['judges'] = []; $fs[] = $x; }
+    $pe = function ($e) { return is_array($e) && trim((string)($e['n'] ?? '')) !== '' ? ['n' => txt($e['n'], 120), 'c' => txt($e['c'] ?? '', 120)] : null; };
+    $pl = [];
+    foreach (array_slice((array)($d['places'] ?? []), 0, 200) as $p) if (is_array($p)) $pl[] = ['kl' => txt($p['kl'] ?? '', 160), 'first' => $pe($p['first'] ?? null), 'second' => $pe($p['second'] ?? null), 'third' => array_values(array_filter(array_map($pe, (array)($p['third'] ?? []))))];
+    $rec = ['grp' => $grp, 'lid' => '', 'type' => $T('type', 10) === 'gala' ? 'gala' : 'turnier', 'name' => $T('name'), 'promoter' => $T('promoter'), 'ort' => $T('ort'), 'date' => $T('date', 20),
+            'sup' => $T('sup'), 'arzt' => $T('arzt'), 'ring' => 1, 'fights' => $fs, 'places' => $pl, 'at' => time(), 'import' => 1];
+    if (file_put_contents("$DIR/res_" . substr(sha1($grp . '|import'), 0, 20) . '.json', json_encode($rec, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler', 500);
+    out(['ok' => true, 'kaempfe' => count($fs), 'kategorien' => count($pl)]);
+
 case 'r_list':
     $G = [];
     foreach (glob("$DIR/res_*.json") as $f) {
@@ -1395,7 +1413,8 @@ case 'r_list':
         if (!is_array($r) || (!empty($r['hidden']) && empty($in['all']))) continue;
         $g = &$G[$r['grp']];
         if (!$g) $g = ['id' => $r['grp'], 'type' => $r['type'], 'name' => $r['name'], 'promoter' => $r['promoter'], 'ort' => $r['ort'], 'date' => $r['date'], 'arzt' => $r['arzt'], 'sups' => [], 'fights' => [], 'at' => 0, 'hidden' => !empty($r['hidden']), 'lid' => $r['lid']];
-        if (!in_array($r['sup'], $g['sups'], true)) $g['sups'][] = $r['sup'];
+        if (!empty($r['places'])) $g['places0'] = $r['places'];
+        if ($r['sup'] !== '' && !in_array($r['sup'], $g['sups'], true)) $g['sups'][] = $r['sup'];
         foreach ($r['fights'] as $x) { $x['ring'] = $r['ring']; $g['fights'][] = $x; }
         $g['at'] = max($g['at'], $r['at']);
         unset($g);
@@ -1403,6 +1422,8 @@ case 'r_list':
     foreach ($G as &$g) {
         usort($g['fights'], function ($a, $b) { return [$a['ring'], $a['no']] <=> [$b['ring'], $b['no']]; });
         if ($g['type'] === 'turnier' && $g['lid']) { $l = json_decode((string)@file_get_contents(lvfile($g['lid'])), true); $g['places'] = $l['snap']['places'] ?? []; }
+        if (empty($g['places']) && !empty($g['places0'])) $g['places'] = $g['places0'];
+        unset($g['places0']);
         $t = strtotime(preg_replace('/^(\d{2})\.(\d{2})\.(\d{4})$/', '$3-$2-$1', (string)$g['date'])) ?: $g['at']; $g['ts'] = $t;
         unset($g['lid']);
     }

@@ -119,7 +119,7 @@ const T={
   rd:'Раунд',rounds:'раундов',of:'×',nores:'Нет результата',none:'Результатов пока нет.',nofind:'Ничего не найдено.',places:'Призёры',ring:'Ринг',draw:'НИЧЬЯ',
   foot:'Результаты публикуются автоматически официальным супервайзером WBU.',hide:'WBU: скрыть',show:'WBU: показать',pw:'Пароль WBU:'}};
 // Entscheidungen
-const DEC={UD:['Unanimous decision','Punktsieg einstimmig','Decisión unánime','Décision unanime','Единогласное решение'],SD:['Split decision','Punktsieg geteilt','Decisión dividida','Décision partagée','Раздельное решение'],
+const DEC={W:['Winner','Sieger','Ganador','Vainqueur','Победитель'],UD:['Unanimous decision','Punktsieg einstimmig','Decisión unánime','Décision unanime','Единогласное решение'],SD:['Split decision','Punktsieg geteilt','Decisión dividida','Décision partagée','Раздельное решение'],
  MD:['Majority decision','Punktsieg Mehrheit','Decisión mayoritaria','Décision majoritaire','Решение большинства'],KO:['Knockout','K.O.','Nocaut (KO)','KO','Нокаут'],TKO:['Technical knockout','T.K.O.','Nocaut técnico','KO technique','Технический нокаут'],
  RTD:['Corner retirement','Aufgabe in der Ecke (RTD)','Abandono en la esquina','Abandon à l\'appel','Отказ от продолжения боя'],DQ:['Disqualification','Disqualifikation','Descalificación','Disqualification','Дисквалификация'],
  TD:['Technical decision','Technische Entscheidung','Decisión técnica','Décision technique','Техническое решение'],UDRAW:['Unanimous draw','Unentschieden einstimmig','Empate unánime','Match nul unanime','Единогласная ничья'],
@@ -140,14 +140,14 @@ const TI={Weltmeisterschaft:['World Championship','Campeonato Mundial','Champion
  'Deutsche Meisterschaft':['German Championship','Campeonato de Alemania','Championnat d\'Allemagne','Чемпионат Германии']};
 const KI={Profi:['Pro','Profesional','Pro','Профи'],Master:['Masters','Masters','Masters','Мастерс'],Hybrid:['Hybrid','Híbrido','Hybride','Гибрид'],'K1 / Kickboxen':['K1 / Kickboxing','K1 / Kickboxing','K1 / Kickboxing','K1 / Кикбоксинг']};
 const WORDS={Herren:['Men','Hombres','Hommes','Мужчины'],Damen:['Women','Mujeres','Femmes','Женщины'],Männer:['Men','Hombres','Hommes','Мужчины'],Frauen:['Women','Mujeres','Femmes','Женщины'],
- Jugend:['Youth','Juvenil','Jeunes','Юниоры'],Kinder:['Kids','Niños','Enfants','Дети'],Erwachsene:['Adults','Adultos','Adultes','Взрослые'],Junioren:['Junior','Junior','Junior','Юниоры'],bis:['up to','hasta','jusqu\'à','до'],über:['over','más de','plus de','свыше']};
+ Jugend:['Youth','Juvenil','Jeunes','Юниоры'],Kinder:['Kids','Niños','Enfants','Дети'],Erwachsene:['Adults','Adultos','Adultes','Взрослые'],Junioren:['Junior','Junior','Junior','Юниоры'],bis:['up to','hasta','jusqu\'à','до'],über:['over','más de','plus de','свыше'],Männlich:['Men','Hombres','Hommes','Мужчины'],Weiblich:['Women','Mujeres','Femmes','Женщины'],Jahre:['years','años','ans','лет'],Finale:['Final','Final','Finale','Финал']};
 let L=(()=>{const q=new URLSearchParams(location.search).get('lang');if(LANGS.includes(q))return q;try{const s=localStorage.getItem('wbuLang');if(LANGS.includes(s))return s}catch(e){}return 'en'})();
 const t=k=>(T[L]||T.en)[k]||T.en[k];
 const li=()=>Math.max(0,['en','es','fr','ru'].indexOf(L)); // Index in den Übersetzungslisten (ohne de)
 function tr(x){if(L==='de'||!x)return x;const i=li();
   const m=x.match(/^(.*?)\s*\(([^)]+)\)$/);if(m&&W[m[1].trim()])return W[m[1].trim()][i];if(W[x])return W[x][i];if(TI[x])return TI[x][i];if(KI[x])return KI[x][i];
   if(/^Junioren-/.test(x)){const b=x.replace(/^Junioren-/,'');const tb=TI[b.charAt(0).toUpperCase()+b.slice(1)];if(tb)return 'Junior '+tb[i]}
-  return x.replace(/\b(Herren|Damen|Männer|Frauen|Jugend|Kinder|Erwachsene|Junioren|bis|über)\b/g,w=>WORDS[w][i])}
+  return x.replace(/\b(Herren|Damen|Männer|Frauen|Jugend|Kinder|Erwachsene|Junioren|bis|über|Männlich|Weiblich|Jahre|Finale)\b/g,w=>WORDS[w][i])}
 const LAND={Deutschland:['Germany','Alemania','Allemagne','Германия'],Österreich:['Austria','Austria','Autriche','Австрия'],Schweiz:['Switzerland','Suiza','Suisse','Швейцария'],Polen:['Poland','Polonia','Pologne','Польша'],
  Türkei:['Turkey','Turquía','Turquie','Турция'],Italien:['Italy','Italia','Italie','Италия'],Frankreich:['France','Francia','France','Франция'],Spanien:['Spain','España','Espagne','Испания'],Niederlande:['Netherlands','Países Bajos','Pays-Bas','Нидерланды'],
  Russland:['Russia','Rusia','Russie','Россия'],Ukraine:['Ukraine','Ucrania','Ukraine','Украина'],Rumänien:['Romania','Rumanía','Roumanie','Румыния'],Kroatien:['Croatia','Croacia','Croatie','Хорватия'],Serbien:['Serbia','Serbia','Serbie','Сербия'],
@@ -181,7 +181,7 @@ function evCard(g){const q=Q;const match=f=>!q||[f.red,f.blue,f.title].join(' ')
   const dp=dparts(g.date),multi=new Set(g.fights.map(f=>f.ring)).size>1;
   return `<section class="ev"><div class="evh"><div class="date"><b>${dp.d}</b><span>${dp.m} ${dp.y}</span></div>
    <div><div><span class="type ${g.type==='turnier'?'t':''}">${t(g.type==='turnier'?'tour':'gala')}</span></div><h2 class="H">${esc(g.name||g.promoter||'WBU')}</h2>
-   <div class="m"><i>📍</i>${esc(g.ort||'')} &nbsp; <i>${t('sup').toUpperCase()}</i>${esc((g.sups||[]).join(', '))}${g.arzt?` &nbsp; <i>${t('doc').toUpperCase()}</i>${esc(g.arzt)}`:''}</div></div></div>
+   <div class="m"><i>📍</i>${esc(g.ort||'')}${(g.sups||[]).filter(Boolean).length?` &nbsp; <i>${t('sup').toUpperCase()}</i>${esc(g.sups.filter(Boolean).join(', '))}`:''}${g.arzt?` &nbsp; <i>${t('doc').toUpperCase()}</i>${esc(g.arzt)}`:''}</div></div></div>
    ${g.places&&g.places.length?`<div class="pod"><h3 class="H">${t('places')}</h3><div class="pgrid">${g.places.map(p=>`<div class="pc"><b>${esc(tr(p.kl))}</b>
      <div class="pl g1"><em>1.</em>${p.first?esc(p.first.n):'–'}</div><div class="pl g2"><em>2.</em>${p.second?esc(p.second.n):'–'}</div>
      <div class="pl g3"><em>3.</em>${(p.third||[]).filter(Boolean).map(x=>esc(x.n)).join(', ')||'–'}</div></div>`).join('')}</div></div>`:''}
