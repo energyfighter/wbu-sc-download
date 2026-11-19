@@ -129,12 +129,12 @@ h3{margin:0;font:700 24px Oswald,sans-serif}
  <iframe id="fqif" title="WBU Fight Quiz" style="flex:1;width:100%;border:0;background:#0E0F12"></iframe>
 </div>
 <script>
-async function fqOpen(){const o=document.getElementById('fqov'),f=document.getElementById('fqif');
+async function fqOpen(){if(window.top!==window){try{window.top.location.href=location.origin+location.pathname+'#play';return}catch(e){}}const o=document.getElementById('fqov'),f=document.getElementById('fqif');
  try{const r=await fetch('quiz-app.html',{method:'HEAD',cache:'no-store'});if(!r.ok)throw 0}catch(e){alert('The test version is being uploaded – please try again in a few minutes.');return}
  if(!f.src)f.src='quiz-app.html';o.style.display='flex';document.body.style.overflow='hidden';history.pushState({fq:1},'','#play')}
 function fqClose(){document.getElementById('fqov').style.display='none';document.body.style.overflow='';if(location.hash==='#play')history.back()}
 addEventListener('popstate',()=>{if(location.hash!=='#play'){document.getElementById('fqov').style.display='none';document.body.style.overflow=''}});
-if(location.hash==='#play')addEventListener('load',fqOpen);
+if(location.hash==='#play'&&window.top===window)addEventListener('load',fqOpen);
 </script>
 </body>
 </html>
