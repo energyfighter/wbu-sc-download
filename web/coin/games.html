@@ -8,7 +8,8 @@
 <style>
 :root{--bg:#0E0F12;--s1:#1A1C22;--s2:#2A2D35;--line:#343843;--t:#F4F1EA;--mut:#C9C4B8;--gold:#D4A73A;--red:#D90000;--blue:#1565C0}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif;overscroll-behavior:none}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif}
+html.play,html.play body{overscroll-behavior:none}
 button{font:inherit;cursor:pointer;color:inherit}
 .bar{position:sticky;top:0;z-index:20;background:var(--gold);color:#0E0F12;font:600 13px/1.35 Inter,sans-serif;padding:7px 14px;display:flex;gap:10px;align-items:center}
 .bar span{flex:1}.bar .lg button{border:0;background:transparent;font:700 12px Inter;padding:4px 6px;border-radius:6px;color:#0E0F12;opacity:.55}.bar .lg button.on{opacity:1;background:#0E0F12;color:var(--gold)}
@@ -425,7 +426,7 @@ const G=[
     const left=Math.max(0,15-((now-this.t0)/1000)%15);c.fillStyle='#2a2d35';c.fillRect(nx+12,ny+240,nw-24,5);c.fillStyle=C.gold;c.fillRect(nx+12,ny+240,(nw-24)*left/15,5)}}}}];
 function avg(a){const v=a.filter(x=>x!==null);return v.length?Math.round(v.reduce((s,x)=>s+x,0)/v.length):'–'}
 // ---------- Ablauf ----------
-function openGame(i){if(window.top!==window){try{window.top.location.href=location.origin+location.pathname+'?lang='+L+'&g='+(i+1);return}catch(e){}}gi=i;cur=G[i];const g=T().g[i];document.getElementById('game').classList.add('on');document.body.style.overflow='hidden';
+function openGame(i){if(window.top!==window){try{window.top.location.href=location.origin+location.pathname+'?lang='+L+'&g='+(i+1);return}catch(e){}}gi=i;cur=G[i];const g=T().g[i];document.getElementById('game').classList.add('on');document.documentElement.classList.add('play');document.body.style.overflow='hidden';
  document.getElementById('gTag').textContent=g.tag;document.getElementById('gName').textContent=g.n;
  document.getElementById('sTag').textContent=g.tag;document.getElementById('sName').textContent=g.n;document.getElementById('sRules').innerHTML=g.r.map(r=>`<li>${r}</li>`).join('');
  document.getElementById('h1l').textContent=T()[cur.hud[0]];document.getElementById('h2l').textContent=T()[cur.hud[1]];document.getElementById('h1').textContent='–';document.getElementById('h2').textContent='0';
@@ -437,7 +438,7 @@ function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(!running)r
 function end(score,sub,steps){if(!running)return;running=false;ui.innerHTML='';const k='wbuGame2_'+gi;let best=0;try{best=+localStorage.getItem(k)||0;if(score>best){best=score;localStorage.setItem(k,score)}}catch(e){}
  document.getElementById('eScore').textContent=score;document.getElementById('eSub').textContent=sub;document.getElementById('eBest').textContent=best;
  let r=0;steps.forEach((s,i)=>{if(score>=s)r=i+1});document.getElementById('eRate').textContent=W_().ratings[r];show('ovEnd');idle()}
-function quit(){running=false;cancelAnimationFrame(raf);ui.innerHTML='';document.getElementById('game').classList.remove('on');document.body.style.overflow='';if(location.hash)history.replaceState(null,'',location.pathname+location.search)}
+function quit(){running=false;cancelAnimationFrame(raf);ui.innerHTML='';document.getElementById('game').classList.remove('on');document.documentElement.classList.remove('play');document.body.style.overflow='';if(location.hash)history.replaceState(null,'',location.pathname+location.search)}
 addEventListener('popstate',()=>{if(document.getElementById('game').classList.contains('on'))quit()});
 const stage=document.getElementById('stage');
 function pos(e){const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]}
