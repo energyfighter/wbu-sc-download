@@ -1,6 +1,6 @@
 {
-  "versionCode": 158,
-  "versionName": "1.158",
+  "versionCode": 194,
+  "versionName": "1.194",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Neustart ohne Datenverlust: Akku leer, App oder Browser zu – Supervisor und Punktrichter machen nach dem Öffnen genau dort weiter (laufender Kampf, Runden, Fight Card, Scorecards), ohne neue Anmeldung."
+  "notes": "Plakat hochladen: Veranstalter laden in WBU Sports (Gala und Turnier, Reiter „Daten“) ihr Plakat hoch – es erscheint automatisch auf der WBU-Startseite bei „WBU Shows“ mit Countdown."
 }
