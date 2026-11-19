@@ -2033,7 +2033,7 @@ case 'l_get':
     unset($r['_sup']);
     out(['ok' => true] + $r);
 
-case 'l_plakat':   // Veranstalter lädt das Plakat seiner Gala hoch (oder löscht es) – erscheint automatisch rechts bei „WBU Shows“
+case 'l_plakat':   // Veranstalter lädt das Plakat seiner Gala / seines Turniers hoch (oder löscht es) – erscheint automatisch rechts bei „WBU Shows“
     $lid = (string)($in['lid'] ?? '');
     $r = withLive($lid, function (&$l) use ($in, $DIR) {
         if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
@@ -2056,11 +2056,11 @@ case 'l_plakatimg':  // öffentlich: Plakat einer Gala
     header('Content-Type: image/jpeg'); header('Cache-Control: public, max-age=86400'); header_remove('Access-Control-Allow-Origin');
     readfile($f); exit;
 
-case 'shows':      // öffentlich: kommende Galas aus WBU Sports für Startseite (Plakat + Countdown)
+case 'shows':      // öffentlich: kommende Galas und Turniere aus WBU Sports für Startseite (Plakat + Countdown)
     $list = []; $heute = date('Y-m-d');
     foreach (glob("$DIR/lv_*.json") as $f) {
         $l = json_decode((string)@file_get_contents($f), true);
-        if (!is_array($l) || empty($l['snap']) || ($l['snap']['type'] ?? '') !== 'gala') continue;
+        if (!is_array($l) || empty($l['snap']) || !in_array($l['snap']['type'] ?? '', ['gala', 'turnier'], true)) continue;
         $sn = $l['snap']; $d = substr((string)($sn['date'] ?? ''), 0, 10);
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) || $d < $heute) continue;
         $t = preg_match('/^\d{1,2}:\d{2}$/', (string)($sn['time'] ?? '')) ? str_pad($sn['time'], 5, '0', STR_PAD_LEFT) : '19:00';
