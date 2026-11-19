@@ -1,6 +1,6 @@
 {
-  "versionCode": 194,
-  "versionName": "1.194",
+  "versionCode": 206,
+  "versionName": "1.206",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Plakat hochladen: Veranstalter laden in WBU Sports (Gala und Turnier, Reiter „Daten“) ihr Plakat hoch – es erscheint automatisch auf der WBU-Startseite bei „WBU Shows“ mit Countdown."
+  "notes": "Supervisor-Korrektur: Der Supervisor kann jede Runde einer empfangenen Scorecard antippen und offensichtliche Fehler korrigieren – die Runde wird gold markiert (mit altem Wert), die Scorecard bekommt „SV-Korrektur“, im Bericht/PDF mit * gekennzeichnet."
 }
