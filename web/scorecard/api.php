@@ -571,6 +571,50 @@ function orderView($t, $o) {
 function newsFile() { global $DIR; return "$DIR/news.json"; }
 function newsDir() { global $DIR; $d = "$DIR/news"; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
 function fbFile() { global $DIR; return "$DIR/facebook.json"; }
+
+// ===================== WBU COIN – WHITELIST (Wallet-Anmeldung, ohne Coin) =====================
+function wlFile() { global $DIR; return "$DIR/whitelist.json"; }
+function wlKey() { global $DIR; $f = "$DIR/whitelist.key"; if (!file_exists($f)) { @file_put_contents($f, random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES)); @chmod($f, 0600); } return file_get_contents($f); }
+function wlEnc($a) { $n = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES); return base64_encode($n . sodium_crypto_secretbox(json_encode($a, JSON_UNESCAPED_UNICODE), $n, wlKey())); }
+function wlDec($b) { $r = base64_decode((string)$b); if (strlen($r) < 25) return []; $m = sodium_crypto_secretbox_open(substr($r, 24), substr($r, 0, 24), wlKey()); return $m === false ? [] : (json_decode($m, true) ?: []); }
+function withWl($fn, $write = false) {
+    $f = wlFile(); $h = fopen($f, 'c+'); flock($h, $write ? LOCK_EX : LOCK_SH);
+    $d = json_decode(stream_get_contents($h) ?: '[]', true) ?: [];
+    $r = $fn($d);
+    if ($write) { ftruncate($h, 0); rewind($h); fwrite($h, json_encode($d, JSON_UNESCAPED_UNICODE)); }
+    flock($h, LOCK_UN); fclose($h); return $r;
+}
+function b58dec($s) {
+    $al = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'; $b = [];
+    for ($i = 0; $i < strlen($s); $i++) { $c = strpos($al, $s[$i]); if ($c === false) return null;
+        for ($j = 0; $j < count($b); $j++) { $c += $b[$j] * 58; $b[$j] = $c & 255; $c >>= 8; }
+        while ($c > 0) { $b[] = $c & 255; $c >>= 8; } }
+    for ($i = 0; $i < strlen($s) && $s[$i] === '1'; $i++) $b[] = 0;
+    return implode('', array_map('chr', array_reverse($b)));
+}
+function wlSecret() { return hash('sha256', wlKey() . 'wl-token'); }
+function wlTok($wallet) { $t = time(); return $wallet . '.' . $t . '.' . substr(hash_hmac('sha256', "$wallet|$t", wlSecret()), 0, 32); }
+function wlAuth($tok) {
+    $p = explode('.', (string)$tok); if (count($p) !== 3) fail('Please connect your wallet again', 401);
+    [$w, $t, $h] = $p; if (time() - (int)$t > 30 * 86400 || !hash_equals(substr(hash_hmac('sha256', "$w|$t", wlSecret()), 0, 32), $h)) fail('Please connect your wallet again', 401);
+    return $w;
+}
+function wlPublic($r) { return ['id' => $r['id'], 'wallet' => $r['wallet'], 'fighter' => $r['fighter'], 'klassen' => $r['klassen'], 'sport' => $r['sport'] ?? 'pro', 'ref' => $r['ref'], 'refs' => $r['refs'] ?? 0, 'ok' => !empty($r['mailOk']), 'blocked' => !empty($r['blocked']), 'created' => $r['created']]; }
+const WL_KL = ['Heavyweight','Bridgerweight','Cruiserweight','Light Heavyweight','Super Middleweight','Middleweight','Super Welterweight','Welterweight','Super Lightweight','Lightweight','Super Featherweight','Featherweight','Super Bantamweight','Bantamweight','Super Flyweight','Flyweight','Light Flyweight','Minimumweight'];
+function wlMail($to, $lang, $subj, $body) {
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) return false;
+    $hdr = "From: WBU Coin <noreply@wbu-boxing.com>\r\nReply-To: info@wbu-boxing.com\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit";
+    return @mail($to, '=?UTF-8?B?' . base64_encode($subj) . '?=', $body . "\n\n— World Boxing Union · www.wbu-boxing.com/coin\nWBU never asks you to send coins to a private wallet.", $hdr);
+}
+function wlConfirmMail($r, $pd) {
+    $sig = substr(hash_hmac('sha256', 'ok|' . $r['id'], wlSecret()), 0, 24);
+    $url = 'https://www.wbu-boxing.com/scorecard/api.php?a=wl_ok&id=' . $r['id'] . '&s=' . $sig;
+    $de = ($r['lang'] ?? 'en') === 'de';
+    wlMail($pd['email'] ?? '', $r['lang'] ?? 'en', $de ? 'WBU Coin – bitte E-Mail bestätigen' : 'WBU Coin – please confirm your e-mail',
+        ($de ? "Hallo {$pd['name']},\n\ndanke für deine Anmeldung zur WBU-Coin-Whitelist als „{$r['fighter']}“.\nBitte bestätige deine E-Mail-Adresse mit diesem Link:\n\n$url\n\nDein Empfehlungslink: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"
+             : "Hi {$pd['name']},\n\nthank you for joining the WBU Coin whitelist as \"{$r['fighter']}\".\nPlease confirm your e-mail address with this link:\n\n$url\n\nYour referral link: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"));
+}
+
 function withNews($fn, $write = false) {
     $h = fopen(newsFile(), 'c+'); if (!$h) fail('Speicherfehler', 500);
     flock($h, $write ? LOCK_EX : LOCK_SH);
@@ -1161,6 +1205,79 @@ case 'wp_despam':   // Superadmin: versteckte Spam-Links aus allen WordPress-Sei
             if (empty($in['dry'])) wp_update_post(['ID' => $po->ID, 'post_content' => $neu]); }
     }
     out(['ok' => true, 'dry' => !empty($in['dry']), 'seiten' => $rep]);
+
+case 'wl_nonce':    // Text zum Unterschreiben (kostenlos, keine Zahlung)
+    $w = preg_replace('/[^1-9A-HJ-NP-Za-km-z]/', '', (string)($in['wallet'] ?? ''));
+    $pk = b58dec($w); if (!$pk || strlen($pk) !== 32) fail('Invalid wallet address');
+    $n = bin2hex(random_bytes(12)); global $DIR; @mkdir("$DIR/wlnonce", 0700);
+    foreach (glob("$DIR/wlnonce/*") ?: [] as $f) if (filemtime($f) < time() - 900) @unlink($f);
+    $msg = "WBU Coin – whitelist sign-in\nWallet: $w\nNonce: $n\nThis signature is free and does not send any coins.";
+    file_put_contents("$DIR/wlnonce/$n", $w);
+    out(['ok' => true, 'msg' => $msg]);
+
+case 'wl_auth':     // Unterschrift prüfen → Anmelde-Schlüssel (30 Tage)
+    $w = (string)($in['wallet'] ?? ''); $msg = (string)($in['msg'] ?? ''); $sig = base64_decode((string)($in['sig'] ?? ''));
+    if (!preg_match('/\nNonce: ([0-9a-f]{24})\n/', $msg, $m)) fail('Invalid request');
+    global $DIR; $nf = "$DIR/wlnonce/{$m[1]}";
+    if (!file_exists($nf) || trim(file_get_contents($nf)) !== $w || filemtime($nf) < time() - 900) fail('Please connect your wallet again');
+    @unlink($nf); $pk = b58dec($w);
+    if (!$pk || strlen($pk) !== 32 || strlen($sig) !== 64 || strpos($msg, "Wallet: $w\n") === false || !sodium_crypto_sign_verify_detached($sig, $msg, $pk)) fail('Invalid signature', 403);
+    out(['ok' => true, 'tok' => wlTok($w)]);
+
+case 'wl_me':
+    $w = wlAuth($in['tok'] ?? '');
+    $r = withWl(function ($d) use ($w) { foreach ($d as $x) if ($x['wallet'] === $w) return $x; return null; });
+    out(['ok' => true, 'me' => $r ? array_merge(wlPublic($r), ['p' => wlDec($r['enc'])]) : null, 'wallet' => $w]);
+
+case 'wl_save':
+    $w = wlAuth($in['tok'] ?? ''); $p = (array)($in['p'] ?? []);
+    $pd = []; foreach (['name' => 80, 'street' => 120, 'zip' => 20, 'city' => 80, 'country' => 60, 'email' => 120, 'phone' => 40] as $k => $mx) { $pd[$k] = txt($p[$k] ?? '', $mx); if ($pd[$k] === '') fail('Please fill in all required fields'); }
+    if (!filter_var($pd['email'], FILTER_VALIDATE_EMAIL)) fail('Invalid e-mail address');
+    $fighter = txt($in['fighter'] ?? '', 30); if (mb_strlen($fighter) < 3) fail('Fighter name: at least 3 characters');
+    $kl = array_values(array_unique(array_filter((array)($in['klassen'] ?? []), fn($k) => in_array($k, WL_KL, true)))); if (!$kl) fail('Please choose at least one weight class');
+    if (empty($in['terms'])) fail('Please accept the participation terms');
+    $lang = in_array($in['lang'] ?? '', ['en','de','es','fr','ru'], true) ? $in['lang'] : 'en';
+    $refIn = preg_replace('/[^A-Z0-9]/', '', strtoupper((string)($in['refBy'] ?? '')));
+    $res = withWl(function (&$d) use ($w, $pd, $fighter, $kl, $lang, $refIn) {
+        foreach ($d as $x) if ($x['wallet'] !== $w && mb_strtolower($x['fighter']) === mb_strtolower($fighter) && array_intersect($x['klassen'], $kl)) fail('This fighter name already exists in this weight class');
+        $i = null; foreach ($d as $k => $x) if ($x['wallet'] === $w) $i = $k;
+        if ($i === null) {
+            do { $ref = strtoupper(substr(bin2hex(random_bytes(4)), 0, 6)); } while (array_filter($d, fn($x) => $x['ref'] === $ref));
+            $r = ['id' => bin2hex(random_bytes(6)), 'wallet' => $w, 'ref' => $ref, 'refBy' => '', 'refs' => 0, 'created' => time(), 'mailOk' => false];
+            if ($refIn) foreach ($d as $k => $x) if ($x['ref'] === $refIn) { $r['refBy'] = $refIn; $d[$k]['refs'] = ($x['refs'] ?? 0) + 1; }
+            $d[] = $r; $i = count($d) - 1; $neu = true;
+        } else $neu = false;
+        $alt = wlDec($d[$i]['enc'] ?? ''); $mailNeu = ($alt['email'] ?? '') !== $pd['email'];
+        $d[$i]['fighter'] = $fighter; $d[$i]['klassen'] = $kl; $d[$i]['sport'] = 'pro'; $d[$i]['lang'] = $lang; $d[$i]['upd'] = time(); $d[$i]['enc'] = wlEnc($pd);
+        if ($mailNeu) $d[$i]['mailOk'] = false;
+        return [$d[$i], $neu || $mailNeu];
+    }, true);
+    if ($res[1]) wlConfirmMail($res[0], $pd);
+    out(['ok' => true, 'me' => array_merge(wlPublic($res[0]), ['p' => $pd]), 'mail' => $res[1]]);
+
+case 'wl_ok':       // Link aus der Bestätigungs-Mail
+    $id = preg_replace('/[^a-f0-9]/', '', (string)($_GET['id'] ?? '')); $sg = (string)($_GET['s'] ?? '');
+    $ok = $id && hash_equals(substr(hash_hmac('sha256', 'ok|' . $id, wlSecret()), 0, 24), $sg) && withWl(function (&$d) use ($id) { foreach ($d as $k => $x) if ($x['id'] === $id) { $d[$k]['mailOk'] = true; return true; } return false; }, true);
+    header('Location: https://www.wbu-boxing.com/coin/?wl=' . ($ok ? 'ok' : 'err') . '#whitelist'); exit;
+
+case 'wl_stats':
+    out(withWl(function ($d) { $pk = []; $n = 0; foreach ($d as $x) { if (!empty($x['blocked'])) continue; $n++; foreach ($x['klassen'] as $k) $pk[$k] = ($pk[$k] ?? 0) + 1; } return ['ok' => true, 'total' => $n, 'klassen' => $pk]; }));
+
+case 'wl_admin':    // Superadmin: alle Anmeldungen (entschlüsselt)
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    out(['ok' => true, 'list' => withWl(function ($d) { return array_map(fn($x) => array_merge(wlPublic($x), ['p' => wlDec($x['enc'] ?? ''), 'refBy' => $x['refBy'] ?? '']), array_reverse($d)); })]);
+
+case 'wl_block':
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    $id = preg_replace('/[^a-f0-9]/', '', (string)($in['id'] ?? '')); $b = !empty($in['b']);
+    withWl(function (&$d) use ($id, $b) { foreach ($d as $k => $x) if ($x['id'] === $id) $d[$k]['blocked'] = $b; }, true);
+    out(['ok' => true]);
+
+case 'wl_mail':     // Superadmin: Rundmail an alle bestätigten Anmeldungen
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    $subj = txt($in['subj'] ?? '', 150); $body = mb_substr(trim((string)($in['text'] ?? '')), 0, 20000); if ($subj === '' || $body === '') fail('Betreff und Text angeben');
+    $n = 0; foreach (withWl(fn($d) => $d) as $x) { if (empty($x['mailOk']) || !empty($x['blocked'])) continue; $pd = wlDec($x['enc'] ?? ''); if (wlMail($pd['email'] ?? '', $x['lang'] ?? 'en', $subj, $body)) $n++; }
+    out(['ok' => true, 'sent' => $n]);
 
 case 'n_tr':       // Superadmin: Übersetzungen eines Berichts setzen (Bilder und Facebook bleiben unberührt)
     $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
