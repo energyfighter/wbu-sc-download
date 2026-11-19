@@ -896,7 +896,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('157')||0;
+const WEB_VERSION=Number('158')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
