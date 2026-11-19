@@ -126,7 +126,7 @@ window.wbuReceive=j=>{try{const c=JSON.parse(j);
   if(c.t==='snap'){if(c.snap&&S.role==='sup'&&!S.nlid){S.nlid='pc';startNativeLive()}   // Laptop mit WBU Sports hat sich automatisch verbunden
   if(S.nlid==='pc'&&c.snap){wbuHubStatus('Laptop verbunden: '+(c.snap.name||''),true);const js=JSON.stringify(c.snap.rows||[]);if(js!==S.liveJs){S.liveJs=js;S.live=c.snap;softRender()}}return}if(c.t==='msg'){chatAdd(c);refreshChat(true);return}if(c.t==='hello')return;upsertInbox(c);softRender()}catch(e){}};
 // gleiche Scorecard-ID = Aktualisierung (neue Runde oder Korrektur) -> ersetzen
-function upsertInbox(card){const ib=get('wbuInbox',[]),i=ib.findIndex(x=>x.id===card.id);if(i>=0){if((ib[i].rev||0)<=(card.rev||0))ib[i]=card}else ib.push(card);set('wbuInbox',ib)}
+function upsertInbox(card){const ib=get('wbuInbox',[]),i=ib.findIndex(x=>x.id===card.id);if(i>=0){if((ib[i].rev||0)<=(card.rev||0)){if(ib[i].svFix){card.svFix=ib[i].svFix;Object.keys(card.svFix).forEach(k=>{if(card.rounds[k])card.rounds[k]={...card.svFix[k].n}})}ib[i]=card}}else ib.push(card);set('wbuInbox',ib)}
 window.wbuSent=id=>{if(id===S.sendId){S.delivered=true;const e=$('sendst');if(e)e.innerHTML=sendStatus()}};
 // ---------- Selbst-Update (nur in der Android-App) ----------
 window.wbuUpdate=info=>{S.upd=info;$('updbar').innerHTML=`<div class="card" style="margin-top:12px;border-color:var(--gold);text-align:center">
@@ -562,9 +562,25 @@ function resName(k){return(RES.find(r=>r[0]===k)||[])[1]}
 function sugText(s){return s?resName(s.k)+(s.w?' · '+(s.w==='R'?'Rot':'Blau'):''):'–'}
 function nextNo(fs){const f=fs.find(f=>!f.full);return f?f.no:fs.length+1}
 function setEv(k,v){const e=get('wbuEvent',{});e[k]=v;set('wbuEvent',e)}
+function svTable(c){
+  let rows='';c.rounds.forEach((x,i)=>{const[a,b]=calc(x.r,x.b,x.dr,x.db),fx=c.svFix&&c.svFix[i];let o='';if(fx){const[oa,ob]=calc(fx.o.r,fx.o.b,fx.o.dr,fx.o.db);o=`<div class="muted" style="font-size:12px">vorher ${oa}:${ob}</div>`}
+    rows+=`<tr onclick="svEdit('${c.id}',${i})" style="cursor:pointer${fx?';outline:2px solid var(--gold);outline-offset:-2px':''}"><td>${i+1} <span style="color:var(--gold)">✎</span></td><td class="rc">${a}${x.dr?` <small>(−${x.dr})</small>`:''}${o}</td><td class="bc">${b}${x.db?` <small>(−${x.db})</small>`:''}</td></tr>`});
+  const[R,B]=totals(c.rounds);
+  return `<table><tr><th>Runde</th><th>Rot</th><th>Blau</th></tr>${rows}<tr class="tot"><td>Σ</td><td class="rc">${R}</td><td class="bc">${B}</td></tr></table><div class="note" style="margin-top:6px">Runde antippen = als Supervisor korrigieren (bei offensichtlichem Fehler)</div>`}
+function svEdit(id,i){const c=get('wbuInbox',[]).find(x=>x.id===id);if(!c||!c.rounds[i])return;const x=c.rounds[i];S.sv={id,i,judge:c.judge,r:x.r,b:x.b,dr:x.dr||0,db:x.db||0};svSheet()}
+function svSheet(){const v=S.sv,sel=(k,arr)=>`<select style="width:100%;font-size:20px;padding:8px" onchange="S.sv.${k}=+this.value;svSheet()">${arr.map(n=>`<option ${n==v[k]?'selected':''}>${n}</option>`).join('')}</select>`,[a,b]=calc(v.r,v.b,v.dr,v.db);
+  sheet(`<h2>Runde ${v.i+1} korrigieren</h2><p class="muted">Scorecard von <b>${esc(v.judge)}</b>. Nur bei offensichtlichem Fehler – die Korrektur wird auf der Scorecard vermerkt.</p>
+  <div class="row2"><div><label style="color:#c62828">Rot Punkte</label>${sel('r',[10,9,8,7,6])}<label>Rot Abzug</label>${sel('dr',[0,1,2,3])}</div><div><label style="color:#1565c0">Blau Punkte</label>${sel('b',[10,9,8,7,6])}<label>Blau Abzug</label>${sel('db',[0,1,2,3])}</div></div>
+  <div class="card" style="text-align:center;font-size:22px">Runde ${v.i+1}: <b class="rc">${a}</b> : <b class="bc">${b}</b></div>
+  <button class="btn" onclick="svSave()">Korrektur speichern</button><button class="btn sec" onclick="closeSheet()">Abbrechen</button>`)}
+function svSave(){const v=S.sv,ib=get('wbuInbox',[]),c=ib.find(x=>x.id===v.id);if(!c)return closeSheet();
+  c.svFix=c.svFix||{};const old=c.svFix[v.i]?c.svFix[v.i].o:{...c.rounds[v.i]},n={r:v.r,b:v.b,dr:v.dr,db:v.db};
+  if(old.r===n.r&&old.b===n.b&&(old.dr||0)===n.dr&&(old.db||0)===n.db)delete c.svFix[v.i];else c.svFix[v.i]={o:old,n,by:S.name,ts:Date.now()};
+  if(!Object.keys(c.svFix).length)delete c.svFix;c.rounds[v.i]=n;set('wbuInbox',ib);S.sv=null;closeSheet();render()}
+function svNote(c){return c.svFix?`<div class="note warn" style="text-align:left;margin-top:6px">Vom Supervisor korrigiert: Runde ${Object.keys(c.svFix).map(k=>+k+1).join(', ')}</div>`:''}
 function cardHead(c){
   const live=c.done===false?`<span class="badge">live · Runde ${c.rounds.length}</span>`:'<span class="badge g">fertig</span>';
-  return `<div class="rbar"><b>${esc(c.judge)}</b><span>${c.corrected?'<span class="badge y">korrigiert</span> ':''}${live}</span></div><div class="muted" style="margin-top:-4px">zuletzt ${c.at} Uhr</div>`}
+  return `<div class="rbar"><b>${esc(c.judge)}</b><span>${c.corrected?'<span class="badge y">korrigiert</span> ':''}${c.svFix?'<span class="badge y">SV-Korrektur</span> ':''}${live}</span></div><div class="muted" style="margin-top:-4px">zuletzt ${c.at} Uhr</div>`}
 function lateFix(f){const r=f.meta.result;return r&&r.ts&&f.cards.some(c=>(c.ts||0)>r.ts)}
 function editEvent(){const e=get('wbuEvent',{});
   sheet(`<h2>Promoter, Ort, Datum</h2>
@@ -627,7 +643,7 @@ function vSup(){
     ${(ev.refs||[]).length?`<label>Gespeicherte Ringrichter – antippen zum Wechseln</label><div class="chips">${ev.refs.map(r=>`<div class="chip ${officials(m).ref===r?'on':''}" onclick="setRef(${C},${esc(JSON.stringify(r)).replace(/"/g,"'")});render()">${esc(r)}</div>`).join('')}</div>`:''}
   </div>
   ${f.cards.length?`<h3>Wertung der Punktrichter</h3>
-  ${f.cards.map(c=>`<div class="card">${cardHead(c)}${table(c.rounds)}${c.end?`<div class="note warn" style="text-align:left;margin-top:6px">Hinweis: ${esc(c.end.t)} in Runde ${c.end.r}</div>`:''}</div>`).join('')}
+  ${f.cards.map(c=>`<div class="card">${cardHead(c)}${svTable(c)}${svNote(c)}${c.end?`<div class="note warn" style="text-align:left;margin-top:6px">Hinweis: ${esc(c.end.t)} in Runde ${c.end.r}</div>`:''}</div>`).join('')}
   <div class="card" style="font-size:16px">${summary(f)}</div>
   ${resultSection(f,maxR)}`
   :`<div class="card" style="text-align:center"><div style="font-size:40px">⌛</div><b>Warte auf die Punktrichter …</b><p class="muted" style="margin-bottom:0">Ihre Scorecards erscheinen hier automatisch, sobald sie den Kampf abschließen.</p></div>`}
@@ -677,7 +693,7 @@ function vFight(){
   const maxR=Math.max(1,...f.cards.map(c=>c.rounds.length+(c.end?1:0)));
   return `<div class="rbar"><span class="fnum">Kampf ${f.no}</span><a href="#" style="color:var(--gold)" onclick="S.view='sup';S.edit=false;render();return false">‹ Zurück</a></div>
   ${f.full?'':`<div class="card warn">Erst ${f.cards.length} von ${n} Scorecards empfangen.</div>`}
-  ${f.cards.map(c=>`<div class="card">${cardHead(c)}${table(c.rounds)}${c.end?`<div class="note warn" style="text-align:left;margin-top:6px">Hinweis: ${esc(c.end.t)} in Runde ${c.end.r}</div>`:''}</div>`).join('')}
+  ${f.cards.map(c=>`<div class="card">${cardHead(c)}${svTable(c)}${svNote(c)}${c.end?`<div class="note warn" style="text-align:left;margin-top:6px">Hinweis: ${esc(c.end.t)} in Runde ${c.end.r}</div>`:''}</div>`).join('')}
   <div class="card" style="font-size:16px">${summary(f)}</div>
   <h3>Angaben zum Kampf (alles freiwillig)</h3>
   <div class="card">
@@ -735,14 +751,14 @@ function copyCard(){
 function fightBlock(f){
   const m=f.meta,cs=f.cards,max=Math.max(...cs.map(c=>c.rounds.length));
   let head='<tr><th>Rd</th>'+cs.map(c=>`<th colspan="2">${esc(c.judge)}</th>`).join('')+'</tr>';
-  let rows='';for(let i=0;i<max;i++){rows+=`<tr><td>${i+1}</td>`+cs.map(c=>{const x=c.rounds[i];if(!x)return'<td>–</td><td>–</td>';const[a,b]=calc(x.r,x.b,x.dr,x.db);return`<td class="rc">${a}${x.dr?'<small>(−'+x.dr+')</small>':''}</td><td class="bc">${b}${x.db?'<small>(−'+x.db+')</small>':''}</td>`}).join('')+'</tr>'}
+  let rows='';for(let i=0;i<max;i++){rows+=`<tr><td>${i+1}</td>`+cs.map(c=>{const x=c.rounds[i];if(!x)return'<td>–</td><td>–</td>';const[a,b]=calc(x.r,x.b,x.dr,x.db);const sv=c.svFix&&c.svFix[i]?'<sup title="Supervisor-Korrektur">*</sup>':'';return`<td class="rc">${a}${x.dr?'<small>(−'+x.dr+')</small>':''}${sv}</td><td class="bc">${b}${x.db?'<small>(−'+x.db+')</small>':''}${sv}</td>`}).join('')+'</tr>'}
   rows+='<tr class="tot"><td>Σ</td>'+cs.map(c=>{const[a,b]=totals(c.rounds);return`<td class="rc">${a}</td><td class="bc">${b}</td>`}).join('')+'</tr>';
   const info=[m.type,m.rounds?m.rounds+' Runden':'',m.dur,m.title].filter(Boolean).map(esc).join(' · ');
   return `<div class="final" style="margin-bottom:12px"><b style="font-size:17px">Kampf ${f.no}</b>${info?`<div style="font-size:13px;color:#555">${info}</div>`:''}
     <p style="margin:6px 0"><b style="color:#b71c1c">ROT:</b> ${esc(fz(m.red,m.ri))} &nbsp; <b style="color:#0d47a1">BLAU:</b> ${esc(fz(m.blue,m.bi))}</p>
     <div style="font-size:12px;color:#555">Ringrichter: ${esc(officials(m).ref||'–')} · Zeitnehmer: ${esc(officials(m).time||'–')} · Ringarzt: ${esc(officials(m).arzt||'–')} · Punktrichter: ${cs.map(c=>esc(c.judge)).join(', ')}</div>
     <div class="res" style="font-size:16px">${m.result?esc(resLine(f)):'Ergebnis nicht bestätigt'}</div>
-    <div class="scroll"><table>${head}${rows}</table></div></div>`;
+    <div class="scroll"><table>${head}${rows}</table></div>${cs.some(c=>c.svFix)?'<div style="font-size:12px;color:#555">* vom Supervisor korrigiert</div>':''}</div>`;
 }
 function vReport(){
   const ev=get('wbuEvent',{}), fs=fights();
@@ -896,7 +912,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('172')||0;
+const WEB_VERSION=Number('173')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
