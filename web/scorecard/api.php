@@ -592,6 +592,21 @@ function b58dec($s) {
     for ($i = 0; $i < strlen($s) && $s[$i] === '1'; $i++) $b[] = 0;
     return implode('', array_map('chr', array_reverse($b)));
 }
+// Werbe-Code im Format WBU-XXXXX (alt: 6 Hex-Zeichen, bleiben gültig)
+function wlNewRef($d) { $al = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; do { $c = 'WBU'; for ($i = 0; $i < 5; $i++) $c .= $al[random_int(0, strlen($al) - 1)]; } while (array_filter($d, fn($x) => ($x['ref'] ?? '') === $c)); return $c; }
+function wlRefShow($c) { return strpos($c, 'WBU') === 0 ? 'WBU-' . substr($c, 3) : $c; }
+// Wegwerf-E-Mail-Adressen sperren
+const WL_TRASH = ['mailinator.com','guerrillamail.com','guerrillamail.net','guerrillamail.org','sharklasers.com','grr.la','10minutemail.com','10minutemail.net','temp-mail.org','tempmail.com','tempmail.net','temp-mail.io','tempmail.dev','tempmailo.com','tempr.email','discard.email','discardmail.com','dispostable.com','yopmail.com','yopmail.net','yopmail.fr','trashmail.com','trashmail.de','trashmail.net','wegwerfmail.de','wegwerfmail.net','einrot.com','spambog.com','spamgourmet.com','maildrop.cc','mailnesia.com','getnada.com','nada.email','mohmal.com','emailondeck.com','fakeinbox.com','throwawaymail.com','mintemail.com','mytemp.email','tmpmail.org','tmpmail.net','moakt.com','burnermail.io','inboxkitten.com','mailcatch.com','mailpoof.com','spam4.me','byom.de','emailfake.com','fakemail.net','tempinbox.com','minuteinbox.com','dropmail.me','10mail.org','emltmp.com','luxusmail.org','smailpro.com','tempail.com','crazymailing.com','mail.tm','mail.gw','harakirimail.com','33mail.com','anonaddy.me','trash-mail.com','wegwerfemail.de','muellmail.com','sofort-mail.de','spoofmail.de','zehnminutenmail.de','emailtemporanea.net','correotemporal.org','jetable.org','mailinator.net','mailinator2.com'];
+function wlTrash($email) { $dom = strtolower(substr(strrchr($email, '@'), 1)); foreach (WL_TRASH as $t) if ($dom === $t || substr($dom, -strlen('.' . $t)) === '.' . $t) return true; return false; }
+function wlHash($s) { return substr(hash_hmac('sha256', mb_strtolower(trim($s)), wlSecret()), 0, 24); }
+function wlIdHashes($pd) { return ['em' => wlHash($pd['email']), 'ph' => wlHash(preg_replace('/\D/', '', $pd['phone'])), 'pe' => wlHash(preg_replace('/\s+/', ' ', $pd['name']) . '|' . $pd['dob'])]; }
+// Konto-Übersicht: Geworbene und Bonus-Liste (Spiele laufen noch im Testmodus → Belohnungen warten)
+function wlAccount($d, $r) {
+    $codes = array_filter([$r['ref'] ?? '', $r['refOld'] ?? '']);
+    $team = []; foreach ($d as $x) if (!empty($x['refBy']) && in_array($x['refBy'], $codes, true)) $team[] = ['fighter' => $x['fighter'], 'created' => $x['created'], 'ok' => !empty($x['mailOk']), 'spent' => round((float)($x['spent'] ?? 0), 2), 'rew' => !empty($x['refPaid'])];
+    $bonus = $r['bonus'] ?? []; $free = 0; $wait = 0; foreach ($bonus as $b) { if (($b['st'] ?? '') === 'ok') $free += $b['n']; else $wait += $b['n']; }
+    return ['code' => wlRefShow($r['ref'] ?? ''), 'team' => $team, 'bonus' => $bonus, 'free' => $free, 'wait' => $wait, 'games' => (int)($r['games'] ?? 0)];
+}
 function wlSecret() { return hash('sha256', wlKey() . 'wl-token'); }
 function wlTok($wallet) { $t = time(); return $wallet . '.' . $t . '.' . substr(hash_hmac('sha256', "$wallet|$t", wlSecret()), 0, 32); }
 function wlAuth($tok) {
@@ -611,8 +626,8 @@ function wlConfirmMail($r, $pd) {
     $url = 'https://www.wbu-boxing.com/scorecard/api.php?a=wl_ok&id=' . $r['id'] . '&s=' . $sig;
     $de = ($r['lang'] ?? 'en') === 'de';
     wlMail($pd['email'] ?? '', $r['lang'] ?? 'en', $de ? 'WBU Coin – bitte E-Mail bestätigen' : 'WBU Coin – please confirm your e-mail',
-        ($de ? "Hallo {$pd['name']},\n\ndanke für deine Anmeldung zur WBU-Coin-Whitelist als „{$r['fighter']}“.\nBitte bestätige deine E-Mail-Adresse mit diesem Link:\n\n$url\n\nDein Empfehlungslink: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"
-             : "Hi {$pd['name']},\n\nthank you for joining the WBU Coin whitelist as \"{$r['fighter']}\".\nPlease confirm your e-mail address with this link:\n\n$url\n\nYour referral link: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"));
+        ($de ? "Hallo {$pd['name']},\n\ndanke für deine Anmeldung zur WBU-Coin-Whitelist als „{$r['fighter']}“.\nBitte bestätige deine E-Mail-Adresse mit diesem Link:\n\n$url\n\nDein Werbe-Code: " . wlRefShow($r['ref']) . "\nDein Empfehlungslink: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"
+             : "Hi {$pd['name']},\n\nthank you for joining the WBU Coin whitelist as \"{$r['fighter']}\".\nPlease confirm your e-mail address with this link:\n\n$url\n\nYour referral code: " . wlRefShow($r['ref']) . "\nYour referral link: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"));
 }
 
 function withNews($fn, $write = false) {
@@ -1286,34 +1301,49 @@ case 'wl_auth':     // Unterschrift prüfen → Anmelde-Schlüssel (30 Tage)
 
 case 'wl_me':
     $w = wlAuth($in['tok'] ?? '');
-    $r = withWl(function ($d) use ($w) { foreach ($d as $x) if ($x['wallet'] === $w) return $x; return null; });
-    out(['ok' => true, 'me' => $r ? array_merge(wlPublic($r), ['p' => wlDec($r['enc'])]) : null, 'wallet' => $w]);
+    $r = withWl(function (&$d) use ($w) { foreach ($d as $k => $x) if ($x['wallet'] === $w) { if (strpos($x['ref'] ?? '', 'WBU') !== 0) { $d[$k]['refOld'] = $x['ref']; $d[$k]['ref'] = wlNewRef($d); } return [$d[$k], wlAccount($d, $d[$k])]; } return null; }, true);
+    out(['ok' => true, 'me' => $r ? array_merge(wlPublic($r[0]), ['p' => wlDec($r[0]['enc']), 'acc' => $r[1]]) : null, 'wallet' => $w]);
 
 case 'wl_save':
     $w = wlAuth($in['tok'] ?? ''); $p = (array)($in['p'] ?? []);
-    $pd = []; foreach (['name' => 80, 'street' => 120, 'zip' => 20, 'city' => 80, 'country' => 60, 'email' => 120, 'phone' => 40] as $k => $mx) { $pd[$k] = txt($p[$k] ?? '', $mx); if ($pd[$k] === '') fail('Please fill in all required fields'); }
+    $pd = []; foreach (['name' => 80, 'dob' => 10, 'street' => 120, 'zip' => 20, 'city' => 80, 'country' => 60, 'email' => 120, 'phone' => 40] as $k => $mx) { $pd[$k] = txt($p[$k] ?? '', $mx); if ($pd[$k] === '') fail('Please fill in all required fields'); }
     if (!filter_var($pd['email'], FILTER_VALIDATE_EMAIL)) fail('Invalid e-mail address');
+    if (wlTrash($pd['email'])) fail('Please use your real e-mail address – temporary e-mail addresses are not accepted');
+    if (!preg_match('/^(19|20)\d\d-\d\d-\d\d$/', $pd['dob']) || strtotime($pd['dob']) === false || strtotime($pd['dob']) > time()) fail('Invalid date of birth');
+    if (strlen(preg_replace('/\D/', '', $pd['phone'])) < 6) fail('Invalid phone number');
+    $idh = wlIdHashes($pd);
     $fighter = txt($in['fighter'] ?? '', 30); if (mb_strlen($fighter) < 3) fail('Fighter name: at least 3 characters');
     $kl = array_values(array_unique(array_filter((array)($in['klassen'] ?? []), fn($k) => in_array($k, WL_KL, true)))); if (!$kl) fail('Please choose at least one weight class');
     if (empty($in['terms'])) fail('Please accept the participation terms');
     $lang = in_array($in['lang'] ?? '', ['en','de','es','fr','ru'], true) ? $in['lang'] : 'en';
     $refIn = preg_replace('/[^A-Z0-9]/', '', strtoupper((string)($in['refBy'] ?? '')));
-    $res = withWl(function (&$d) use ($w, $pd, $fighter, $kl, $lang, $refIn) {
+    $res = withWl(function (&$d) use ($w, $pd, $fighter, $kl, $lang, $refIn, $idh) {
         foreach ($d as $x) if ($x['wallet'] !== $w && mb_strtolower($x['fighter']) === mb_strtolower($fighter) && array_intersect($x['klassen'], $kl)) fail('This fighter name already exists in this weight class');
+        foreach ($d as $k => $x) { if ($x['wallet'] === $w) continue;
+            if (empty($x['idh'])) { $o = wlDec($x['enc'] ?? ''); if ($o) { $d[$k]['idh'] = wlIdHashes(array_merge(['dob' => ''], $o)); $x = $d[$k]; } }
+            $h = $x['idh'] ?? []; if (($h['em'] ?? '') === $idh['em']) fail('This e-mail address is already registered');
+            if (($h['ph'] ?? '') === $idh['ph']) fail('This phone number is already registered');
+            if (($h['pe'] ?? '') === $idh['pe']) fail('This person is already registered'); }
         $i = null; foreach ($d as $k => $x) if ($x['wallet'] === $w) $i = $k;
         if ($i === null) {
-            do { $ref = strtoupper(substr(bin2hex(random_bytes(4)), 0, 6)); } while (array_filter($d, fn($x) => $x['ref'] === $ref));
-            $r = ['id' => bin2hex(random_bytes(6)), 'wallet' => $w, 'ref' => $ref, 'refBy' => '', 'refs' => 0, 'created' => time(), 'mailOk' => false];
-            if ($refIn) foreach ($d as $k => $x) if ($x['ref'] === $refIn) { $r['refBy'] = $refIn; $d[$k]['refs'] = ($x['refs'] ?? 0) + 1; }
+            $ref = wlNewRef($d);
+            $r = ['id' => bin2hex(random_bytes(6)), 'wallet' => $w, 'ref' => $ref, 'refBy' => '', 'refs' => 0, 'created' => time(), 'mailOk' => false, 'bonus' => []];
+            if ($refIn) foreach ($d as $k => $x) if (($x['ref'] ?? '') === $refIn || ($x['refOld'] ?? '') === $refIn) {
+                $r['refBy'] = $x['ref']; $d[$k]['refs'] = ($x['refs'] ?? 0) + 1;
+                // Geworbener: 10 Freispiele sofort · Werbender: 20 Freispiele, sobald der Geworbene für 5 $ gespielt hat
+                $r['bonus'][] = ['t' => 'welcome', 'n' => 10, 'st' => 'ok', 'd' => time()];
+                $d[$k]['bonus'] = $x['bonus'] ?? []; $d[$k]['bonus'][] = ['t' => 'ref', 'n' => 20, 'st' => 'wait', 'who' => $fighter, 'd' => time()];
+                break; }
             $d[] = $r; $i = count($d) - 1; $neu = true;
         } else $neu = false;
         $alt = wlDec($d[$i]['enc'] ?? ''); $mailNeu = ($alt['email'] ?? '') !== $pd['email'];
-        $d[$i]['fighter'] = $fighter; $d[$i]['klassen'] = $kl; $d[$i]['sport'] = 'pro'; $d[$i]['lang'] = $lang; $d[$i]['upd'] = time(); $d[$i]['enc'] = wlEnc($pd);
+        $d[$i]['fighter'] = $fighter; $d[$i]['klassen'] = $kl; $d[$i]['sport'] = 'pro'; $d[$i]['lang'] = $lang; $d[$i]['upd'] = time(); $d[$i]['enc'] = wlEnc($pd); $d[$i]['idh'] = $idh;
         if ($mailNeu) $d[$i]['mailOk'] = false;
         return [$d[$i], $neu || $mailNeu];
     }, true);
     if ($res[1]) wlConfirmMail($res[0], $pd);
-    out(['ok' => true, 'me' => array_merge(wlPublic($res[0]), ['p' => $pd]), 'mail' => $res[1]]);
+    $acc = withWl(function ($d) use ($w) { foreach ($d as $x) if ($x['wallet'] === $w) return wlAccount($d, $x); return null; });
+    out(['ok' => true, 'me' => array_merge(wlPublic($res[0]), ['p' => $pd, 'acc' => $acc]), 'mail' => $res[1]]);
 
 case 'wl_ok':       // Link aus der Bestätigungs-Mail
     $id = preg_replace('/[^a-f0-9]/', '', (string)($_GET['id'] ?? '')); $sg = (string)($_GET['s'] ?? '');
