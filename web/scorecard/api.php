@@ -2033,6 +2033,42 @@ case 'l_get':
     unset($r['_sup']);
     out(['ok' => true] + $r);
 
+case 'l_plakat':   // Veranstalter lädt das Plakat seiner Gala hoch (oder löscht es) – erscheint automatisch rechts bei „WBU Shows“
+    $lid = (string)($in['lid'] ?? '');
+    $r = withLive($lid, function (&$l) use ($in, $DIR) {
+        if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        $f = "$DIR/plakat_{$l['id']}.jpg";
+        if (empty($in['data'])) { @unlink($f); unset($l['plakat']); return ['plakat' => 0]; }
+        [$data, $ext] = decodeFile($in['data'], 10000000);
+        if (!in_array($ext, ['jpg', 'png'], true)) fail('Bitte ein Foto (JPG oder PNG) hochladen');
+        $im = @imagecreatefromstring($data); if (!$im) fail('Bild konnte nicht gelesen werden');
+        $w = imagesx($im); $h = imagesy($im); $nw = min(900, $w); $nh = (int)round($h * $nw / $w);
+        $o = imagecreatetruecolor($nw, $nh); imagecopyresampled($o, $im, 0, 0, 0, 0, $nw, $nh, $w, $h);
+        imagejpeg($o, $f, 86); imagedestroy($o); imagedestroy($im);
+        $l['plakat'] = time(); return ['plakat' => $l['plakat']];
+    }, true);
+    out(['ok' => true] + $r);
+
+case 'l_plakatimg':  // öffentlich: Plakat einer Gala
+    $id = preg_replace('/[^a-f0-9]/', '', (string)($_GET['id'] ?? ''));
+    $f = "$DIR/plakat_$id.jpg";
+    if ($id === '' || !file_exists($f)) { http_response_code(404); header('Content-Type: text/plain'); exit('nicht gefunden'); }
+    header('Content-Type: image/jpeg'); header('Cache-Control: public, max-age=86400'); header_remove('Access-Control-Allow-Origin');
+    readfile($f); exit;
+
+case 'shows':      // öffentlich: kommende Galas aus WBU Sports für Startseite (Plakat + Countdown)
+    $list = []; $heute = date('Y-m-d');
+    foreach (glob("$DIR/lv_*.json") as $f) {
+        $l = json_decode((string)@file_get_contents($f), true);
+        if (!is_array($l) || empty($l['snap']) || ($l['snap']['type'] ?? '') !== 'gala') continue;
+        $sn = $l['snap']; $d = substr((string)($sn['date'] ?? ''), 0, 10);
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) || $d < $heute) continue;
+        $t = preg_match('/^\d{1,2}:\d{2}$/', (string)($sn['time'] ?? '')) ? str_pad($sn['time'], 5, '0', STR_PAD_LEFT) : '19:00';
+        $list[] = ['d' => $d, 'n' => (string)($sn['name'] ?? ''), 'ort' => (string)($sn['ort'] ?? ''), 'st' => [$d . 'T' . $t],
+                   'img' => !empty($l['plakat']) ? '/scorecard/api.php?a=l_plakatimg&id=' . $l['id'] . '&v=' . $l['plakat'] : '', 'lid' => $l['id']];
+    }
+    out(['ok' => true, 'shows' => $list]);
+
 case 'l_list':
     $list = [];
     foreach (glob("$DIR/lv_*.json") as $f) {

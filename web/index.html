@@ -199,7 +199,7 @@ function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
    <section class="fb nw"><h3 class="H">WBU News</h3><div id="nwl" class="nwl"><p class="nwe">…</p></div></section></div>
   <aside class="side">
    <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
-   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.filter(x=>x.img).length?SHOWS.filter(x=>x.img).slice(0,20).map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div><a class="btn allp" href="#plakate">${t('allp')} ›</a></div>
+   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl" id="showsL">${showsHtml()}</div><a class="btn allp" href="#plakate">${t('allp')} ›</a></div>
   </aside></div>`}
 // Seite im Rahmen: Pfad + Sprache; deren eigenes Kopf-Menü wird ausgeblendet, Untermenüs (z. B. Fight Quiz) bleiben
 const FBOX=()=>`<h3 class="H">${t('fb')}</h3><div class="tg"><iframe title="WBU News" src="https://widget.tagembed.com/339487?website=1" allow="fullscreen" loading="lazy"></iframe></div><a class="btn" href="https://www.facebook.com/WorldBoxingUnionV" target="_blank" rel="noopener">${t('fbb')} ›</a>`;
@@ -251,8 +251,17 @@ const SHOWS_ALL=[
  {d:'2027-02-27',img:'/start/img/show-2027-02-27-bayerische-ringnacht.jpg',t:'Bayerische Ringnacht – Manzau Gym Olching',n:'Bayerische Ringnacht',ort:'Manzau Gym Olching',st:['2027-02-27T19:00']},
  {d:'2027-05-29',img:'/start/img/show-2027-05-29-wadersloh.jpg',t:'WBU Deutsche Meisterschaft – Wadersloh',n:'WBU Deutsche Meisterschaft',ort:'Wadersloh',st:['2027-05-29T19:00']},
 ];
-const SHOWS=(()=>{const n=new Date(),h=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+let SHOWS=(()=>{const n=new Date(),h=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
  return SHOWS_ALL.filter(x=>x.d>=h).sort((a,b)=>a.d<b.d?-1:1)})();
+function showsHtml(){return SHOWS.filter(x=>x.img).length?SHOWS.filter(x=>x.img).slice(0,20).map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}
+// Galas aus WBU Sports (Plakat vom Veranstalter hochgeladen + Countdown) automatisch dazunehmen
+function showsMerge(list){const norm=x=>(x||'').toLowerCase().replace(/[^a-z0-9äöüß]/g,'');let ch=false;
+ (list||[]).forEach(a=>{const m=SHOWS_ALL.find(x=>(x.d===a.d||(x.st||[]).some(v=>v.slice(0,10)===a.d))&&norm(x.ort)===norm(a.ort));
+  if(m){if(!m.img&&a.img){m.img=a.img;ch=true}return}
+  SHOWS_ALL.push({d:a.d,img:a.img,t:a.n+(a.ort?' – '+a.ort:''),n:a.n,ort:a.ort,st:a.st});ch=true});
+ if(!ch)return;const n=new Date(),h=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+ SHOWS=SHOWS_ALL.filter(x=>x.d>=h).sort((a,b)=>a.d<b.d?-1:1);const b=document.getElementById('showsL');if(b)b.innerHTML=showsHtml();try{cdDraw()}catch(e){}}
+fetch('/scorecard/api.php?a=shows',{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j&&j.ok)showsMerge(j.shows)}).catch(()=>{});
 const GUERTEL=[5,1,6,2,7,3,8,4].map(n=>'/start/img/guertel-'+String(n).padStart(2,'0')+'.jpg');
 function guertelSeite(v){v.innerHTML=`<div class="in wpw"><h1 class="H">${t('belts')}</h1><div class="bar"></div><div class="gg">${GUERTEL.map((u,i)=>`<a href="${u}" onclick="return zoom(${i})"><img src="${u}" alt="WBU ${t('belts')} ${i+1}" loading="lazy"></a>`).join('')}</div></div>`}
 function zoomU(u){const d=document.createElement('div');d.className='zm';d.innerHTML=`<img src="${u}" alt=""><button aria-label="×">×</button>`;d.onclick=()=>d.remove();document.body.appendChild(d);return false}
