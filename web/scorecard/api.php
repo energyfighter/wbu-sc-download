@@ -712,6 +712,53 @@ function fbUpdate($p, $imgNeu) {
     return ['id' => $p['fb']];
 }
 
+// ===================== INSTAGRAM (über die verbundene Facebook-Seite) =====================
+// Nur Berichte MIT Bild gehen auf Instagram (Instagram erlaubt keine reinen Text-Beiträge).
+function igBild($f) {   // Seitenverhältnis auf 4:5 … 1,91:1 bringen (schwarz auffüllen), sonst lehnt Instagram ab
+    $g = $f . '.ig.jpg'; if (file_exists($g) && filemtime($g) >= filemtime($f)) return $g;
+    $im = @imagecreatefromjpeg($f); if (!$im) return $f;
+    $w = imagesx($im); $h = imagesy($im); $r = $w / max(1, $h);
+    if ($r >= 0.8 && $r <= 1.91) { imagedestroy($im); return $f; }
+    if ($r < 0.8) { $nw = (int)ceil($h * 0.8); $nh = $h; } else { $nw = $w; $nh = (int)ceil($w / 1.91); }
+    $c = imagecreatetruecolor($nw, $nh); imagefill($c, 0, 0, imagecolorallocate($c, 0, 0, 0));
+    imagecopy($c, $im, (int)(($nw - $w) / 2), (int)(($nh - $h) / 2), 0, 0, $w, $h);
+    imagejpeg($c, $g, 90); imagedestroy($c); imagedestroy($im); return $g;
+}
+function igKonto($fb, $neu = false) {   // Instagram-Business-Konto der Facebook-Seite suchen (wird gemerkt)
+    if (!$neu && !empty($fb['ig'])) return $fb;
+    $r = fbHttp('GET', $fb['page'], ['fields' => 'instagram_business_account{id,username}', 'access_token' => $fb['tok']]);
+    $fb['ig'] = $r['instagram_business_account']['id'] ?? ''; $fb['igName'] = $r['instagram_business_account']['username'] ?? '';
+    $fb['igErr'] = !empty($r['error']) ? ($r['error']['message'] ?? 'Fehler') : ($fb['ig'] ? '' : 'Mit der Facebook-Seite ist kein Instagram-Business-Konto verknüpft');
+    @file_put_contents(fbFile(), json_encode($fb)); return $fb;
+}
+function igWarte($id, $tok) { for ($k = 0; $k < 15; $k++) { $s = fbHttp('GET', $id, ['fields' => 'status_code', 'access_token' => $tok]); $c = $s['status_code'] ?? ''; if ($c === 'FINISHED') return true; if ($c === 'ERROR' || $c === 'EXPIRED') return false; sleep(2); } return false; }
+function igPublish($p) {
+    $n = count($p['img'] ?? []); if ($n === 0) return ['err' => ''];   // ohne Bild: nicht auf Instagram
+    $fb = json_decode((string)@file_get_contents(fbFile()), true);
+    if (!is_array($fb) || empty($fb['tok'])) return ['err' => 'Facebook/Instagram ist noch nicht verbunden'];
+    $fb = igKonto($fb); if (empty($fb['ig'])) return ['err' => 'Instagram: ' . ($fb['igErr'] ?: 'nicht verknüpft')];
+    $en = $p['tr']['en'] ?? ['t' => $p['t'], 'x' => $p['x']];
+    $cap = mb_substr(trim($en['t'] . "\n\n" . $en['x']), 0, 2100) . "\n\nwww.wbu-boxing.com";
+    $url = function ($i) use ($p) { return newsImgUrl($p['id'], $i) . '&ig=1'; };
+    $ig = $fb['ig']; $tk = $fb['tok'];
+    if ($n === 1) $c = fbHttp('POST', "$ig/media", ['image_url' => $url(0), 'caption' => $cap, 'access_token' => $tk]);
+    else {
+        $kids = [];
+        for ($i = 0; $i < min($n, 10); $i++) {
+            $k = fbHttp('POST', "$ig/media", ['image_url' => $url($i), 'is_carousel_item' => 'true', 'access_token' => $tk]);
+            if (empty($k['id'])) return ['err' => 'Instagram: ' . ($k['error']['message'] ?? 'Bild abgelehnt')];
+            $kids[] = $k['id'];
+        }
+        foreach ($kids as $k) igWarte($k, $tk);
+        $c = fbHttp('POST', "$ig/media", ['media_type' => 'CAROUSEL', 'children' => implode(',', $kids), 'caption' => $cap, 'access_token' => $tk]);
+    }
+    if (empty($c['id'])) return ['err' => 'Instagram: ' . ($c['error']['message'] ?? 'Fehler')];
+    igWarte($c['id'], $tk);
+    $r = fbHttp('POST', "$ig/media_publish", ['creation_id' => $c['id'], 'access_token' => $tk]);
+    if (empty($r['id'])) return ['err' => 'Instagram: ' . ($r['error']['message'] ?? 'Fehler')];
+    return ['id' => $r['id']];
+}
+
 function newsSecret() { global $DIR; $f = "$DIR/news.key"; if (!file_exists($f)) file_put_contents($f, bin2hex(random_bytes(32))); return trim((string)file_get_contents($f)); }
 function newsOkSig($em) { return hash_hmac('sha256', 'news-ok|' . mb_strtolower($em), newsSecret()); }
 /** Facebook-Beiträge der Seite als Berichte übernehmen (Bilder werden auf den eigenen Server kopiert) */
@@ -1091,13 +1138,20 @@ case 'n_img':      // öffentlich: Bild eines Berichts
     $id = preg_replace('/[^a-f0-9]/', '', (string)($_GET['id'] ?? ($in['id'] ?? ''))); $i = (int)($_GET['i'] ?? ($in['i'] ?? 0));
     $f = newsDir() . "/$id-$i.jpg";
     if ($id === '' || !file_exists($f)) { http_response_code(404); header('Content-Type: text/plain'); exit('nicht gefunden'); }
+    if (!empty($_GET['ig'])) $f = igBild($f);
     header('Content-Type: image/jpeg'); header('Cache-Control: public, max-age=31536000'); header_remove('Access-Control-Allow-Origin');
     readfile($f); exit;
 
 case 'n_me':       // eingeloggt: darf ich schreiben?
     $me = needLogin($in['tok'] ?? '');
     $fb = json_decode((string)@file_get_contents(fbFile()), true);
-    out(['ok' => true, 'me' => $me, 'status' => newsStatus($me), 'super' => isSuper($me), 'fb' => is_array($fb) && !empty($fb['page']) ? ($fb['name'] ?? 'Facebook') : '']);
+    out(['ok' => true, 'me' => $me, 'status' => newsStatus($me), 'super' => isSuper($me), 'fb' => is_array($fb) && !empty($fb['page']) ? ($fb['name'] ?? 'Facebook') : '', 'ig' => is_array($fb) ? ($fb['igName'] ?? '') : '']);
+
+case 'ig_check':   // Superadmin: Instagram-Konto der verbundenen Facebook-Seite suchen
+    $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
+    $fb = json_decode((string)@file_get_contents(fbFile()), true); if (!is_array($fb) || empty($fb['tok'])) fail('Facebook nicht verbunden');
+    $fb = igKonto($fb, true);
+    out(['ok' => true, 'ig' => $fb['ig'] ?? '', 'name' => $fb['igName'] ?? '', 'err' => $fb['igErr'] ?? '']);
 
 case 'n_req':      // Schreibrechte anfragen
     $me = needLogin($in['tok'] ?? '');
@@ -1180,7 +1234,13 @@ case 'n_save':     // Bericht anlegen oder ändern (Bilder kommen fertig verklei
         else $fbErr = $r['err'] ?? 'Facebook-Fehler';
         $p['fb'] = $r['id'] ?? '';
     }
-    out(['ok' => true, 'post' => newsPublic($p), 'fbErr' => $fbErr]);
+    $igErr = '';
+    if (!empty($p['fb']) && empty($p['ig']) && count($p['img'] ?? []) > 0 && empty($in['noig'])) {   // mit Bild → auch Instagram
+        $r = igPublish($p);
+        if (!empty($r['id'])) { $p['ig'] = $r['id']; withNews(function (&$n) use ($p) { foreach ($n as &$q) if ($q['id'] === $p['id']) $q['ig'] = $p['ig']; }, true); }
+        else $igErr = $r['err'] ?? '';
+    }
+    out(['ok' => true, 'post' => newsPublic($p), 'fbErr' => $fbErr, 'igErr' => $igErr, 'ig' => !empty($p['ig'])]);
 
 case 'fb_texts':   // Superadmin: Texte älterer Facebook-Beiträge lesen (nur lesen, nichts übernehmen)
     $me = needLogin($in['tok'] ?? ''); if (!isSuper($me)) fail('Nur für die WBU', 403);
@@ -1318,9 +1378,10 @@ case 'fb_off':
     if ($a === 'fb_pick') {
         $pend = json_decode((string)@file_get_contents(fbFile() . '.pending'), true) ?: [];
         foreach ($pend as $pg) if ((string)$pg['id'] === (string)($in['page'] ?? '')) {
-            file_put_contents(fbFile(), json_encode(['page' => $pg['id'], 'name' => $pg['name'], 'tok' => $pg['access_token'], 'at' => time()]));
-            @unlink(fbFile() . '.pending');
-            out(['ok' => true, 'name' => $pg['name']]);
+            $neu = ['page' => $pg['id'], 'name' => $pg['name'], 'tok' => $pg['access_token'], 'at' => time()];
+            file_put_contents(fbFile(), json_encode($neu)); @unlink(fbFile() . '.pending');
+            $neu = igKonto($neu, true);
+            out(['ok' => true, 'name' => $pg['name'], 'ig' => $neu['igName'] ?? '', 'igErr' => $neu['igErr'] ?? '']);
         }
         fail('Seite nicht gefunden – bitte neu verbinden');
     }
