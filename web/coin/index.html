@@ -34,6 +34,7 @@ a{color:#E8C25A}a:hover{color:#F5D987}
         <a href="#roadmap" style="color: #D6D1C6; text-decoration: none">Roadmap</a>
       </nav>
       <a href="fight-quiz.html" style="color: #D6D1C6; text-decoration: none; font-weight: 600; font-size: 15px">Fight Quiz</a>
+      <a href="games.html" style="color: #D6D1C6; text-decoration: none; font-weight: 600; font-size: 15px">WBU Games</a>
       <a href="#whitelist" style="display: inline-flex; align-items: center; height: 46px; padding: 0 22px; border-radius: 10px; background: #1565C0; color: #FFFFFF; font: 700 16px Oswald, sans-serif; letter-spacing: 2px; text-decoration: none">JOIN WHITELIST</a>
     </div>
   </header>
@@ -180,7 +181,10 @@ a{color:#E8C25A}a:hover{color:#F5D987}
         <div style="font: 500 15px Oswald, sans-serif; letter-spacing: 4px; color: #D4A73A">THE GAMES</div>
         <h2 style="margin: 0; font: 700 48px/1.05 Oswald, sans-serif">Every game counts for your ranking</h2>
         <p style="margin: 0; color: #C9C4B8">No luck, no betting – points come from skill, knowledge and speed. You can never lose points by playing; your goal is to beat your own record.</p>
-        <a href="fight-quiz.html" style="align-self: flex-start; display: inline-flex; align-items: center; height: 48px; padding: 0 22px; border-radius: 10px; border: 1px solid #D4A73A; color: #D4A73A; font: 700 16px Oswald, sans-serif; letter-spacing: 2px; text-decoration: none">PLAY THE FIRST GAME: FIGHT QUIZ ›</a>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px">
+          <a href="fight-quiz.html" style="display: inline-flex; align-items: center; height: 48px; padding: 0 22px; border-radius: 10px; border: 1px solid #D4A73A; color: #D4A73A; font: 700 16px Oswald, sans-serif; letter-spacing: 2px; text-decoration: none">PLAY THE FIRST GAME: FIGHT QUIZ ›</a>
+          <a href="games.html" style="display: inline-flex; align-items: center; height: 48px; padding: 0 22px; border-radius: 10px; border: 1px solid #D4A73A; background: #D4A73A; color: #0E0F12; font: 700 16px Oswald, sans-serif; letter-spacing: 2px; text-decoration: none">ALL WBU GAMES · TEST VERSION ›</a>
+        </div>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 18px">
         <div style="background: #1A1C22; border: 1px solid #D4A73A; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 10px">
@@ -596,6 +600,7 @@ var D={"NOW":["JETZT","AHORA","MAINTENANT","СЕЙЧАС"],"SOON":["BALD","PRONT
 "Sin suerte, sin apuestas – los puntos vienen de la habilidad, el conocimiento y la velocidad. Jugando nunca pierdes puntos; tu meta es superar tu propio récord.",
 "Pas de hasard, pas de paris – les points viennent du talent, du savoir et de la vitesse. Tu ne peux jamais perdre de points en jouant ; ton but est de battre ton propre record.",
 "Никакой удачи и ставок – очки дают мастерство, знания и скорость. Играя, ты никогда не теряешь очки; твоя цель – побить собственный рекорд."],
+"ALL WBU GAMES · TEST VERSION ›":["ALLE WBU-SPIELE · TESTVERSION ›","TODOS LOS JUEGOS WBU · VERSIÓN DE PRUEBA ›","TOUS LES JEUX WBU · VERSION TEST ›","ВСЕ ИГРЫ WBU · ТЕСТОВАЯ ВЕРСИЯ ›"],
 "PLAY THE FIRST GAME: FIGHT QUIZ ›":["JETZT SPIELEN: FIGHT-QUIZ ›", "JUEGA EL PRIMER JUEGO: FIGHT QUIZ ›", "JOUER AU PREMIER JEU : FIGHT QUIZ ›", "ИГРАТЬ В ПЕРВУЮ ИГРУ: FIGHT QUIZ ›"],
 "MAIN GAME · IN PRODUCTION":["HAUPTSPIEL · IN PRODUKTION","JUEGO PRINCIPAL · EN PRODUCCIÓN","JEU PRINCIPAL · EN PRODUCTION","ГЛАВНАЯ ИГРА · В РАЗРАБОТКЕ"],
 "Box to Gain – Pad Training":["Box to Gain – Pratzentraining","Box to Gain – Entrenamiento con manoplas","Box to Gain – Entraînement aux pattes d'ours","Box to Gain – Работа на лапах"],
@@ -733,7 +738,7 @@ attrs.forEach(function(x){var t=tr(x[2],i);x[0].setAttribute(x[1],t==null?x[2]:t
 document.querySelectorAll('#wbuLang button[data-l]').forEach(function(b){b.className=b.dataset.l===l?'on':''});if(window.__wbuLinks)window.__wbuLinks(l);
 try{localStorage.setItem('wbuLang',l)}catch(e){}
 try{var u=new URL(location.href);if(l==='en')u.searchParams.delete('lang');else u.searchParams.set('lang',l);history.replaceState(null,'',u)}catch(e){}
-document.querySelectorAll('a[href*="fight-quiz"]').forEach(function(a){try{var u=new URL(a.href,location.href);if(l==='en')u.searchParams.delete('lang');else u.searchParams.set('lang',l);a.href=u.href}catch(e){}})}
+document.querySelectorAll('a[href*="fight-quiz"],a[href*="games.html"]').forEach(function(a){try{var u=new URL(a.href,location.href);if(l==='en')u.searchParams.delete('lang');else u.searchParams.set('lang',l);a.href=u.href}catch(e){}})}
 function ui(){
 var TX={en:['Home','Rankings','WBU Coin','Live','Results'],de:['Startseite','Rangliste','WBU Coin','Live','Ergebnisse'],es:['Inicio','Ranking','WBU Coin','Live','Resultados'],fr:['Accueil','Classement','WBU Coin','Live','Résultats'],ru:['Главная','Рейтинг','WBU Coin','Live','Результаты']};
 var URLS=['https://www.wbu-boxing.com/','https://www.wbu-boxing.com/rankings/','https://wbu.wbu-boxing.com/coin/','https://www.wbu-boxing.com/live/','https://www.wbu-boxing.com/results/'];
