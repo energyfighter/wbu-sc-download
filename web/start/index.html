@@ -197,7 +197,7 @@ function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
    <section class="fb nw"><h3 class="H">WBU News</h3><div id="nwl" class="nwl"><p class="nwe">…</p></div></section></div>
   <aside class="side">
    <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
-   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.length?SHOWS.slice(0,20).map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div><a class="btn allp" href="#plakate">${t('allp')} ›</a></div>
+   <div class="card shows"><h3 class="H">WBU Shows</h3><div class="sl">${SHOWS.filter(x=>x.img).length?SHOWS.filter(x=>x.img).slice(0,20).map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}</div><a class="btn allp" href="#plakate">${t('allp')} ›</a></div>
   </aside></div>`}
 // Seite im Rahmen: Pfad + Sprache; deren eigenes Kopf-Menü wird ausgeblendet, Untermenüs (z. B. Fight Quiz) bleiben
 const FBOX=()=>`<h3 class="H">${t('fb')}</h3><div class="tg"><iframe title="WBU News" src="https://widget.tagembed.com/339487?website=1" allow="fullscreen" loading="lazy"></iframe></div><a class="btn" href="https://www.facebook.com/WorldBoxingUnionV" target="_blank" rel="noopener">${t('fbb')} ›</a>`;
@@ -245,6 +245,7 @@ const WPC={};
 const SHOWS_ALL=[
  // n/ort = Countdown-Text, st = Beginn je Showtag (ohne Uhrzeit gilt 19:00 Uhr)
  {d:'2026-11-21',img:'/start/img/show-2026-11-21-steel-warriors.jpg',t:'Steel Warriors – Lokschuppen Dillingen',n:'Steel Warriors',ort:'Lokschuppen Dillingen',st:['2026-11-20T19:00','2026-11-21T19:00']},
+ {d:'2026-11-21',img:'',t:'Fight Night Villingen-Schwenningen',n:'Fight Night',ort:'Villingen-Schwenningen',st:['2026-11-21T19:00']},
  {d:'2027-02-27',img:'/start/img/show-2027-02-27-bayerische-ringnacht.jpg',t:'Bayerische Ringnacht – Manzau Gym Olching',n:'Bayerische Ringnacht',ort:'Manzau Gym Olching',st:['2027-02-27T19:00']},
  {d:'2027-05-29',img:'/start/img/show-2027-05-29-wadersloh.jpg',t:'WBU Deutsche Meisterschaft – Wadersloh',n:'WBU Deutsche Meisterschaft',ort:'Wadersloh',st:['2027-05-29T19:00']},
 ];
@@ -487,7 +488,7 @@ function newsPage(n){NW.page=n;newsLoad();const s=document.querySelector('.nw');
 // ---- Plakat-Seite (nur über „Alle Plakate ansehen“ erreichbar): kommende + vergangene Shows + Archiv ----
 const PLAKAT_ARCHIV=[ // {d:'JJJJ-MM-TT',img:'/start/img/plakate/…jpg',t:'Titel'}
 ];
-function plakView(){const all=[...SHOWS_ALL,...PLAKAT_ARCHIV].sort((a,b)=>a.d<b.d?1:-1);
+function plakView(){const all=[...SHOWS_ALL,...PLAKAT_ARCHIV].filter(x=>x.img).sort((a,b)=>a.d<b.d?1:-1);
  return `<div class="plk"><h2 class="H">${t('plt')}</h2><p>${t('pls')}</p><div class="plg">${all.map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${nEsc(x.t)}"><img src="${x.img}" alt="${nEsc(x.t)}" loading="lazy"><span>${nDate(x.d)}</span></a>`).join('')}</div></div>`}
 async function newsOpen(id){if(!NW.list){try{NW.list=(await nApi('n_list')).news}catch(e){NW.list=[]}}
  const p=NW.list.find(x=>x.id===id);if(!p)return;const q=nTr(p);document.querySelectorAll('.nov').forEach(x=>x.remove());
