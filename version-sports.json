@@ -1,6 +1,6 @@
 {
-  "versionCode": 236,
-  "versionName": "1.236",
+  "versionCode": 237,
+  "versionName": "1.237",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Ringsprecher: Namen der Boxer werden betonter ausgerufen. Dazu Siegerverkündung, Tonlage und eigener Name-Regler."
+  "notes": "Ringsprecher: Gong beim Rundenstart kommt sicher, auch wenn die Stimme hängt. Neu: Schalter „Vokale im Namen dehnen“ zum Ausprobieren."
 }
