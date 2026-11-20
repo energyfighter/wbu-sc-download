@@ -1,6 +1,6 @@
 {
-  "versionCode": 217,
-  "versionName": "1.217",
+  "versionCode": 218,
+  "versionName": "1.218",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Alles in 5 Sprachen (Deutsch, English, Español, Français, Русский): App, PDF-Bericht, Urkunden, Akkreditierungskarten, Rechnungen, Gebrauchsanweisung und Präsentation. Sprachknopf 🌐 oben im Menü."
+  "notes": "Fehlerbehebung: Update wurde von Google Play Protect blockiert – behoben. Alles in 5 Sprachen (DE, EN, ES, FR, RU)."
 }
