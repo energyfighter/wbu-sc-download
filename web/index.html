@@ -114,8 +114,8 @@ a{color:inherit;text-decoration:none}.H{font-family:Oswald,"Inter Display",Impac
 .dd .sub a.mo{display:none}@media(max-width:900px){.dd .sub a.mo{display:block}}
 .fb .tg{background:#fff}.fb .tg iframe{display:block;width:100%;height:1600px;border:0}@media(max-width:900px){.fb .tg iframe{height:1100px}}
 /* Verbände */
-.orgs{display:flex;justify-content:center;gap:clamp(10px,2.4vw,30px);flex-wrap:wrap;padding:28px 0 6px}
-.orgs a{display:block;width:clamp(78px,10vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
+.orgs{display:flex;justify-content:center;gap:clamp(6px,2.2vw,30px);flex-wrap:wrap;padding:28px 0 6px}
+.orgs a{display:block;width:clamp(38px,10.5vw,118px);transition:transform .15s}.orgs a:hover{transform:translateY(-4px) scale(1.04)}.orgs img{width:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
 /* Inhalt */
 .main{display:grid;grid-template-columns:1fr 330px;gap:26px;padding:26px 22px 60px;max-width:1240px;margin:0 auto}
 .ban{display:block;border-radius:16px;overflow:hidden;border:1px solid var(--line);margin-bottom:22px;box-shadow:0 20px 50px rgba(0,0,0,.45);transition:transform .15s}.ban:hover{transform:translateY(-3px)}
@@ -168,7 +168,7 @@ function MENU(){return [[t('home'),'#',1],[t('rank'),R('rankings'),'rankings'],[
  ['PBU',R('p/upcoming-fights'),'p/upcoming-fights'],['EBO',R('p/ebo-2'),'p/ebo-2'],['WFU',R('p/wfu'),'p/wfu'],['K1',R('p/k1'),'p/k1'],['SemiPro',R('p/semipro'),'p/semipro'],['Master',R('p/master'),'p/master'],['BKB',R('p/bkb'),'p/bkb'],['HYBB (4oz)',R('p/hbkb4oz'),'p/hbkb4oz'],['Stress-Defense',R('p/sd'),'p/sd'],
  [t('dl'),R('p/downloads'),'p/downloads'],[t('hist'),R('p/about-wbu'),'p/about-wbu'],[t('dir'),R('p/directory'),'p/directory'],[t('contact'),R('p/contact'),'p/contact'],[t('shop'),'https://wbu.printify.me/',0,0,'',1],[t('bl'),R('p/bundesliga'),'p/bundesliga'],
  ['WBU Sports',R('anmeldung'),'anmeldung',[['WBU Live',R('live')],['WBU Time 1',lq(WWW+'/live/?zeit=1&ring=1'),0,1],['WBU Time 2',lq(WWW+'/live/?zeit=1&ring=2'),0,1]]],['Scorecard',W+'/scorecard/'],['WBU Coin',R('coin'),'coin',0,'coin']]}
-const ORGS=[['WBU','2026/01/wbulogo-150x150.png',R('p/sample-page'),'p/sample-page'],['PBU','2026/01/PBULOGO-150x150.png',R('p/upcoming-fights'),'p/upcoming-fights'],['EBO','2026/01/ebologo-150x150.png',R('p/ebo-2'),'p/ebo-2'],
+const ORGS=[['WBU','2026/01/wbulogo-150x150.png',R('p/sample-page'),'p/sample-page'],['PBU','2026/01/PBULOGO-150x150.png',R('p/upcoming-fights'),'p/upcoming-fights'],['EBO','2026/01/ebologo-150x150.png',R('p/ebo-2'),'p/ebo-2'],['Against Racism','/start/img/againstracism.webp','https://www.againstracism.de/',0,1],
  ['WFU','2026/01/wfunew-1-150x150.png',R('p/wfu'),'p/wfu'],['Stress Defense','2026/01/SD_logo_freigestellt-150x150.png',R('p/sd'),'p/sd'],['WBU Bundesliga','2026/01/wbulogoBUNDESLIGA-1-150x150.png',R('p/bundesliga'),'p/bundesliga']];
 const IG_URL='https://www.instagram.com/worldboxingunion2010/';
 const LOCK=`<a href="#intern" title="Intern – Login" class="lk2"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></a>`;
@@ -192,7 +192,7 @@ function draw(){document.documentElement.lang=L;
 // Handy: Untermenü (z. B. WBU Sports) klappt erst beim Antippen auf
 function ddTap(a){if(!matchMedia('(max-width:900px)').matches)return true;a.parentNode.classList.toggle('open');return false}
 function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
- return `<div id="cdown"></div><div id="ytlive"></div><div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
+ return `<div id="cdown"></div><div id="ytlive"></div><div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u,_,x])=>`<a href="${u}" title="${n}"${x?' target="_blank" rel="noopener"':''}><img src="${i[0]==='/'?i:UP+i}" alt="${n}"></a>`).join('')}</div></div>
  <div class="main"><div>
    <a class="ban" href="${R('anmeldung')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
    <a class="ban" href="${R('coin')}"><img src="/start/img/wbu-coin-presale.webp" alt="WBU Coin – Presale opens soon"></a>
