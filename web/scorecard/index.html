@@ -860,7 +860,7 @@ async function makePdf(){const st=$('pdfst'),blob=await buildPdf(st);if(!blob)re
 // Beim Abschließen: Ergebnisse + PDF an den Server – E-Mail ans Büro (info@wbu-boxing.com) und öffentliche Resultate-Seite
 function resData(){const ev=get('wbuEvent',{}),fs=fights(),L=S.live||{},lid=liveLid();
   return {lid:/^[a-f0-9]{16}$/.test(lid||'')?lid:'',ring:(L.rings||1)>1&&typeof myRing==='function'?myRing():1,type:L.type||'gala',name:L.name||'',promoter:ev.name||'',ort:ev.ort||'',date:evDate(),sup:S.name||'',arzt:ev.arzt||'',
-    fights:fs.map(f=>{const m=f.meta,r=m.result;return {no:f.no,title:m.title||'',red:m.red||'',blue:m.blue||'',ri:m.ri||'',bi:m.bi||'',rounds:m.rounds||0,dur:m.dur||'',
+    fights:fs.map(f=>{const m=f.meta,r=m.result;return {no:f.no,art:m.type||'',title:m.title||'',red:m.red||'',blue:m.blue||'',ri:m.ri||'',bi:m.bi||'',rounds:m.rounds||0,dur:m.dur||'',
       k:r?r.k:'',kn:r?resName(r.k):'',w:r&&r.w?r.w:'',r:r&&r.r?r.r:0,t:r&&r.t?r.t:'',ref:officials(m).ref||'',judges:f.cards.map(c=>{const[a,b]=totals(c.rounds);return {n:c.judge,r:a,b}})}})}}
 function resAuth(){if(WEB&&S.web&&S.web.ev)return {ev:S.web.ev,key:S.web.key};const pw=S.npass||get('wbuResPw','');return pw?{pass:pw}:null}
 function resSubmit(){set('wbuResOut',resData());set('wbuResSt','');resRetry()}
@@ -951,7 +951,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('181')||0;
+const WEB_VERSION=Number('182')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

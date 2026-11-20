@@ -173,6 +173,8 @@ function kPut(&$k, $x, $src) {
     foreach (['vn' => 60, 'nn' => 60, 'sex' => 2, 'gym' => 100, 'land' => 60, 'kg' => 8, 'sp' => 4, 'klasse' => 80, 'trainer' => 100] as $f => $max) {
         $v = txt($x[$f] ?? '', $max); if ($v !== '' && $v !== '–') $o[$f] = $v;
     }
+    $kg = txt($x['kg'] ?? '', 8); if ($kg !== '' && is_numeric(str_replace(',', '.', $kg))) { $h = $o['kgh'] ?? []; $last = end($h);
+        if (!$last || $last['kg'] !== $kg || $last['d'] !== date('Y-m-d')) $h[] = ['d' => date('Y-m-d'), 'kg' => $kg, 'src' => $src]; $o['kgh'] = array_slice($h, -40); }
     if ($geb !== '') $o['geb'] = $geb;
     if (!in_array($src, $o['src'], true)) { $o['src'] = array_slice(array_merge($o['src'], [$src]), -30); $o['n'] = count($o['src']); }
     $o['at'] = time();
@@ -196,6 +198,83 @@ function kAllowed($in) {
     $me = clubByToken($in['tok'] ?? '');
     return $me && in_array($me['rolle'], ['veranstalter', 'sup'], true);
 }
+
+// ===================== Kampfbilanz, Titel, K.O.-Sperre (nur in WBU Sports, nicht öffentlich) =====================
+const K_ARTEN = ['Profi', 'Semi-Pro', 'Master', 'K1', 'Bare Knuckle', 'Hybrid'];
+const K_SPERRE = ['KO' => 90, 'TKO' => 30];   // Tage; RTD (Aufgabe) = keine Sperre
+function kArt($txt, $default) {
+    $t = mb_strtolower((string)$txt);
+    if (preg_match('/bare|knuckle/', $t)) return 'Bare Knuckle';
+    if (strpos($t, 'hybrid') !== false) return 'Hybrid';
+    if (preg_match('/k1|k-1|kick/', $t)) return 'K1';
+    if (strpos($t, 'master') !== false) return 'Master';
+    if (strpos($t, 'semi') !== false) return 'Semi-Pro';
+    if (strpos($t, 'profi') !== false || strpos($t, 'pro') === 0) return 'Profi';
+    return $default;
+}
+function kTs($d) { $d = (string)$d; if (preg_match('/^(\d{2})\.(\d{2})\.(\d{4})$/', $d, $m)) $d = "$m[3]-$m[2]-$m[1]"; return strtotime(substr($d, 0, 10)) ?: 0; }
+function kIsSuper($in) { if (hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) return true; return isSuper(clubByToken($in['tok'] ?? '')); }
+/** Alle Kämpfe aus den Resultaten (auch alte, importierte) je Name: Art, Ergebnis, K.O., Titel */
+function kResIndex() {
+    global $DIR; static $IX = null; if ($IX !== null) return $IX;
+    $IX = ['f' => [], 't' => []]; $seen = []; $lvk = [];
+    foreach (glob("$DIR/res_*.json") as $f) {
+        $r = json_decode((string)@file_get_contents($f), true); if (!is_array($r) || !empty($r['hidden'])) continue;
+        $ts = kTs($r['date'] ?? '') ?: (int)($r['at'] ?? 0); $ev = trim(($r['name'] ?: 'Veranstaltung') . ' · ' . ($r['ort'] ?? ''), ' ·');
+        $def = ($r['type'] ?? '') === 'turnier' ? 'Semi-Pro' : 'Profi';
+        $lid = (string)($r['lid'] ?? '');
+        if ($lid !== '' && !isset($lvk[$lid])) { $lvk[$lid] = []; $l = json_decode((string)@file_get_contents(lvfile($lid)), true);
+            foreach ((array)($l['snap']['rows'] ?? []) as $row) $lvk[$lid][kNorm($row['a'] ?? '') . '|' . kNorm($row['b'] ?? '')] = (string)(($row['kind'] ?? '') ?: ($row['kl'] ?? '')); }
+        foreach ((array)($r['fights'] ?? []) as $x) {
+            $red = trim((string)($x['red'] ?? '')); $blue = trim((string)($x['blue'] ?? '')); $k = (string)($x['k'] ?? '');
+            if ($red === '' || $blue === '' || $k === '' || $k === 'NC') continue;
+            $key = ($r['grp'] ?? '') . '|' . kNorm($red) . '|' . kNorm($blue); if (isset($seen[$key])) continue; $seen[$key] = 1;
+            $art = kArt(($x['art'] ?? '') . ' ' . ($lvk[$lid][kNorm($red) . '|' . kNorm($blue)] ?? '') . ' ' . ($x['title'] ?? ''), $def);
+            $draw = in_array($k, ['UDRAW', 'SDRAW', 'MDRAW', 'TDRAW'], true); $w = (string)($x['w'] ?? '');
+            if (!$draw && !in_array($w, ['R', 'B'], true)) continue;
+            foreach (['R' => [$red, $blue], 'B' => [$blue, $red]] as $side => [$me, $geg]) {
+                $res = $draw ? 'D' : ($w === $side ? 'W' : 'L');
+                $IX['f'][kNorm($me)][] = ['name' => $me, 'ts' => $ts, 'date' => date('Y-m-d', $ts), 'ev' => $ev, 'geg' => $geg, 'art' => $art, 'res' => $res, 'k' => $k, 'ko' => in_array($k, ['KO', 'TKO'], true), 'r' => (int)($x['r'] ?? 0), 'title' => (string)($x['title'] ?? ''), 'id' => $key];
+                if ($res === 'W' && preg_match('/meister|champion|titel|title|wm\b|em\b|dm\b|world|europ|international|cup|gürtel|belt/i', (string)($x['title'] ?? '')))
+                    $IX['t'][kNorm($me)][] = ['t' => trim($x['title']) . ' (' . $art . ')', 'j' => date('Y', $ts), 'ext' => 0, 'auto' => 1, 'ev' => $ev];
+            }
+        }
+        foreach ((array)($r['places'] ?? []) as $p) if (!empty($p['first']['n']))   // Turnier: 1. Platz = Titel
+            $IX['t'][kNorm($p['first']['n'])][] = ['t' => 'Sieger ' . ($p['kl'] ?? '') . ' – ' . ($r['name'] ?? ''), 'j' => date('Y', $ts), 'ext' => 0, 'auto' => 1, 'ev' => $ev];
+    }
+    return $IX;
+}
+function kLeer() { return ['w' => 0, 'wko' => 0, 'l' => 0, 'lko' => 0, 'd' => 0]; }
+/** Bilanz, Sperre und Titel eines Kämpfers */
+function kProfil($id, $x) {
+    $IX = kResIndex(); $n = kNorm($x['name'] ?? ''); $fs = $IX['f'][$n] ?? [];
+    usort($fs, function ($a, $b) { return $b['ts'] - $a['ts']; });
+    $rec = [];
+    foreach ($fs as $f) { $a = $f['art']; $rec[$a] = $rec[$a] ?? ['auto' => kLeer(), 'ext' => kLeer()];
+        if ($f['res'] === 'W') { $rec[$a]['auto']['w']++; if ($f['ko']) $rec[$a]['auto']['wko']++; }
+        elseif ($f['res'] === 'L') { $rec[$a]['auto']['l']++; if ($f['ko']) $rec[$a]['auto']['lko']++; }
+        else $rec[$a]['auto']['d']++; }
+    foreach ((array)($x['rec'] ?? []) as $a => $v) { $rec[$a] = $rec[$a] ?? ['auto' => kLeer(), 'ext' => kLeer()]; $rec[$a]['ext'] = array_merge(kLeer(), array_map('intval', (array)$v)); }
+    foreach ($rec as $a => &$v) { $v['sum'] = kLeer(); foreach ($v['sum'] as $f => $_) $v['sum'][$f] = $v['auto'][$f] + $v['ext'][$f]; } unset($v);
+    // Sperre: Niederlage durch K.O. 90 Tage, T.K.O. 30 Tage – Aufgabe (RTD) ohne Sperre
+    $sp = null; $frei = (int)($x['frei'] ?? 0);
+    foreach ($fs as $f) if ($f['res'] === 'L' && isset(K_SPERRE[$f['k']]) && $f['ts'] > $frei) {
+        $bis = $f['ts'] + K_SPERRE[$f['k']] * 86400;
+        if ($bis > time() && (!$sp || $bis > $sp['bis'])) $sp = ['bis' => $bis, 'grund' => ($f['k'] === 'KO' ? 'K.O.' : 'T.K.O.') . '-Niederlage am ' . date('d.m.Y', $f['ts']) . ' (' . $f['ev'] . ')'];
+    }
+    foreach ((array)($x['sperren'] ?? []) as $m) { $bis = kTs($m['bis'] ?? '') + 86399;
+        if ($bis > time() && ($m['at'] ?? 0) > $frei && (!$sp || $bis > $sp['bis'])) $sp = ['bis' => $bis, 'grund' => $m['grund'] ?? 'von der WBU eingetragen']; }
+    if ($sp) $sp['bisText'] = date('d.m.Y', $sp['bis']);
+    $titel = array_merge($IX['t'][$n] ?? [], array_values((array)($x['titel'] ?? [])));
+    return ['rec' => $rec, 'kampf' => $fs, 'sperre' => $sp, 'titel' => $titel];
+}
+/** Kämpfer aus allen Resultaten (auch alten) in die Datenbank übernehmen – einmal je Veranstaltung */
+function kAusResultaten(&$k) {
+    $da = []; foreach ($k as $o) $da[kNorm($o['name'])] = 1;
+    foreach (kResIndex()['f'] as $n => $fs) if (!isset($da[$n])) { kPut($k, ['name' => $fs[0]['name']], 'resultate'); $da[$n] = 1; }
+}
+/** Trainer-Konto: darf nur Kämpfer aus dem eigenen Gym sehen und deren Bilanz ergänzen */
+function kTrainerGym($in) { $me = clubByToken($in['tok'] ?? ''); return $me && $me['rolle'] === 'trainer' ? kNorm($me['club'] ?? '') : ''; }
 /** Info an die WBU: eine Veranstaltung wurde zum ersten Mal hochgeladen (einmal pro Veranstaltung) */
 function neueVeranstaltungMail($eid, $art, $name, $date, $ort, $anzahl, $link, $tok) {
     global $DIR;
@@ -1913,7 +1992,7 @@ case 'r_submit':
     foreach (array_slice((array)($d['fights'] ?? []), 0, 150) as $f) {
         if (!is_array($f)) continue;
         $x = ['no' => (int)($f['no'] ?? 0)];
-        foreach (['title', 'red', 'blue', 'ri', 'bi', 'dur', 'k', 'kn', 'w', 't', 'ref'] as $k) $x[$k] = txt($f[$k] ?? '', 160);
+        foreach (['title', 'red', 'blue', 'ri', 'bi', 'dur', 'k', 'kn', 'w', 't', 'ref', 'art'] as $k) $x[$k] = txt($f[$k] ?? '', 160);
         $x['rounds'] = (int)($f['rounds'] ?? 0); $x['r'] = (int)($f['r'] ?? 0);
         $x['judges'] = [];
         foreach (array_slice((array)($f['judges'] ?? []), 0, 5) as $j) if (is_array($j)) $x['judges'][] = ['n' => txt($j['n'] ?? '', 80), 'r' => (int)($j['r'] ?? 0), 'b' => (int)($j['b'] ?? 0)];
@@ -1956,7 +2035,7 @@ case 'r_import':   // Ergebnisse einer früheren Veranstaltung (z. B. aus der Dr
     $grp = substr(sha1(mb_strtolower($T('name') . '|' . $T('date') . '|' . $T('ort'))), 0, 16);
     $fs = [];
     foreach (array_slice((array)($d['fights'] ?? []), 0, 400) as $f) { if (!is_array($f)) continue;
-        $x = ['no' => (int)($f['no'] ?? 0)]; foreach (['title', 'red', 'blue', 'ri', 'bi', 'dur', 'k', 'kn', 'w', 't', 'ref'] as $k) $x[$k] = txt($f[$k] ?? '', 160);
+        $x = ['no' => (int)($f['no'] ?? 0)]; foreach (['title', 'red', 'blue', 'ri', 'bi', 'dur', 'k', 'kn', 'w', 't', 'ref', 'art'] as $k) $x[$k] = txt($f[$k] ?? '', 160);
         $x['rounds'] = (int)($f['rounds'] ?? 0); $x['r'] = (int)($f['r'] ?? 0); $x['judges'] = []; $fs[] = $x; }
     $pe = function ($e) { return is_array($e) && trim((string)($e['n'] ?? '')) !== '' ? ['n' => txt($e['n'], 120), 'c' => txt($e['c'] ?? '', 120)] : null; };
     $pl = [];
@@ -2116,10 +2195,13 @@ case 'l_list':
     out(['ok' => true, 'live' => $list]);
 
 case 'k_list':     // Kämpfer-Datenbank lesen (geschlossen)
-    if (!kAllowed($in)) fail('Die Kämpfer-Datenbank sehen nur Veranstalter, Supervisoren und die WBU – bitte einloggen', 403);
-    $L = withKaempfer(function (&$k) { $o = [];
-        foreach ($k as $id => $x) $o[] = ['id' => $id, 'name' => $x['name'], 'vn' => $x['vn'] ?? '', 'nn' => $x['nn'] ?? '', 'geb' => $x['geb'] ?? '', 'sex' => $x['sex'] ?? '',
-            'gym' => $x['gym'] ?? '', 'land' => $x['land'] ?? '', 'kg' => $x['kg'] ?? '', 'sp' => $x['sp'] ?? '', 'klasse' => $x['klasse'] ?? '', 'trainer' => $x['trainer'] ?? '', 'n' => $x['n'] ?? 0, 'at' => $x['at'] ?? 0];
+    $tg = kAllowed($in) ? '' : kTrainerGym($in);
+    if (!kAllowed($in) && $tg === '') fail('Die Kämpfer-Datenbank sehen nur Veranstalter, Supervisoren, Trainer (eigenes Gym) und die WBU – bitte einloggen', 403);
+    $L = withKaempfer(function (&$k) use ($tg) { $o = []; kAusResultaten($k);
+        foreach ($k as $id => $x) { if ($tg !== '' && kNorm($x['gym'] ?? '') !== $tg) continue; $P = kProfil($id, $x); $bil = [];
+            foreach ($P['rec'] as $a => $v) $bil[] = $a . ' ' . $v['sum']['w'] . '-' . $v['sum']['l'] . '-' . $v['sum']['d'];
+            $o[] = ['bil' => implode(' · ', $bil), 'sperre' => $P['sperre'], 'titel' => count($P['titel']), 'id' => $id, 'name' => $x['name'], 'vn' => $x['vn'] ?? '', 'nn' => $x['nn'] ?? '', 'geb' => $x['geb'] ?? '', 'sex' => $x['sex'] ?? '',
+            'gym' => $x['gym'] ?? '', 'land' => $x['land'] ?? '', 'kg' => $x['kg'] ?? '', 'sp' => $x['sp'] ?? '', 'klasse' => $x['klasse'] ?? '', 'trainer' => $x['trainer'] ?? '', 'n' => $x['n'] ?? 0, 'at' => $x['at'] ?? 0]; }
         return $o; });
     usort($L, function ($a, $b) { return strcasecmp($a['gym'] ?: 'zzz', $b['gym'] ?: 'zzz') ?: strcasecmp($a['name'], $b['name']); });
     header('Cache-Control: no-store');
@@ -2173,6 +2255,54 @@ case 'k_suggest':  // Namensvorschläge beim Eintippen – gegen Doppel-Einträg
 case 'k_del':      // Eintrag löschen (nur WBU-Passwort)
     if (!hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) fail('Löschen nur mit dem WBU-Passwort', 403);
     withKaempfer(function (&$k) use ($in) { unset($k[(string)($in['id'] ?? '')]); });
+    out(['ok' => true]);
+
+case 'k_profil':   // Sportlerprofil: Bilanz je Sportart, Kämpfe, Titel, Sperre, Gewichte, Änderungen
+    $tg = kAllowed($in) ? '' : kTrainerGym($in); $su = kIsSuper($in);
+    if (!kAllowed($in) && $tg === '') fail('Nicht berechtigt', 403);
+    $id = (string)($in['id'] ?? '');
+    $r = withKaempfer(function (&$k) use ($id, $tg, $su, $in) { if (!isset($k[$id])) fail('Kämpfer nicht gefunden', 404); $x = $k[$id];
+        if ($tg !== '' && kNorm($x['gym'] ?? '') !== $tg) fail('Nur Kämpfer aus deinem Gym', 403);
+        $me = clubByToken($in['tok'] ?? ''); $trainerHier = $me && $me['rolle'] === 'trainer' && kNorm($me['club'] ?? '') === kNorm($x['gym'] ?? '');
+        return kProfil($id, $x) + ['name' => $x['name'], 'gym' => $x['gym'] ?? '', 'kgh' => $x['kgh'] ?? [], 'log' => array_slice($x['log'] ?? [], -30),
+            'darf' => $su ? 'super' : ($trainerHier ? 'trainer' : ''), 'arten' => K_ARTEN]; });
+    out(['ok' => true] + $r);
+
+case 'k_bilanz':   // Bilanz von anderswo nachtragen: Trainer (gleiches Gym) nur nach oben, WBU auch nach unten
+    $su = kIsSuper($in); $me = clubByToken($in['tok'] ?? '');
+    $art = (string)($in['art'] ?? ''); if (!in_array($art, K_ARTEN, true)) fail('Unbekannte Sportart');
+    $neu = []; foreach (kLeer() as $f => $_) $neu[$f] = max(0, min(999, (int)($in['v'][$f] ?? 0)));
+    if ($neu['wko'] > $neu['w'] || $neu['lko'] > $neu['l']) fail('„davon K.O.“ kann nicht größer sein als Siege bzw. Niederlagen');
+    withKaempfer(function (&$k) use ($in, $art, $neu, $su, $me) { $id = (string)($in['id'] ?? ''); if (!isset($k[$id])) fail('Kämpfer nicht gefunden', 404);
+        $x = &$k[$id]; $alt = array_merge(kLeer(), array_map('intval', (array)($x['rec'][$art] ?? [])));
+        if (!$su) { if (!$me || $me['rolle'] !== 'trainer' || kNorm($me['club'] ?? '') !== kNorm($x['gym'] ?? '')) fail('Die Bilanz ändert nur der Trainer aus dem gleichen Gym (Rolle „Trainer“) oder die WBU', 403);
+            foreach ($neu as $f => $v) if ($v < $alt[$f]) fail('Die Bilanz kann nur ergänzt werden – Zahlen dürfen nicht kleiner werden. Fehler bitte an die WBU melden.'); }
+        $x['rec'][$art] = $neu;
+        $x['log'][] = ['at' => time(), 'by' => $su ? 'WBU' : ($me['trainer'] . ' (' . $me['club'] . ')'), 'was' => "Bilanz $art (extern): " . implode('-', [$alt['w'], $alt['l'], $alt['d']]) . ' → ' . implode('-', [$neu['w'], $neu['l'], $neu['d']])];
+        $x['log'] = array_slice($x['log'], -60); });
+    out(['ok' => true]);
+
+case 'k_titel':    // Titel eintragen: WBU-Titel nur WBU; Trainer nur Titel anderer Verbände (Vermerk „extern“) – löschen nur WBU
+    $su = kIsSuper($in); $me = clubByToken($in['tok'] ?? '');
+    withKaempfer(function (&$k) use ($in, $su, $me) { $id = (string)($in['id'] ?? ''); if (!isset($k[$id])) fail('Kämpfer nicht gefunden', 404); $x = &$k[$id];
+        $trainer = $me && $me['rolle'] === 'trainer' && kNorm($me['club'] ?? '') === kNorm($x['gym'] ?? '');
+        if (!$su && !$trainer) fail('Titel trägt nur der Trainer aus dem gleichen Gym oder die WBU ein', 403);
+        if (isset($in['del'])) { if (!$su) fail('Titel löschen nur die WBU', 403); $t = $x['titel'][(int)$in['del']] ?? null; array_splice($x['titel'], (int)$in['del'], 1);
+            $x['log'][] = ['at' => time(), 'by' => 'WBU', 'was' => 'Titel gelöscht: ' . ($t['t'] ?? '')]; return; }
+        $t = txt($in['t'] ?? '', 160); if (mb_strlen($t) < 3) fail('Bitte den Titel eintragen');
+        $ext = $su ? (int)!empty($in['ext']) : 1;
+        if (!$su && preg_match('/\bwbu\b|world boxing union/i', $t)) fail('WBU-Titel trägt nur die WBU ein');
+        $x['titel'][] = ['t' => $t, 'j' => txt($in['j'] ?? '', 4), 'ext' => $ext, 'by' => $su ? 'WBU' : $me['trainer']];
+        $x['log'][] = ['at' => time(), 'by' => $su ? 'WBU' : $me['trainer'], 'was' => 'Titel eingetragen: ' . $t . ($ext ? ' (extern)' : '')]; });
+    out(['ok' => true]);
+
+case 'k_sperre':   // nur WBU: Sperre von Hand eintragen (z. B. K.O. bei einem anderen Verband) oder alle Sperren aufheben (ärztliche Freigabe)
+    if (!kIsSuper($in)) fail('Sperren ändert nur die WBU', 403);
+    withKaempfer(function (&$k) use ($in) { $id = (string)($in['id'] ?? ''); if (!isset($k[$id])) fail('Kämpfer nicht gefunden', 404); $x = &$k[$id];
+        if (!empty($in['frei'])) { $x['frei'] = time(); $x['log'][] = ['at' => time(), 'by' => 'WBU', 'was' => 'Sperre aufgehoben' . (($g = txt($in['grund'] ?? '', 120)) ? ": $g" : '')]; return; }
+        $bis = (string)($in['bis'] ?? ''); if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $bis)) fail('Bitte ein Datum wählen');
+        $x['sperren'][] = ['bis' => $bis, 'grund' => txt($in['grund'] ?? '', 160) ?: 'von der WBU eingetragen', 'at' => time()];
+        $x['log'][] = ['at' => time(), 'by' => 'WBU', 'was' => 'Sperre bis ' . date('d.m.Y', kTs($bis)) . ' eingetragen']; });
     out(['ok' => true]);
 
 default:
