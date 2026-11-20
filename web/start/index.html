@@ -380,7 +380,9 @@ function clkAt(st,now){
   if(st.run&&ph!=='idle'&&ph!=='done'){r=st.rem-(now-st.t0);
     while(r<=0){if(ph==='round'){if(rd>=st.rounds){ph='done';r=0;break}ph='pause';r+=st.pSec*1000}else if(ph==='pause'){ph='round';rd++;r+=st.rSec*1000}else break}}
   const m=st.med||{};const med=Math.min(600000,(m.acc||0)+(m.run?now-m.t0:0));
-  return {phase:ph,round:rd,rem:Math.max(0,r),run:st.run&&ph!=='done'&&ph!=='idle',med,medOn:!!m.run||(!!m.end&&med>0&&now-m.end<10000),medRun:!!m.run,medLast:m.run?0:med}}
+  return {phase:ph,round:rd,rem:Math.max(0,r),run:st.run&&ph!=='done'&&ph!=='idle',fresh:clkFresh(st),med,medOn:!!m.run||(!!m.end&&med>0&&now-m.end<10000),medRun:!!m.run,medLast:m.run?0:med}}
+// Runde steht auf voller Zeit und wurde noch nicht gestartet (z. B. nach „Runde neu“ / „Nächste Runde“) = BEREIT, nicht gestoppt
+function clkFresh(st){return !!st&&st.phase==='round'&&!st.run&&st.rem>=(st.rSec||0)*1000-500}
 // Aktionen (geben neuen Zustand zurück)
 function clkFreeze(st,now){const v=clkAt(st,now);return Object.assign({},st,{phase:v.phase,round:v.round,rem:v.rem,t0:now})}
 function clkStart(st,now){let s=clkFreeze(st,now);const m=s.med||{};if(m.run)s.med={run:false,t0:0,acc:Math.min(600000,(m.acc||0)+now-m.t0),end:now};if(s.phase==='idle'||s.phase==='done')s=Object.assign(s,{phase:'round',round:s.phase==='done'?1:s.round,rem:s.rSec*1000});return Object.assign(s,{run:true,t0:now})}
@@ -423,8 +425,8 @@ function clkView(st,now,logo,title){
   return `<div class="wt ${v.medOn?'withmed':''}"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${st.no?'Kampf '+E(st.no):'WBU Time'}${st.ring?' · '+(/^\d+$/.test(String(st.ring))?'Ring '+E(st.ring):E(st.ring)):''}<small>${E(st.kl||title||'')}</small></div></div>
    <div class="ec"><div class="r"><small>ROTE ECKE</small>${E(st.red)||'&nbsp;'}</div><div class="b"><small>BLAUE ECKE</small>${E(st.blue)||'&nbsp;'}</div></div>
    <div class="main"><div class="box rd"><div class="lab">${v.phase==='pause'?'GLEICH RUNDE':'RUNDE'}</div><div class="big">${v.phase==='pause'?v.round+1:v.round}</div><div class="of">von ${st.rounds}</div></div>
-     <div class="box tm ${cls}"><div class="lab">${v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'?'BEREIT':'ZEIT'}</div>
-       <div class="big">${v.phase==='done'?'ENDE':clkFmt(v.rem)}</div><div class="st">${!v.run&&v.phase!=='idle'&&v.phase!=='done'?'ZEIT GESTOPPT':''}</div></div></div>
+     <div class="box tm ${cls}"><div class="lab">${v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'||v.fresh?'BEREIT':'ZEIT'}</div>
+       <div class="big">${v.phase==='done'?'ENDE':clkFmt(v.rem)}</div><div class="st">${!v.run&&!v.fresh&&v.phase!=='idle'&&v.phase!=='done'?'ZEIT GESTOPPT':''}</div></div></div>
    ${v.medOn?`<div class="med"><div class="lab">⏱ TIMEOUT${v.med>=600000?' – 10 MIN ERREICHT':v.medRun?'':' – BEENDET'}</div><div class="big">${clkFmtUp(v.med)}</div></div>`:''}</div>`}
 // ---------- Signale (werden im Browser erzeugt, keine Tondateien nötig) ----------
 let CLK_AC=null,CLK_OUT=null,KNOCK_VOL=4;
