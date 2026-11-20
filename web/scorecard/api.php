@@ -213,6 +213,7 @@ function kArt($txt, $default) {
     return $default;
 }
 function kTs($d) { $d = (string)$d; if (preg_match('/^(\d{2})\.(\d{2})\.(\d{4})$/', $d, $m)) $d = "$m[3]-$m[2]-$m[1]"; return strtotime(substr($d, 0, 10)) ?: 0; }
+function ttsKey() { global $DIR, $CFG; $k = is_array($CFG) ? (string)($CFG['gtts_key'] ?? '') : ''; if ($k === '') $k = trim((string)@file_get_contents("$DIR/tts_key.txt")); return $k; }
 function kIsSuper($in) { if (hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) return true; return isSuper(clubByToken($in['tok'] ?? '')); }
 /** Alle Kämpfe aus den Resultaten (auch alte, importierte) je Name: Art, Ergebnis, K.O., Titel */
 function kResIndex() {
@@ -2271,6 +2272,39 @@ case 'k_del':      // Eintrag löschen (nur WBU-Passwort)
     out(['ok' => true]);
 
 // ===================== WBU Sports: Veranstaltungen auf dem Server (für alle Geräte, Supervisor-Zugang) =====================
+case 'tts_info':  // Ringsprecher: ist eine Google-Stimme eingerichtet?
+    out(['ok' => true, 'google' => ttsKey() !== '']);
+
+case 'tts_key':   // Ringsprecher: Google-Schlüssel speichern (nur WBU-Passwort / WBU-Konto)
+    if (!kIsSuper($in)) fail('Nur mit dem WBU-Supervisor-Passwort', 403);
+    $k = trim((string)($in['key'] ?? ''));
+    if ($k !== '' && !preg_match('/^[A-Za-z0-9_\-]{20,80}$/', $k)) fail('Der Schlüssel sieht nicht richtig aus');
+    if ($k === '') @unlink("$DIR/tts_key.txt"); else file_put_contents("$DIR/tts_key.txt", $k, LOCK_EX);
+    out(['ok' => true, 'google' => ttsKey() !== '']);
+
+case 'tts':       // Ringsprecher: Text -> MP3 (Google Chirp 3 HD, kostenlos bis 1 Mio. Zeichen/Monat), mit Zwischenspeicher
+    $txt = trim(mb_substr((string)($in['text'] ?? ''), 0, 400));
+    $lang = (string)($in['lang'] ?? 'de');
+    $VO = ['de' => 'de-DE', 'en' => 'en-US', 'es' => 'es-ES', 'fr' => 'fr-FR', 'ru' => 'ru-RU'];
+    if ($txt === '' || !isset($VO[$lang])) fail('Kein Text');
+    $key = ttsKey(); if ($key === '') fail('Keine Google-Stimme eingerichtet', 409);
+    $voice = $VO[$lang] . '-Chirp3-HD-' . (preg_replace('/[^A-Za-z]/', '', (string)($CFG['tts_voice'] ?? '')) ?: 'Fenrir');
+    @mkdir("$DIR/tts", 0755, true);
+    $f = "$DIR/tts/" . sha1($voice . '|' . $txt) . '.mp3';
+    if (!is_file($f)) {
+        // Schutz: nur angemeldete Veranstalter/Supervisor dürfen neue Ansagen erzeugen
+        if (!kIsSuper($in) && !clubByToken($in['tok'] ?? '')) fail('Bitte anmelden', 401);
+        $req = json_encode(['input' => ['text' => $txt], 'voice' => ['languageCode' => $VO[$lang], 'name' => $voice],
+            'audioConfig' => ['audioEncoding' => 'MP3', 'speakingRate' => 0.9]], JSON_UNESCAPED_UNICODE);
+        $c = curl_init('https://texttospeech.googleapis.com/v1/text:synthesize?key=' . urlencode($key));
+        curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => $req, CURLOPT_TIMEOUT => 20,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json']]);
+        $r = json_decode((string)curl_exec($c), true); $code = curl_getinfo($c, CURLINFO_HTTP_CODE); curl_close($c);
+        if ($code !== 200 || empty($r['audioContent'])) fail('Google-Stimme: ' . ($r['error']['message'] ?? ('Fehler ' . $code)), 502);
+        file_put_contents($f, base64_decode($r['audioContent']), LOCK_EX);
+    }
+    out(['ok' => true, 'mp3' => base64_encode((string)file_get_contents($f))]);
+
 case 'ws_save':   // ganze Veranstaltung speichern – Veranstalter (Konto), Supervisor (WBU-Passwort) oder WBU
 case 'ws_list':
 case 'ws_get':
