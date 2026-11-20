@@ -1,7 +1,7 @@
 {
-  "versionCode": 230,
-  "versionName": "1.230",
+  "versionCode": 231,
+  "versionName": "1.231",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Leitstand aufgeräumt: kein doppeltes Zeitnahme-Fenster mehr, alles im Leitstand. Ringsprecher mit Stimmenauswahl, Gong-Knopf."
+  "notes": "Leitstand: Fernseher-Leiste mit WBU Live, WBU Time 1 und WBU Time 2 – auch ohne Internet (Fenster auf den Fernseher per HDMI)."
 }
