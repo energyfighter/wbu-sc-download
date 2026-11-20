@@ -1,6 +1,6 @@
 {
-  "versionCode": 231,
-  "versionName": "1.231",
+  "versionCode": 232,
+  "versionName": "1.232",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Leitstand: Fernseher-Leiste mit WBU Live, WBU Time 1 und WBU Time 2 – auch ohne Internet (Fenster auf den Fernseher per HDMI)."
+  "notes": "Veranstaltungspause im Leitstand (PAUSE mit Countdown auf WBU Time/Live). Ringsprecher: erst „Ringfrei“, dann Gong – am Rundenende Gong, dann „Ende Runde“."
 }
