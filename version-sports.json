@@ -1,6 +1,6 @@
 {
-  "versionCode": 233,
-  "versionName": "1.233",
+  "versionCode": 234,
+  "versionName": "1.234",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Testveranstaltung für alle zum Ausprobieren. Veranstaltungspause im Leitstand. Ringsprecher: erst „Ringfrei“, dann Gong – am Rundenende Gong, dann „Ende Runde“."
+  "notes": "Ringsprecher: neue Ansagetexte in 5 Sprachen, Siegerverkündung (🏆) nach dem Ergebnis, Regler für die Tonlage (dunkler/heller)."
 }

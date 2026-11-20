@@ -1,7 +1,7 @@
 {
-  "versionCode": 233,
-  "versionName": "1.233",
+  "versionCode": 234,
+  "versionName": "1.234",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Testveranstaltung für alle zum Ausprobieren. Veranstaltungspause im Leitstand. Ringsprecher: erst „Ringfrei“, dann Gong – am Rundenende Gong, dann „Ende Runde“."
+  "notes": "Ringsprecher: neue Ansagetexte in 5 Sprachen, Siegerverkündung (🏆) nach dem Ergebnis, Regler für die Tonlage (dunkler/heller)."
 }
