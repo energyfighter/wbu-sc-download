@@ -214,7 +214,7 @@ function kArt($txt, $default) {
 }
 function kTs($d) { $d = (string)$d; if (preg_match('/^(\d{2})\.(\d{2})\.(\d{4})$/', $d, $m)) $d = "$m[3]-$m[2]-$m[1]"; return strtotime(substr($d, 0, 10)) ?: 0; }
 define('TTS_VOICES', ['Fenrir','Algenib','Orus','Alnilam','Charon','Iapetus','Umbriel','Puck','Enceladus','Rasalgethi','Sadaltager','Schedar','Achird','Algieba','Zubenelgenubi']);
-function ttsCfg() { global $DIR; $c = json_decode((string)@file_get_contents("$DIR/tts_cfg.json"), true); return ['voice' => (is_array($c) && in_array($c['voice'] ?? '', TTS_VOICES, true)) ? $c['voice'] : 'Fenrir', 'rate' => is_array($c) && isset($c['rate']) ? (float)$c['rate'] : 0.9, 'pitch' => is_array($c) && isset($c['pitch']) ? (float)$c['pitch'] : 1.0, 'nrate' => is_array($c) && isset($c['nrate']) ? (float)$c['nrate'] : 0.75, 'npitch' => is_array($c) && isset($c['npitch']) ? (float)$c['npitch'] : null]; }
+function ttsCfg() { global $DIR; $c = json_decode((string)@file_get_contents("$DIR/tts_cfg.json"), true); return ['voice' => (is_array($c) && in_array($c['voice'] ?? '', TTS_VOICES, true)) ? $c['voice'] : 'Fenrir', 'rate' => is_array($c) && isset($c['rate']) ? (float)$c['rate'] : 0.9, 'pitch' => is_array($c) && isset($c['pitch']) ? (float)$c['pitch'] : 1.0, 'nrate' => is_array($c) && isset($c['nrate']) ? (float)$c['nrate'] : 0.75, 'npitch' => is_array($c) && isset($c['npitch']) ? (float)$c['npitch'] : null, 'vowel' => is_array($c) && !empty($c['vowel'])]; }
 function ttsKey() { global $DIR, $CFG; $k = is_array($CFG) ? (string)($CFG['gtts_key'] ?? '') : ''; if ($k === '') $k = trim((string)@file_get_contents("$DIR/tts_key.txt")); return $k; }
 function kIsSuper($in) { if (hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')))) return true; return isSuper(clubByToken($in['tok'] ?? '')); }
 /** Alle Kämpfe aus den Resultaten (auch alte, importierte) je Name: Art, Ergebnis, K.O., Titel */
@@ -2275,7 +2275,7 @@ case 'k_del':      // Eintrag löschen (nur WBU-Passwort)
 
 // ===================== WBU Sports: Veranstaltungen auf dem Server (für alle Geräte, Supervisor-Zugang) =====================
 case 'tts_info':  // Ringsprecher: ist eine Google-Stimme eingerichtet? Welche Stimme / welches Tempo?
-    $tc = ttsCfg(); out(['ok' => true, 'google' => ttsKey() !== '', 'voice' => $tc['voice'], 'rate' => $tc['rate'], 'pitch' => $tc['pitch'], 'nrate' => $tc['nrate'], 'npitch' => $tc['npitch'], 'voices' => TTS_VOICES]);
+    $tc = ttsCfg(); out(['ok' => true, 'google' => ttsKey() !== '', 'voice' => $tc['voice'], 'rate' => $tc['rate'], 'pitch' => $tc['pitch'], 'nrate' => $tc['nrate'], 'npitch' => $tc['npitch'], 'vowel' => $tc['vowel'], 'voices' => TTS_VOICES]);
 
 case 'tts_key':   // Ringsprecher: Google-Schlüssel speichern (nur WBU-Passwort / WBU-Konto)
     if (!kIsSuper($in)) fail('Nur mit dem WBU-Supervisor-Passwort', 403);
@@ -2283,6 +2283,7 @@ case 'tts_key':   // Ringsprecher: Google-Schlüssel speichern (nur WBU-Passwort
     if ($k !== '' && !preg_match('/^[A-Za-z0-9_\-]{20,80}$/', $k)) fail('Der Schlüssel sieht nicht richtig aus');
     if (!empty($in['delKey'])) @unlink("$DIR/tts_key.txt"); elseif ($k !== '') file_put_contents("$DIR/tts_key.txt", $k, LOCK_EX);
     if (isset($in['voice']) || isset($in['rate']) || isset($in['pitch'])) { $tc = ttsCfg();
+        if (isset($in['vowel'])) $tc['vowel'] = !empty($in['vowel']);
         if (isset($in['nrate'])) $tc['nrate'] = max(0.6, min(1.1, round((float)$in['nrate'], 2)));
         if (isset($in['npitch'])) $tc['npitch'] = max(0.8, min(1.1, round((float)$in['npitch'], 2)));
         if (isset($in['pitch'])) $tc['pitch'] = max(0.8, min(1.1, round((float)$in['pitch'], 2)));
