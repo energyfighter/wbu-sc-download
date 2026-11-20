@@ -1,7 +1,7 @@
 {
-  "versionCode": 237,
-  "versionName": "1.237",
+  "versionCode": 238,
+  "versionName": "1.238",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Ringsprecher: Gong beim Rundenstart kommt sicher, auch wenn die Stimme hängt. Neu: Schalter „Vokale im Namen dehnen“ zum Ausprobieren."
+  "notes": "Uhr: Nach „Runde neu“ oder „Nächste Runde“ steht BEREIT und START; beim Start kommen „Ringfrei – Runde X“ und der Gong."
 }
