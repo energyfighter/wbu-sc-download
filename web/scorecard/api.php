@@ -2231,7 +2231,7 @@ case 'shows':      // öffentlich: kommende Galas und Turniere aus WBU Sports f�
     out(['ok' => true, 'shows' => $list]);
 
 case 'yt_live':   // öffentlich: YouTube-Livestreams der Veranstaltungen (Veranstaltungstag) – läuft der Stream gerade?
-    $heute = date('Y-m-d'); $gestern = date('Y-m-d', time() - 86400); $out = []; $cf = "$DIR/ytlive.json";
+    $heute = date('Y-m-d'); $gestern = (int)date('G') < 6 ? date('Y-m-d', time() - 86400) : '-'; $out = [];   // Folgetag nur bis 6 Uhr morgens (lange Shows) $cf = "$DIR/ytlive.json";
     $cache = json_decode((string)@file_get_contents($cf), true) ?: []; $neu = 0;
     foreach (glob("$DIR/lv_*.json") as $f) { $l = json_decode((string)@file_get_contents($f), true); $sn = is_array($l) ? ($l['snap'] ?? null) : null;
         if (!is_array($sn)) continue; $yt = trim((string)($sn['yt'] ?? '')); $d = substr((string)($sn['date'] ?? ''), 0, 10);
