@@ -1,7 +1,7 @@
 {
-  "versionCode": 228,
-  "versionName": "1.228",
+  "versionCode": 229,
+  "versionName": "1.229",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Gong-Knopf im Leitstand (jeder Klick läutet, auch bei laufender Uhr). Dialoge immer im sichtbaren Bereich. Ringsprecher-Stimme zum Testen."
+  "notes": "Ringsprecher: Stimme auswählen und anhören, Sprechtempo einstellbar. Gong-Knopf im Leitstand."
 }
