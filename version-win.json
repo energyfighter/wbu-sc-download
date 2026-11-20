@@ -1,7 +1,7 @@
 {
-  "versionCode": 222,
-  "versionName": "1.222",
+  "versionCode": 226,
+  "versionName": "1.226",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Update ohne Doppelabfrage: Die App startet die Installation nicht mehr ein zweites Mal. Xiaomi-Handys: bei „Riskante App“ einfach „Überspringen“, dann „Aktualisieren“."
+  "notes": "Neu: Ringsprecher-Stimme – Ansage per Knopf (Kampf, rote und blaue Ecke), „Ringfrei“ und „Seconds out“ automatisch mit der Uhr, in 5 Sprachen."
 }
