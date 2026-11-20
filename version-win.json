@@ -1,7 +1,7 @@
 {
-  "versionCode": 218,
-  "versionName": "1.218",
+  "versionCode": 220,
+  "versionName": "1.220",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Fehlerbehebung: Update wurde von Google Play Protect blockiert – behoben. Alles in 5 Sprachen (DE, EN, ES, FR, RU)."
+  "notes": "Supervisor am Laptop/PC: eigene Scorecard direkt unter dem Leitstand in WBU Sports (automatisch angemeldet, PIN groß) – kein Handy nötig. Veranstaltungen auf dem Server, Supervisor hat auf jedem Gerät vollen Zugriff. Scorecard-Anmeldung leer, bis eine Show gewählt ist."
 }
