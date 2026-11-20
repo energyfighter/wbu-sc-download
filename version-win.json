@@ -1,7 +1,7 @@
 {
-  "versionCode": 220,
-  "versionName": "1.220",
+  "versionCode": 221,
+  "versionName": "1.221",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Supervisor am Laptop/PC: eigene Scorecard direkt unter dem Leitstand in WBU Sports (automatisch angemeldet, PIN groß) – kein Handy nötig. Veranstaltungen auf dem Server, Supervisor hat auf jedem Gerät vollen Zugriff. Scorecard-Anmeldung leer, bis eine Show gewählt ist."
+  "notes": "Rollen beim Supervisor-Login: Supervisor sieht den Leitstand live mit und hat seine Scorecard darunter, Veranstalter bedient Uhr und Monitore. Updates noch zuverlässiger (neue Version wird geprüft, bevor installiert wird)."
 }
