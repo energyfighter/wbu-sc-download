@@ -415,6 +415,10 @@ const CLK_CSS=`.wt{position:fixed;inset:0;background:#e9ebef;color:#000;font-fam
 function clkView(st,now,logo,title){
   if(!st)return `<div class="wt"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">WBU Time<small>${title||''}</small></div></div><div class="main" style="grid-template-columns:1fr"><div class="box"><div class="lab">KEIN KAMPF AKTIV</div></div></div></div>`;
   const v=clkAt(st,now),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  if(st.pz&&(v.phase==='done'||v.phase==='idle'||!st.mid)){const left=st.pz.until?Math.max(0,st.pz.until-now):null,nx=st.pz.next||{};   // Veranstaltungspause
+    return `<div class="wt"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${E(title||'WBU Time')}<small>&nbsp;</small></div></div>
+     <div class="main" style="grid-template-columns:1fr"><div class="box tm pause"><div class="lab">PAUSE</div><div class="big">${left!=null&&left>0?clkFmt(left):'⏸'}</div><div class="st">${left!=null&&left>0?'Weiter in':'Gleich geht es weiter'}</div></div></div>
+     ${nx.red?`<div class="ec"><div class="r"><small>ALS NÄCHSTES · KAMPF ${E(nx.no)}</small>${E(nx.red)}</div><div class="b"><small>${E(nx.kl||'')}</small>${E(nx.blue)}</div></div>`:''}</div>`}
   const cls=v.phase==='pause'?'pause':v.phase==='done'?'done':v.rem<=10000&&v.phase==='round'?'last':'';
   return `<div class="wt ${v.medOn?'withmed':''}"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${st.no?'Kampf '+E(st.no):'WBU Time'}${st.ring?' · '+(/^\d+$/.test(String(st.ring))?'Ring '+E(st.ring):E(st.ring)):''}<small>${E(st.kl||title||'')}</small></div></div>
    <div class="ec"><div class="r"><small>ROTE ECKE</small>${E(st.red)||'&nbsp;'}</div><div class="b"><small>BLAUE ECKE</small>${E(st.blue)||'&nbsp;'}</div></div>
