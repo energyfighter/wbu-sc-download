@@ -27,7 +27,7 @@ $BASE = 'https://raw.githubusercontent.com/energyfighter/wbu-sc-download/main/we
 $WEBROOT = dirname(__DIR__);                      // Ordner, in dem "scorecard" liegt
 // Nur diese Dateien dürfen ersetzt werden (Ziel relativ zum Webroot)
 $ALLOWED = [
-    'scorecard/index.html', 'scorecard/api.php', 'scorecard/manifest.json', 'scorecard/icon-192.png', 'scorecard/.htaccess',
+    'scorecard/index.html', 'scorecard/api.php', 'scorecard/fonts/wbu-r.ttf', 'scorecard/fonts/wbu-b.ttf', 'scorecard/manifest.json', 'scorecard/icon-192.png', 'scorecard/.htaccess',
     'veranstalter/index.html', 'veranstalter/.htaccess',
     'anmeldung/index.html', 'anmeldung/.htaccess', 'scorecard/update.php',
     'live/index.html', 'live/.htaccess', 'results/index.html', 'results/.htaccess', 'rankings/index.html', 'rankings/.htaccess', 'start/index.html', 'start/.htaccess', 'coin/index.html', 'coin/fight-quiz.html', 'coin/games.html',

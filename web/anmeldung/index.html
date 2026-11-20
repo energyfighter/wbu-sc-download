@@ -98,6 +98,9 @@ table.l tr.own td{background:#fff7df}.thumb{width:44px;height:52px;object-fit:co
   // Druck-Fenster (Urkunden, Akkreditierungskarten …) nach dem Schreiben übersetzen
   window.WBU_TRDOC=function(doc){if(L==='de'||!doc||!doc.body)return;try{doc.documentElement.lang=L;walkIn(doc,doc.body);if(doc.title)doc.title=tr(doc.title)}catch(e){}};
   // jsPDF-Berichte: alle Texte übersetzen; Russisch mit eingebetteter Schrift (kyrillisch)
+  // Kyrillische PDF-Schrift als eigene Datei (fonts/), nur bei Russisch nachladen
+  if(L==='ru'&&!window.WBU_PDF_FONT){var ld=function(f,cb){try{var x=new XMLHttpRequest();x.open('GET','fonts/'+f,true);x.responseType='arraybuffer';x.onload=function(){try{var u=new Uint8Array(x.response),s='',i;for(i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));cb(btoa(s))}catch(e){}};x.send()}catch(e){}};
+    ld('wbu-r.ttf',function(r){ld('wbu-b.ttf',function(b){window.WBU_PDF_FONT={r:r,b:b}})})}
   window.WBU_TRPDF=function(d){if(L==='de'||!d)return d;var ot=d.text.bind(d);
     d.text=function(t){var a=[].slice.call(arguments);a[0]=Array.isArray(t)?t.map(tr):tr(t);return ot.apply(null,a)};
     if(L==='ru'&&window.WBU_PDF_FONT){try{d.addFileToVFS('wbu-r.ttf',WBU_PDF_FONT.r);d.addFont('wbu-r.ttf','WBUF','normal');d.addFileToVFS('wbu-b.ttf',WBU_PDF_FONT.b);d.addFont('wbu-b.ttf','WBUF','bold');
@@ -1922,7 +1925,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('184')||0;
+const WEB_VERSION=Number('185')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
