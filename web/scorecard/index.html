@@ -579,6 +579,7 @@ function svSave(){const v=S.sv,ib=get('wbuInbox',[]),c=ib.find(x=>x.id===v.id);i
   if(!Object.keys(c.svFix).length)delete c.svFix;c.rounds[v.i]=n;set('wbuInbox',ib);S.sv=null;closeSheet();render()}
 function svNote(c){return c.svFix?`<div class="note warn" style="text-align:left;margin-top:6px">Vom Supervisor korrigiert: Runde ${Object.keys(c.svFix).map(k=>+k+1).join(', ')}</div>`:''}
 // ---------- Papier-Modus: Supervisor tippt die Zettel der Punktrichter ein ----------
+function namePool(){const e=get('wbuEvent',{});return [...new Set([...(e.refs||[]),...get('wbuPaperNames',[])].map(x=>String(x||'').trim()).filter(Boolean))]}
 function PAPER(){return !!get('wbuPaper',false)}
 function ppGet(C){const m=get('wbuMeta',{})[C]||{},n=jc(),P=m.paper?JSON.parse(JSON.stringify(m.paper)):{j:get('wbuPaperJ',[]).slice(0,n),s:[]};while(P.j.length<n)P.j.push('');P.j=P.j.slice(0,n);return P}
 function ppNames(P){const seen={};return P.j.map((x,i)=>{let v=(x||'').trim()||('Punktrichter '+(i+1));if(seen[v])v+=' ('+(i+1)+')';seen[v]=1;return v})}
@@ -589,6 +590,7 @@ function ppSync(C,P){const m=get('wbuMeta',{})[C]||{},names=ppNames(P),ib=get('w
     const old=i>=0?ib[i]:{},card={id,judge:nm,rounds:rs,end:null,done:R?rs.length>=R:true,rev:(old.rev||0)+1,ts:Date.now(),paper:true,at:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})};
     if(i>=0)ib[i]=card;else ib.push(card)});
   set('wbuInbox',ib)}
+function ppPick(C,v){const n=jc(),j=Math.min(n-1,S.ppSel||0);S.ppSel=(j+1)%n;ppName(C,j,v)}
 function ppName(C,j,v){const P=ppGet(C);P.j[j]=v;ppSave(C,P);render()}
 function paperTable(C){const P=ppGet(C),m=get('wbuMeta',{})[C]||{},n=jc(),names=ppNames(P),nm=get('wbuPaperNames',[]);
   let filled=0;(P.s||[]).forEach((row,r)=>{if((row||[]).some(Boolean))filled=r+1});const R=Math.max(1,Math.min(12,m.rounds||filled+1));
@@ -598,8 +600,8 @@ function paperTable(C){const P=ppGet(C),m=get('wbuMeta',{})[C]||{},n=jc(),names=
   const tot=names.map((_,j)=>{let A=0,B=0;(P.s||[]).forEach(row=>{const x=(row||[])[j];if(x){const[a,b]=calc(x.r,x.b,x.dr,x.db);A+=a;B+=b}});return `<td style="font-weight:800;color:var(--gold)">${A}:${B}</td>`}).join('');
   return `<h3>✍️ Zettel-Wertung</h3><div class="card">
   <div class="muted" style="font-size:13px">Punktrichter – stehen vom letzten Kampf schon drin, nur bei Wechsel ändern</div>
-  <datalist id="ppnl">${nm.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
-  <div style="display:grid;grid-template-columns:repeat(${n},1fr);gap:6px;margin:6px 0 10px">${P.j.map((x,j)=>`<input list="ppnl" placeholder="Punktrichter ${j+1}" value="${esc(x)}" onchange="ppName(${C},${j},this.value)">`).join('')}</div>
+  <div style="display:grid;grid-template-columns:repeat(${n},1fr);gap:6px;margin:6px 0 6px">${P.j.map((x,j)=>`<input placeholder="Punktrichter ${j+1}" value="${esc(x)}" onfocus="S.ppSel=${j};document.querySelectorAll('.ppin').forEach((e,k)=>e.style.borderColor=k===${j}?'var(--gold)':'')" class="ppin" style="${(S.ppSel||0)===j?'border-color:var(--gold)':''}" onchange="ppName(${C},${j},this.value)">`).join('')}</div>
+  ${namePool().length?`<div class="muted" style="font-size:12px">Gespeicherte Namen – Feld oben wählen, dann Namen antippen</div><div class="chips" style="margin-bottom:8px">${namePool().map(x=>`<div class="chip ${P.j.includes(x)?'on':''}" onclick="ppPick(${C},${esc(JSON.stringify(x)).replace(/"/g,"'")})">${esc(x)}</div>`).join('')}</div>`:''}
   <table><tr><th>Rd</th>${names.map(x=>`<th>${esc(x)}</th>`).join('')}</tr>${rows}<tr class="tot"><td>Σ</td>${tot}</tr></table>
   ${m.rounds?'':`<div class="note">Anzahl Runden oben wählen – oder einfach weiter eintragen, es kommt immer eine Zeile dazu.</div>`}
   <div class="note" style="margin-top:6px">Feld antippen und Wertung vom Zettel wählen</div></div>`}
@@ -676,7 +678,7 @@ function vSup(){
     <div><label style="color:#8dbcff">Blau: Land · Alter · Gewicht</label><input value="${esc(m.bi||'')}" placeholder="z. B. Polen · 30 J. · 72,1 kg" onchange="saveMeta(${C},{bi:this.value})"></div></div>
     <label>Gewichtsklasse / Titel (optional)</label><input value="${esc(m.title||'')}" placeholder="z. B. Mittelgewicht – WBU-WM" onchange="saveMeta(${C},{title:this.value})">
     <div class="row2"><div><label>Ringrichter</label><input value="${esc(officials(m).ref)}" placeholder="Name" onchange="setRef(${C},this.value);render()"></div><div><label>Zeitnehmer</label><input value="${esc(officials(m).time)}" placeholder="Name" onchange="setTime(${C},this.value)"></div></div>
-    ${(ev.refs||[]).length?`<label>Gespeicherte Ringrichter – antippen zum Wechseln</label><div class="chips">${ev.refs.map(r=>`<div class="chip ${officials(m).ref===r?'on':''}" onclick="setRef(${C},${esc(JSON.stringify(r)).replace(/"/g,"'")});render()">${esc(r)}</div>`).join('')}</div>`:''}
+    ${namePool().length?`<label>Gespeicherte Namen – antippen zum Wechseln</label><div class="chips">${namePool().map(r=>`<div class="chip ${officials(m).ref===r?'on':''}" onclick="setRef(${C},${esc(JSON.stringify(r)).replace(/"/g,"'")});render()">${esc(r)}</div>`).join('')}</div>`:''}
   </div>
   ${PAPER()?paperTable(C)+(f.cards.length?`<div class="card" style="font-size:16px">${summary(f)}</div>${resultSection(f,maxR)}`:''):`
   ${f.cards.length?`<h3>Wertung der Punktrichter</h3>
@@ -949,7 +951,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('180')||0;
+const WEB_VERSION=Number('181')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
