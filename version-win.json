@@ -1,7 +1,7 @@
 {
-  "versionCode": 232,
-  "versionName": "1.232",
+  "versionCode": 233,
+  "versionName": "1.233",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Veranstaltungspause im Leitstand (PAUSE mit Countdown auf WBU Time/Live). Ringsprecher: erst „Ringfrei“, dann Gong – am Rundenende Gong, dann „Ende Runde“."
+  "notes": "Testveranstaltung für alle zum Ausprobieren. Veranstaltungspause im Leitstand. Ringsprecher: erst „Ringfrei“, dann Gong – am Rundenende Gong, dann „Ende Runde“."
 }

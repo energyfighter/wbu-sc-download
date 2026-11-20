@@ -1,6 +1,6 @@
 {
-  "versionCode": 232,
-  "versionName": "1.232",
+  "versionCode": 233,
+  "versionName": "1.233",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Veranstaltungspause im Leitstand (PAUSE mit Countdown auf WBU Time/Live). Ringsprecher: erst „Ringfrei“, dann Gong – am Rundenende Gong, dann „Ende Runde“."
+  "notes": "Testveranstaltung für alle zum Ausprobieren. Veranstaltungspause im Leitstand. Ringsprecher: erst „Ringfrei“, dann Gong – am Rundenende Gong, dann „Ende Runde“."
 }
