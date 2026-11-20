@@ -1,7 +1,7 @@
 {
-  "versionCode": 235,
-  "versionName": "1.235",
+  "versionCode": 236,
+  "versionName": "1.236",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Ringsprecher: Name der Boxer wird getrennt, langsamer und betont gesprochen (eigene Regler Tempo Name / Tonlage Name). Dazu neue Ansagetexte, Siegerverkündung und Tonlage."
+  "notes": "Ringsprecher: Namen der Boxer werden betonter ausgerufen. Dazu Siegerverkündung, Tonlage und eigener Name-Regler."
 }
