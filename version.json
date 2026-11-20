@@ -1,6 +1,6 @@
 {
-  "versionCode": 227,
-  "versionName": "1.227",
+  "versionCode": 228,
+  "versionName": "1.228",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Fenster und Dialoge (z. B. Rolle ändern, Google-Stimme, Ergebnis) erscheinen jetzt immer im sichtbaren Bereich. Ringsprecher-Stimme zum Testen."
+  "notes": "Gong-Knopf im Leitstand (jeder Klick läutet, auch bei laufender Uhr). Dialoge immer im sichtbaren Bereich. Ringsprecher-Stimme zum Testen."
 }
