@@ -1025,7 +1025,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('186')||0;
+const WEB_VERSION=Number('187')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
@@ -1056,6 +1056,19 @@ function sessRestore(){const o=get('wbuSess',null);if(!o||!o.role||!o.name||!o.v
     document.body.appendChild(d);setTimeout(()=>d.remove(),4000)},300)}
 sessRestore();
 render();
+// Eingebettet in WBU Sports (Supervisor am Laptop/PC, unter dem Leitstand): automatisch als Supervisor der Show anmelden
+(function(){try{if(!WEB||new URLSearchParams(location.search).get('embed')!=='sup')return;
+  if(window.top!==window){const st=document.createElement('style');st.textContent='#wbuLangBtn,img.logo,img.toplogo{display:none!important}';document.head.appendChild(st)}
+  const x=JSON.parse(sessionStorage.getItem('wbuEmbedSup')||'null');if(!x||!x.lid)return;
+  if(S.role==='sup'&&S.view!=='start'&&S.web&&S.web.lid===x.lid)return;
+  S.role='sup';S.name=x.name||'';S.view='start';S.web=null;S.lid=x.lid;render();
+  let n=0;const t=setInterval(()=>{n++;if(n>60){clearInterval(t);return}
+    if(!LIVES.some(l=>l.id===x.lid)){if(n%6===0)loadLives();return}clearInterval(t);
+    if($('evl'))$('evl').value=x.lid;pickRole('sup');pickLive(x.lid);
+    if($('nm'))$('nm').value=x.name||'';if($('evpw'))$('evpw').value=x.pass||'';
+    const old=get('wbuWebSup',null);
+    if($('evp')&&!$('evp').value)$('evp').value=(old&&old.lid===x.lid&&old.pin)||String(1000+Math.floor(Math.random()*9000));
+    if(($('nm').value||'').trim().length>=3)doLogin()},500)}catch(e){}})();
 if(NATIVE&&WBU.checkUpdate)setTimeout(()=>WBU.checkUpdate(),800);
 {const q=new URLSearchParams(location.search).get('fc');if(WEB&&q)fcStandalone(q)}
 </script>
