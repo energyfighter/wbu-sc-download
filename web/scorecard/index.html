@@ -578,6 +578,41 @@ function svSave(){const v=S.sv,ib=get('wbuInbox',[]),c=ib.find(x=>x.id===v.id);i
   if(old.r===n.r&&old.b===n.b&&(old.dr||0)===n.dr&&(old.db||0)===n.db)delete c.svFix[v.i];else c.svFix[v.i]={o:old,n,by:S.name,ts:Date.now()};
   if(!Object.keys(c.svFix).length)delete c.svFix;c.rounds[v.i]=n;set('wbuInbox',ib);S.sv=null;closeSheet();render()}
 function svNote(c){return c.svFix?`<div class="note warn" style="text-align:left;margin-top:6px">Vom Supervisor korrigiert: Runde ${Object.keys(c.svFix).map(k=>+k+1).join(', ')}</div>`:''}
+// ---------- Papier-Modus: Supervisor tippt die Zettel der Punktrichter ein ----------
+function PAPER(){return !!get('wbuPaper',false)}
+function ppGet(C){const m=get('wbuMeta',{})[C]||{},n=jc(),P=m.paper?JSON.parse(JSON.stringify(m.paper)):{j:get('wbuPaperJ',[]).slice(0,n),s:[]};while(P.j.length<n)P.j.push('');P.j=P.j.slice(0,n);return P}
+function ppNames(P){const seen={};return P.j.map((x,i)=>{let v=(x||'').trim()||('Punktrichter '+(i+1));if(seen[v])v+=' ('+(i+1)+')';seen[v]=1;return v})}
+function ppSave(C,P){saveMeta(C,{paper:P});set('wbuPaperJ',P.j.slice());const nm=get('wbuPaperNames',[]);P.j.forEach(x=>{x=(x||'').trim();if(x&&nm.indexOf(x)<0)nm.push(x)});set('wbuPaperNames',nm.slice(-20));ppSync(C,P)}
+function ppSync(C,P){const m=get('wbuMeta',{})[C]||{},names=ppNames(P),ib=get('wbuInbox',[]),R=m.rounds||0;
+  names.forEach((nm,j)=>{const rs=[];for(let r=0;r<(P.s||[]).length;r++){const x=(P.s[r]||[])[j];if(!x)break;rs.push({r:x.r,b:x.b,dr:x.dr||0,db:x.db||0})}
+    const id='pp-'+C+'-'+j,i=ib.findIndex(c=>c.id===id);if(!rs.length&&i<0)return;
+    const old=i>=0?ib[i]:{},card={id,judge:nm,rounds:rs,end:null,done:R?rs.length>=R:true,rev:(old.rev||0)+1,ts:Date.now(),paper:true,at:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})};
+    if(i>=0)ib[i]=card;else ib.push(card)});
+  set('wbuInbox',ib)}
+function ppName(C,j,v){const P=ppGet(C);P.j[j]=v;ppSave(C,P);render()}
+function paperTable(C){const P=ppGet(C),m=get('wbuMeta',{})[C]||{},n=jc(),names=ppNames(P),nm=get('wbuPaperNames',[]);
+  let filled=0;(P.s||[]).forEach((row,r)=>{if((row||[]).some(Boolean))filled=r+1});const R=Math.max(1,Math.min(12,m.rounds||filled+1));
+  const cell=(x,r,j)=>{const[a,b]=x?calc(x.r,x.b,x.dr,x.db):[0,0],c=!x?'#55607a':a>b?'var(--red)':b>a?'var(--blue)':'var(--text)';
+    return `<td><span onclick="ppEdit(${C},${r},${j})" style="display:inline-block;min-width:58px;cursor:pointer;border:1px ${x?'solid':'dashed'} #39425A;border-radius:8px;padding:6px 2px;font-weight:800;color:${c}">${x?a+':'+b+((x.dr||x.db)?'<small>*</small>':''):'–'}</span></td>`};
+  let rows='';for(let r=0;r<R;r++)rows+=`<tr><td>${r+1}</td>${names.map((_,j)=>cell(((P.s||[])[r]||[])[j],r,j)).join('')}</tr>`;
+  const tot=names.map((_,j)=>{let A=0,B=0;(P.s||[]).forEach(row=>{const x=(row||[])[j];if(x){const[a,b]=calc(x.r,x.b,x.dr,x.db);A+=a;B+=b}});return `<td style="font-weight:800;color:var(--gold)">${A}:${B}</td>`}).join('');
+  return `<h3>✍️ Zettel-Wertung</h3><div class="card">
+  <div class="muted" style="font-size:13px">Punktrichter – stehen vom letzten Kampf schon drin, nur bei Wechsel ändern</div>
+  <datalist id="ppnl">${nm.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
+  <div style="display:grid;grid-template-columns:repeat(${n},1fr);gap:6px;margin:6px 0 10px">${P.j.map((x,j)=>`<input list="ppnl" placeholder="Punktrichter ${j+1}" value="${esc(x)}" onchange="ppName(${C},${j},this.value)">`).join('')}</div>
+  <table><tr><th>Rd</th>${names.map(x=>`<th>${esc(x)}</th>`).join('')}</tr>${rows}<tr class="tot"><td>Σ</td>${tot}</tr></table>
+  ${m.rounds?'':`<div class="note">Anzahl Runden oben wählen – oder einfach weiter eintragen, es kommt immer eine Zeile dazu.</div>`}
+  <div class="note" style="margin-top:6px">Feld antippen und Wertung vom Zettel wählen</div></div>`}
+function ppEdit(C,r,j){const P=ppGet(C),x=((P.s||[])[r]||[])[j];S.pp={C,r,j,free:false,v:x?{...x}:{r:10,b:9,dr:0,db:0},nm:ppNames(P)[j]};ppSheet()}
+function ppSheet(){const q=S.pp,v=q.v,pk=(a,b,cls)=>`<div onclick="ppPut(${a},${b})" style="border:1px solid #39425A;border-radius:12px;padding:14px 4px;text-align:center;font:800 19px Inter,sans-serif;cursor:pointer;color:${cls}">${a}:${b}</div>`;
+  const sel=(k,arr)=>`<select style="width:100%;font-size:20px;padding:8px" onchange="S.pp.v.${k}=+this.value;ppSheet()">${arr.map(n=>`<option ${n==v[k]?'selected':''}>${n}</option>`).join('')}</select>`,[a,b]=calc(v.r,v.b,v.dr,v.db);
+  sheet(`<h2>Runde ${q.r+1} · ${esc(q.nm)}</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${pk(10,9,'var(--red)')}${pk(10,10,'var(--text)')}${pk(9,10,'var(--blue)')}${pk(10,8,'var(--red)')}<div onclick="S.pp.free=!S.pp.free;ppSheet()" style="border:${q.free?'2px solid var(--gold)':'1px solid #39425A'};border-radius:12px;padding:14px 4px;text-align:center;font:800 19px Inter,sans-serif;cursor:pointer">mehr…</div>${pk(8,10,'var(--blue)')}</div>
+  ${q.free?`<div class="card" style="margin-top:10px;border-color:var(--gold)"><b>Selbst eintragen</b><div class="row2"><div><label style="color:#ff8a8a">Rot Punkte</label>${sel('r',[10,9,8,7,6,5])}<label>Rot Abzug</label>${sel('dr',[0,1,2,3])}</div><div><label style="color:#8dbcff">Blau Punkte</label>${sel('b',[10,9,8,7,6,5])}<label>Blau Abzug</label>${sel('db',[0,1,2,3])}</div></div>
+    <div style="text-align:center;font-size:20px;margin-top:8px">Runde ${q.r+1}: <b class="rc">${a}</b> : <b class="bc">${b}</b></div><button class="btn" onclick="ppPut()">Übernehmen</button></div>`:''}
+  <button class="btn sec" onclick="ppPut(null,null,1)">Feld leeren</button><button class="btn sec" onclick="closeSheet()">Abbrechen</button>`)}
+function ppPut(a,b,clear){const q=S.pp,P=ppGet(q.C);P.s=P.s||[];while(P.s.length<=q.r)P.s.push([]);
+  P.s[q.r][q.j]=clear?null:(a!=null?{r:a,b:b,dr:0,db:0}:{...q.v});ppSave(q.C,P);S.pp=null;closeSheet();render()}
 function cardHead(c){
   const live=c.done===false?`<span class="badge">live · Runde ${c.rounds.length}</span>`:'<span class="badge g">fertig</span>';
   return `<div class="rbar"><b>${esc(c.judge)}</b><span>${c.corrected?'<span class="badge y">korrigiert</span> ':''}${c.svFix?'<span class="badge y">SV-Korrektur</span> ':''}${live}</span></div><div class="muted" style="margin-top:-4px">zuletzt ${c.at} Uhr</div>`}
@@ -601,7 +636,7 @@ function resultSection(f,maxR){
   const sg=suggest(f.cards), typ=(RES.find(r=>r[0]===S.sel.k)||[])[2], needW=typ===1||typ===2, needT=typ===2||typ===3;
   return `<h3>Ergebnis festlegen (nur Supervisor)</h3>
   <div class="card">
-    <div class="muted">Vorschlag aus den Scorecards: <b style="color:var(--gold)">${sugText(sg)}</b></div>
+    <div class="muted">${f.cards.some(c=>c.paper)?'Laut Zettel':'Vorschlag aus den Scorecards'}: <b style="color:var(--gold)">${sugText(sg)}</b></div>
     <label>Offizielles Resultat</label><div class="chips">${RES.map(r=>`<div class="chip ${S.sel.k===r[0]?'on':''}" onclick="S.sel.k='${r[0]}';render()">${r[1]}</div>`).join('')}</div>
     ${needW?`<label>Sieger</label><div class="role">
       <div class="chip" style="${S.sel.w==='R'?'background:var(--red);border-color:var(--red);color:#fff;font-weight:700':''}" onclick="S.sel.w='R';render()">Rot</div>
@@ -627,7 +662,8 @@ function vSup(){
   const st=f.allDone?'<span class="badge y">alle Scorecards fertig</span>':`<span class="badge">${fin}/${n} fertig${f.cards.length>fin?' · '+(f.cards.length-fin)+' live':''}</span>`;
   const archive=done.length?`<h3>Abgeschlossene Kämpfe (${done.length})</h3><div class="archive">${done.slice().reverse().map(x=>`<div class="arow" onclick="S.openFight=${x.no};S.view='fight';render();window.scrollTo(0,0)"><span class="fnum">Kampf ${x.no}</span><span class="t">${lateFix(x)?'<b class="warn">⚠ Korrektur nach Ergebnis</b><br>':''}${esc(resLine(x))}${(x.meta.red||x.meta.blue)?`<br><span class="muted">${esc(x.meta.red||'Rot')} vs. ${esc(x.meta.blue||'Blau')}</span>`:''}</span><span class="muted">›</span></div>`).join('')}</div>`:'';
   return `<div class="rbar evline"><span onclick="editEvent()" style="cursor:pointer">${ev.name?'Promoter: '+esc(ev.name):''}${ev.ort?' · '+esc(ev.ort):''} · ${esc(evDate())} <b style="color:var(--gold)">✎</b></span>${btBadge('Bluetooth bereit')}</div>
-  <div class="rbar"><span class="fnum" style="font-size:26px">Kampf ${C}</span>${st}</div>
+  <div class="card" onclick="set('wbuPaper',!PAPER());render()" style="display:flex;align-items:center;gap:12px;cursor:pointer;${PAPER()?'border:2px solid var(--gold)':''}"><div style="flex:1"><b>Punktrichter werten auf Papier</b><div class="muted" style="font-size:13px">${PAPER()?'An – du tippst die Zettel selbst ein':'Aus – die Punktrichter senden per App'}</div></div><div style="width:54px;height:30px;border-radius:15px;background:${PAPER()?'var(--gold)':'#39425A'};position:relative;flex-shrink:0"><div style="position:absolute;${PAPER()?'right':'left'}:3px;top:3px;width:24px;height:24px;border-radius:50%;background:${PAPER()?'#111':'#cfd5e0'}"></div></div></div>
+  <div class="rbar"><span class="fnum" style="font-size:26px">Kampf ${C}</span>${PAPER()?'<span class="badge y">✍️ Papier-Modus</span>':st}</div>
   ${liveCard(C)}
   <div class="card">
     ${optChips(C,'rounds','Anzahl Runden',[1,2,3,4,5,6,7,8,9,10,11,12],m.rounds)}
@@ -642,13 +678,14 @@ function vSup(){
     <div class="row2"><div><label>Ringrichter</label><input value="${esc(officials(m).ref)}" placeholder="Name" onchange="setRef(${C},this.value);render()"></div><div><label>Zeitnehmer</label><input value="${esc(officials(m).time)}" placeholder="Name" onchange="setTime(${C},this.value)"></div></div>
     ${(ev.refs||[]).length?`<label>Gespeicherte Ringrichter – antippen zum Wechseln</label><div class="chips">${ev.refs.map(r=>`<div class="chip ${officials(m).ref===r?'on':''}" onclick="setRef(${C},${esc(JSON.stringify(r)).replace(/"/g,"'")});render()">${esc(r)}</div>`).join('')}</div>`:''}
   </div>
+  ${PAPER()?paperTable(C)+(f.cards.length?`<div class="card" style="font-size:16px">${summary(f)}</div>${resultSection(f,maxR)}`:''):`
   ${f.cards.length?`<h3>Wertung der Punktrichter</h3>
   ${f.cards.map(c=>`<div class="card">${cardHead(c)}${svTable(c)}${svNote(c)}${c.end?`<div class="note warn" style="text-align:left;margin-top:6px">Hinweis: ${esc(c.end.t)} in Runde ${c.end.r}</div>`:''}</div>`).join('')}
   <div class="card" style="font-size:16px">${summary(f)}</div>
   ${resultSection(f,maxR)}`
   :`<div class="card" style="text-align:center"><div style="font-size:40px">⌛</div><b>Warte auf die Punktrichter …</b><p class="muted" style="margin-bottom:0">Ihre Scorecards erscheinen hier automatisch, sobald sie den Kampf abschließen.</p></div>`}
   ${chatBox()}
-  ${NATIVE||WEB?'':`<button class="btn sec" onclick="demo()">Demo: ${n} Punktrichter senden einen Kampf</button>`}
+  ${NATIVE||WEB?'':`<button class="btn sec" onclick="demo()">Demo: ${n} Punktrichter senden einen Kampf</button>`}`}
   ${archive}
   ${done.length?`<button class="btn sec" style="margin-top:34px;border:2px solid var(--red)" onclick="askClose()">Veranstaltung abschließen &amp; PDF erstellen</button>`:''}`;
 }
@@ -693,7 +730,7 @@ function vFight(){
   const maxR=Math.max(1,...f.cards.map(c=>c.rounds.length+(c.end?1:0)));
   return `<div class="rbar"><span class="fnum">Kampf ${f.no}</span><a href="#" style="color:var(--gold)" onclick="S.view='sup';S.edit=false;render();return false">‹ Zurück</a></div>
   ${f.full?'':`<div class="card warn">Erst ${f.cards.length} von ${n} Scorecards empfangen.</div>`}
-  ${f.cards.map(c=>`<div class="card">${cardHead(c)}${svTable(c)}${svNote(c)}${c.end?`<div class="note warn" style="text-align:left;margin-top:6px">Hinweis: ${esc(c.end.t)} in Runde ${c.end.r}</div>`:''}</div>`).join('')}
+  ${f.cards.some(c=>c.paper)?paperTable(f.no):f.cards.map(c=>`<div class="card">${cardHead(c)}${svTable(c)}${svNote(c)}${c.end?`<div class="note warn" style="text-align:left;margin-top:6px">Hinweis: ${esc(c.end.t)} in Runde ${c.end.r}</div>`:''}</div>`).join('')}
   <div class="card" style="font-size:16px">${summary(f)}</div>
   <h3>Angaben zum Kampf (alles freiwillig)</h3>
   <div class="card">
@@ -758,7 +795,7 @@ function fightBlock(f){
     <p style="margin:6px 0"><b style="color:#b71c1c">ROT:</b> ${esc(fz(m.red,m.ri))} &nbsp; <b style="color:#0d47a1">BLAU:</b> ${esc(fz(m.blue,m.bi))}</p>
     <div style="font-size:12px;color:#555">Ringrichter: ${esc(officials(m).ref||'–')} · Zeitnehmer: ${esc(officials(m).time||'–')} · Ringarzt: ${esc(officials(m).arzt||'–')} · Punktrichter: ${cs.map(c=>esc(c.judge)).join(', ')}</div>
     <div class="res" style="font-size:16px">${m.result?esc(resLine(f)):'Ergebnis nicht bestätigt'}</div>
-    <div class="scroll"><table>${head}${rows}</table></div>${cs.some(c=>c.svFix)?'<div style="font-size:12px;color:#555">* vom Supervisor korrigiert</div>':''}</div>`;
+    <div class="scroll"><table>${head}${rows}</table></div>${cs.some(c=>c.svFix)?'<div style="font-size:12px;color:#555">* vom Supervisor korrigiert</div>':''}${cs.some(c=>c.paper)?'<div style="font-size:12px;color:#555">Wertung vom Papier übertragen (Supervisor)</div>':''}</div>`;
 }
 function vReport(){
   const ev=get('wbuEvent',{}), fs=fights();
@@ -912,7 +949,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('179')||0;
+const WEB_VERSION=Number('180')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
