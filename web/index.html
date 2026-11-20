@@ -192,7 +192,7 @@ function draw(){document.documentElement.lang=L;
 // Handy: Untermenü (z. B. WBU Sports) klappt erst beim Antippen auf
 function ddTap(a){if(!matchMedia('(max-width:900px)').matches)return true;a.parentNode.classList.toggle('open');return false}
 function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
- return `<div id="cdown"></div><div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
+ return `<div id="cdown"></div><div id="ytlive"></div><div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
  <div class="main"><div>
    <a class="ban" href="${R('anmeldung')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
    <a class="ban" href="${R('coin')}"><img src="${UP}2021/01/wbu-coin-banner-850x300-4x.jpg" alt="WBU Coin – Coming Soon"></a>
@@ -659,10 +659,21 @@ function lmDraw(){cdDraw();const box=document.getElementById('lmon');if(!box)ret
  ids.forEach((id,i)=>{let w=[...box.children].find(x=>x.dataset.ev===id);
   if(!w){w=document.createElement('div');w.dataset.ev=id;w.innerHTML='<div class="ytw"></div><div class="lmw"></div>'}
   if(box.children[i]!==w)box.insertBefore(w,box.children[i]||null);
-  const sn=(LM.D[id]||{}).snap||{},src=(sn.rows||[]).length?ytSrc(sn.yt):'',yw=w.querySelector('.ytw');
+  const sn=(LM.D[id]||{}).snap||{},src=(sn.rows||[]).length&&ytlOn(id)?ytSrc(sn.yt):'',yw=w.querySelector('.ytw');
   if(yw.dataset.src!==src){yw.dataset.src=src;yw.innerHTML=src?ytBox(id,sn.yt):''}
   const lw=w.querySelector('.lmw'),l=lw.querySelector('.lmlist'),y=l?l.scrollTop:0;lw.innerHTML=lmOne(id);
   const l2=lw.querySelector('.lmlist');if(l2&&y)l2.scrollTop=y})}
+// YouTube: Video erscheint, sobald der Inhaber den Stream startet, und verschwindet, wenn er ihn beendet (Server prüft die YouTube-Seite)
+const YL={};   // YL[lid] = {live:true|false|null, ...}
+async function ytlLoad(){try{const j=await lmApi('yt_live',{});for(const k in YL)delete YL[k];(j.yt||[]).forEach(x=>YL[x.lid]=x)}catch(e){}ytlDraw();lmDraw()}
+function ytlOn(id){const y=YL[id];return !y||y.live!==false}   // unbekannt -> wie bisher anzeigen
+function ytlDraw(){const box=document.getElementById('ytlive');if(!box)return;const seen={};
+ // Livestream ohne verbundenen Supervisor: eigener Kasten (ein Stream nur einmal)
+ const L0=Object.values(YL).filter(x=>x.live===true&&!LM.evs.some(e=>e.id===x.lid)&&!LM.evs.some(e=>((LM.D[e.id]||{}).snap||{}).yt===x.yt)).filter(x=>seen[x.yt]?0:(seen[x.yt]=1));
+ const ids=L0.map(x=>x.lid);[...box.children].forEach(w=>{if(!ids.includes(w.dataset.ev))w.remove()});
+ L0.forEach(x=>{if([...box.children].some(w=>w.dataset.ev===x.lid))return;const w=document.createElement('div');w.dataset.ev=x.lid;
+  w.innerHTML=ytBox(x.lid,x.yt)+`<section class="lm"><div class="lmb"><div class="lmh"><span class="lv">LIVE</span><b>${esc(x.name)}</b><span>${esc([x.ort,x.date&&x.date.split('-').reverse().join('.')].filter(Boolean).join(' · '))}</span></div></div></section>`;box.appendChild(w)})}
+setInterval(ytlLoad,60000);setTimeout(ytlLoad,1500);
 // Uhren fein nachziehen, ohne die Listen neu zu zeichnen
 setInterval(()=>document.querySelectorAll('.lmclk').forEach(k=>{const d=LM.D[k.dataset.id];if(!d)return;const h=lmClockHtml(d,lmCur(d));if(k.innerHTML!==h)k.innerHTML=h}),250);
 lmList();setInterval(lmList,30000);setInterval(lmData,5000);setInterval(lmClock,1000);

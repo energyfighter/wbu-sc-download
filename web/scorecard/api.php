@@ -301,6 +301,23 @@ function neueVeranstaltungMail($eid, $art, $name, $date, $ort, $anzahl, $link, $
 
 
 // ===================== Live =====================
+// YouTube: läuft der Stream gerade? true / false / null (unbekannt) – liest die öffentliche YouTube-Seite (ohne Schlüssel)
+function ytIstLive($u) {
+    if (preg_match('~(?:v=|youtu\.be/|/live/|/embed/|/shorts/)([\w-]{11})~', $u, $m)) $url = 'https://www.youtube.com/watch?v=' . $m[1];
+    elseif (preg_match('~/channel/(UC[\w-]{22})~', $u, $m)) $url = 'https://www.youtube.com/channel/' . $m[1] . '/live';
+    elseif (preg_match('~youtube\.com/(@[\w.-]+)~', $u, $m)) $url = 'https://www.youtube.com/' . $m[1] . '/live';
+    else return null;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_HTTPHEADER => ['Accept-Language: de-DE,de;q=0.9,en;q=0.8', 'Cookie: SOCS=CAI; CONSENT=YES+cb'],
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36']);
+    $h = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    if (!is_string($h) || $code !== 200 || strlen($h) < 5000) return null;
+    if (strpos($h, '"isLiveNow":true') !== false) return true;
+    if (strpos($h, '"isLiveNow":false') !== false) return false;
+    if (strpos($h, 'ytInitialPlayerResponse') !== false) return false;   // Seite da, aber kein Livestream (beendet / Kanal sendet nicht)
+    return null;
+}
 function lvfile($id) {
     global $DIR;
     if (!is_string($id) || !preg_match('/^[a-f0-9]{16}$/', $id)) fail('Live-Veranstaltung unbekannt', 404);
@@ -2212,6 +2229,19 @@ case 'shows':      // öffentlich: kommende Galas und Turniere aus WBU Sports f�
                    'img' => !empty($l['plakat']) ? '/scorecard/api.php?a=l_plakatimg&id=' . $l['id'] . '&v=' . $l['plakat'] : '', 'lid' => $l['id']];
     }
     out(['ok' => true, 'shows' => $list]);
+
+case 'yt_live':   // öffentlich: YouTube-Livestreams der Veranstaltungen (Veranstaltungstag) – läuft der Stream gerade?
+    $heute = date('Y-m-d'); $gestern = date('Y-m-d', time() - 86400); $out = []; $cf = "$DIR/ytlive.json";
+    $cache = json_decode((string)@file_get_contents($cf), true) ?: []; $neu = 0;
+    foreach (glob("$DIR/lv_*.json") as $f) { $l = json_decode((string)@file_get_contents($f), true); $sn = is_array($l) ? ($l['snap'] ?? null) : null;
+        if (!is_array($sn)) continue; $yt = trim((string)($sn['yt'] ?? '')); $d = substr((string)($sn['date'] ?? ''), 0, 10);
+        if ($yt === '' || ($d !== $heute && $d !== $gestern)) continue;
+        $c = $cache[$yt] ?? null;
+        if ((!$c || time() - (int)$c['at'] > 90) && $neu < 3) { $neu++; $c = ['at' => time(), 'live' => ytIstLive($yt)]; $cache[$yt] = $c; }
+        $out[] = ['lid' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $d, 'yt' => $yt, 'live' => $c ? $c['live'] : null]; }
+    if ($neu) @file_put_contents($cf, json_encode($cache, JSON_UNESCAPED_UNICODE));
+    header('Cache-Control: no-store');
+    out(['ok' => true, 'yt' => $out]);
 
 case 'l_list':
     $list = [];
