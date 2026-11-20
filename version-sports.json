@@ -1,6 +1,6 @@
 {
-  "versionCode": 221,
-  "versionName": "1.221",
+  "versionCode": 222,
+  "versionName": "1.222",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Rollen beim Supervisor-Login: Supervisor sieht den Leitstand live mit und hat seine Scorecard darunter, Veranstalter bedient Uhr und Monitore. Updates noch zuverlässiger (neue Version wird geprüft, bevor installiert wird)."
+  "notes": "Update ohne Doppelabfrage: Die App startet die Installation nicht mehr ein zweites Mal. Xiaomi-Handys: bei „Riskante App“ einfach „Überspringen“, dann „Aktualisieren“."
 }
