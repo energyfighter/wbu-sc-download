@@ -1,7 +1,7 @@
 {
-  "versionCode": 226,
-  "versionName": "1.226",
+  "versionCode": 227,
+  "versionName": "1.227",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Neu: Ringsprecher-Stimme – Ansage per Knopf (Kampf, rote und blaue Ecke), „Ringfrei“ und „Seconds out“ automatisch mit der Uhr, in 5 Sprachen."
+  "notes": "Fenster und Dialoge (z. B. Rolle ändern, Google-Stimme, Ergebnis) erscheinen jetzt immer im sichtbaren Bereich. Ringsprecher-Stimme zum Testen."
 }
