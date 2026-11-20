@@ -195,7 +195,7 @@ function home(){const FB='https://www.facebook.com/WorldBoxingUnionV';
  return `<div id="cdown"></div><div id="ytlive"></div><div id="lmon"></div><div class="in"><div class="orgs">${ORGS.map(([n,i,u])=>`<a href="${u}" title="${n}"><img src="${UP}${i}" alt="${n}"></a>`).join('')}</div></div>
  <div class="main"><div>
    <a class="ban" href="${R('anmeldung')}"><img src="${UP}2021/01/WBU-DM-2027-Banner-1-2048x1152.jpg" alt="WBU Deutsche Meisterschaft 2027"></a>
-   <a class="ban" href="${R('coin')}"><img src="${UP}2021/01/wbu-coin-banner-850x300-4x.jpg" alt="WBU Coin – Coming Soon"></a>
+   <a class="ban" href="${R('coin')}"><img src="/start/img/wbu-coin-presale.webp" alt="WBU Coin – Presale opens soon"></a>
    <section class="fb nw"><h3 class="H">WBU News</h3><div id="nwl" class="nwl"><p class="nwe">…</p></div></section></div>
   <aside class="side">
    <div class="card"><h3 class="H">${t('pass')}</h3><a href="${W}/sportpass-2/"><img src="${UP}2024/06/picpass-1.jpg" alt="WBU Sportpass"></a><p>${t('passT')}</p><a class="btn" href="${W}/sportpass-2/">${t('passB')} ›</a></div>
@@ -545,7 +545,7 @@ function adDraw(){const v=document.getElementById('view');if(!v)return;const me=
   <div class="msg ${AD.msgErr?'err':'ok'}">${nEsc(AD.msg)}</div></div>
  <div class="bx"><h2>${AD.sup?'Alle Berichte':'Meine Berichte'}</h2>${(AD.mine||[]).length?AD.mine.map(p=>`<div class="li"><span>${nDate(p.d)}</span><b>${nEsc(p.t)}</b>${p.fb?'<span title="auf Facebook">f</span>':''}<button class="b2" onclick="adEdit('${p.id}')">Bearbeiten</button><button class="b2" onclick="adDel('${p.id}')">Löschen</button></div>`).join(''):'<p>Noch keine Berichte.</p>'}</div>
  ${AD.sup?`<div class="bx"><h2>Schreibrechte</h2>${(AD.users||[]).length?AD.users.map(u=>`<div class="li"><b>${u.status==='ok'?'✅':'⏳'} ${nEsc(u.name||u.email)} <small>${nEsc(u.email)}</small></b>${u.status==='ok'?`<button class="b2" onclick="adGrant('${nEsc(u.email)}',0)">Entziehen</button>`:`<button class="bl" onclick="adGrant('${nEsc(u.email)}',1)">Freigeben</button>`}</div>`).join(''):'<p>Keine Anfragen. Wer schreiben möchte, meldet sich hier über das Schloss an und tippt auf „Schreibrechte anfragen“.</p>'}</div>
- <div class="bx"><h2>WBU Coin – Whitelist</h2>${adWlBox()}</div>
+ <div class="bx"><h2>WBU Coin – Presale-Vormerkung</h2>${adWlBox()}</div>
  <div class="bx"><h2>Facebook</h2>${AD.fb?`<p class="ok">✅ Verbunden mit der Seite „${nEsc(AD.fb)}“. Berichte können direkt mitgepostet werden.</p>${AD.ig?`<p class="ok">✅ Instagram: @${nEsc(AD.ig)} – Berichte mit Bild gehen automatisch mit auf Instagram.</p>`:`<p>Instagram ist noch nicht verbunden. Dafür Facebook einmal trennen und neu verbinden – mit den zusätzlichen Berechtigungen instagram_basic, instagram_content_publish und business_management.</p>`}<button class="b2" onclick="adFbOff()">Verbindung trennen</button>`:adFbForm()}</div>`:''}</div>`}
 function adWlBox(){if(!AD.wl)return `<button class="b2" onclick="adWlLoad()">Anmeldungen laden</button>`;const L2=AD.wl,ok=L2.filter(x=>x.ok&&!x.blocked);
  return `<p><b>${L2.length}</b> Anmeldungen · <b>${ok.length}</b> E-Mail bestätigt</p><div class="row"><button class="b" onclick="adWlCsv(0)">Wallet-Liste (Alpha Vault) herunterladen</button><button class="b2" onclick="adWlCsv(1)">Alle Daten als Tabelle (CSV)</button></div>

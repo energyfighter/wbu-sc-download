@@ -737,8 +737,8 @@ function wlConfirmMail($r, $pd) {
     $url = 'https://www.wbu-boxing.com/scorecard/api.php?a=wl_ok&id=' . $r['id'] . '&s=' . $sig;
     $de = ($r['lang'] ?? 'en') === 'de';
     wlMail($pd['email'] ?? '', $r['lang'] ?? 'en', $de ? 'WBU Coin – bitte E-Mail bestätigen' : 'WBU Coin – please confirm your e-mail',
-        ($de ? "Hallo {$pd['name']},\n\ndanke für deine Anmeldung zur WBU-Coin-Whitelist als „{$r['fighter']}“.\nBitte bestätige deine E-Mail-Adresse mit diesem Link:\n\n$url\n\nDein Werbe-Code: " . wlRefShow($r['ref']) . "\nDein Empfehlungslink: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"
-             : "Hi {$pd['name']},\n\nthank you for joining the WBU Coin whitelist as \"{$r['fighter']}\".\nPlease confirm your e-mail address with this link:\n\n$url\n\nYour referral code: " . wlRefShow($r['ref']) . "\nYour referral link: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"));
+        ($de ? "Hallo {$pd['name']},\n\ndanke für deine Vormerkung zum WBU-Coin-Presale als „{$r['fighter']}“.\nBitte bestätige deine E-Mail-Adresse mit diesem Link:\n\n$url\n\nDein Werbe-Code: " . wlRefShow($r['ref']) . "\nDein Empfehlungslink: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"
+             : "Hi {$pd['name']},\n\nthank you for registering for the WBU Coin presale as \"{$r['fighter']}\".\nPlease confirm your e-mail address with this link:\n\n$url\n\nYour referral code: " . wlRefShow($r['ref']) . "\nYour referral link: https://www.wbu-boxing.com/coin/?ref={$r['ref']}"));
 }
 
 function withNews($fn, $write = false) {
@@ -1415,7 +1415,7 @@ case 'wl_nonce':    // Text zum Unterschreiben (kostenlos, keine Zahlung)
     $pk = b58dec($w); if (!$pk || strlen($pk) !== 32) fail('Invalid wallet address');
     $n = bin2hex(random_bytes(12)); global $DIR; @mkdir("$DIR/wlnonce", 0700);
     foreach (glob("$DIR/wlnonce/*") ?: [] as $f) if (filemtime($f) < time() - 900) @unlink($f);
-    $msg = "WBU Coin – whitelist sign-in\nWallet: $w\nNonce: $n\nThis signature is free and does not send any coins.";
+    $msg = "WBU Coin – presale registration\nWallet: $w\nNonce: $n\nThis signature is free and does not send any coins.";
     file_put_contents("$DIR/wlnonce/$n", $w);
     out(['ok' => true, 'msg' => $msg]);
 
