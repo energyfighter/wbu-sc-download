@@ -1,6 +1,6 @@
 {
-  "versionCode": 229,
-  "versionName": "1.229",
+  "versionCode": 230,
+  "versionName": "1.230",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Ringsprecher: Stimme auswählen und anhören, Sprechtempo einstellbar. Gong-Knopf im Leitstand."
+  "notes": "Leitstand aufgeräumt: kein doppeltes Zeitnahme-Fenster mehr, alles im Leitstand. Ringsprecher mit Stimmenauswahl, Gong-Knopf."
 }

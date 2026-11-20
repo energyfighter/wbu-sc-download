@@ -1,7 +1,7 @@
 {
-  "versionCode": 229,
-  "versionName": "1.229",
+  "versionCode": 230,
+  "versionName": "1.230",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Ringsprecher: Stimme auswählen und anhören, Sprechtempo einstellbar. Gong-Knopf im Leitstand."
+  "notes": "Leitstand aufgeräumt: kein doppeltes Zeitnahme-Fenster mehr, alles im Leitstand. Ringsprecher mit Stimmenauswahl, Gong-Knopf."
 }
