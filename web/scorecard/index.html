@@ -169,6 +169,16 @@ tr.tot td{font-weight:900;font-size:16px;border-top:2px solid var(--line)}
   if(document.body)mo2.observe(document.body,{childList:true,subtree:true});else document.addEventListener('DOMContentLoaded',function(){mo2.observe(document.body,{childList:true,subtree:true})});
   if(document.body)btn();else document.addEventListener('DOMContentLoaded',btn);
 })();
+
+// Eingebettet in die WBU-Hauptseite (sehr hohes iframe): Dialogfenster in den sichtbaren Bereich holen
+(function(){try{if(window.top===window||!window.frameElement)return}catch(e){return}
+ function fix(d){try{const fe=window.frameElement,r=fe.getBoundingClientRect(),vh=window.parent.innerHeight,top=Math.max(0,-r.top);
+   let m=d.parentElement;while(m&&m!==document.body&&getComputedStyle(m).position!=='fixed')m=m.parentElement;if(!m||m===document.body)return;
+   m.style.alignItems='flex-start';m.style.justifyContent='center';d.style.maxHeight=(Math.min(vh,vh-r.top)-30)+'px';d.style.overflow='auto';
+   const bot=Math.min(fe.offsetHeight,vh-r.top);d.style.marginTop=(top+Math.max(10,(bot-top-d.offsetHeight)/2))+'px'}catch(e){}}
+ function scan(n){if(!n||n.nodeType!==1)return;if(n.classList&&n.classList.contains('dlg'))fix(n);n.querySelectorAll&&n.querySelectorAll('.dlg').forEach(fix)}
+ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(scan))).observe(document.documentElement,{childList:true,subtree:true});
+ try{window.parent.addEventListener('scroll',()=>document.querySelectorAll('.dlg').forEach(fix),{passive:true})}catch(e){}})();
 </script><!--/I18N--></head>
 <body>
 <div id="updbar" style="max-width:480px;margin:0 auto;padding:0 14px"></div>
@@ -1025,7 +1035,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('193')||0;
+const WEB_VERSION=Number('194')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
