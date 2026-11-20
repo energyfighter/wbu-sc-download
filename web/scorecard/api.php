@@ -915,6 +915,24 @@ function fbImport($n) {
 }
 
 
+// ---- Einmalig (20.11.2026): YouTube-Livestream für die Galas in Dillingen am 20. und 21.11. eintragen ----
+function migYtDillingen() {
+    global $DIR; $mark = "$DIR/mig_yt_dillingen.done"; if (file_exists($mark)) return;
+    $yt = 'https://www.youtube.com/live/ji3uDNzOr6Y'; $tage = ['2026-11-20', '2026-11-21']; $log = [];
+    $passt = function ($e) use ($tage) { $t = mb_strtolower(($e['ort'] ?? '') . ' ' . ($e['name'] ?? ''));
+        return in_array(substr((string)($e['date'] ?? ''), 0, 10), $tage, true) && mb_strpos($t, 'dillingen') !== false; };
+    $ids = [];
+    foreach (glob("$DIR/ws_*.json") as $f) { $h = fopen($f, 'c+'); if (!$h) continue; flock($h, LOCK_EX); $w = json_decode((string)stream_get_contents($h), true);
+        if (is_array($w) && !empty($w['ev']) && $passt($w['ev'])) { $w['ev']['yt'] = $yt; $w['ev']['ytAdm'] = 1; $w['mt'] = round(microtime(true) * 1000); $ids[] = $w['ev']['id'];
+            ftruncate($h, 0); rewind($h); fwrite($h, json_encode($w, JSON_UNESCAPED_UNICODE)); fflush($h); $log[] = 'ws ' . $w['ev']['id'] . ' ' . ($w['ev']['date'] ?? '') . ' ' . ($w['ev']['ort'] ?? ''); }
+        flock($h, LOCK_UN); fclose($h); }
+    foreach (glob("$DIR/lv_*.json") as $f) { $h = fopen($f, 'c+'); if (!$h) continue; flock($h, LOCK_EX); $l = json_decode((string)stream_get_contents($h), true);
+        if (is_array($l) && is_array($l['snap'] ?? null) && (in_array($l['snap']['eid'] ?? '', $ids, true) || $passt($l['snap']))) { $l['snap']['yt'] = $yt; $l['updated'] = time();
+            ftruncate($h, 0); rewind($h); fwrite($h, json_encode($l, JSON_UNESCAPED_UNICODE)); fflush($h); $log[] = 'lv ' . basename($f); }
+        flock($h, LOCK_UN); fclose($h); }
+    @file_put_contents($mark, date('c') . "\n" . implode("\n", $log));
+}
+migYtDillingen();
 switch ($a) {
 
 case 'events':
@@ -1935,6 +1953,7 @@ case 'l_push':
     withLive($in['lid'] ?? '', function (&$l) use ($in, $snap) {
         if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
         if (!empty($l['fc']) && (int)($snap['fcv'] ?? 0) < (int)$l['fc']['v'] && !empty($l['snap']['rows'])) { $snap['rows'] = $l['snap']['rows']; $snap['fcv'] = $l['fc']['v']; }
+        if (trim((string)($snap['yt'] ?? '')) === '' && !empty($l['snap']['yt'])) $snap['yt'] = $l['snap']['yt'];
         $l['snap'] = $snap; $l['updated'] = time();
     }, true);
     $sn = $snap; $lid = (string)$in['lid'];
@@ -2347,6 +2366,7 @@ case 'ws_lock':
     elseif ($a === 'ws_save') { $ev = $in['ev'] ?? null; if (!is_array($ev) || empty($ev['id'])) { flock($fh, LOCK_UN); fclose($fh); fail('Leere Veranstaltung'); }
         if (strlen(json_encode($ev)) > 4000000) { flock($fh, LOCK_UN); fclose($fh); fail('Veranstaltung zu groß'); }
         if (empty($w['owner']) && $mail && !$sup) $w['owner'] = $mail;
+        if (!empty($w['ev']['ytAdm']) && trim((string)($ev['yt'] ?? '')) === '' && !empty($w['ev']['yt'])) { $ev['yt'] = $w['ev']['yt']; $ev['ytAdm'] = 1; }
         $w['ev'] = $ev; $w['mt'] = round(microtime(true) * 1000); $w['by'] = txt($in['name'] ?? ($acc['trainer'] ?? 'Supervisor'), 60); $res['mt'] = $w['mt']; }
     elseif ($a === 'ws_del') { if (!$su && !$isOwner) { flock($fh, LOCK_UN); fclose($fh); fail('Löschen nur der Veranstalter oder die WBU', 403); } $w = ['deleted' => time()]; }
     elseif ($a === 'ws_lock') { $L = $w['lock'] ?? null; $dev = txt($in['dev'] ?? '', 40);
