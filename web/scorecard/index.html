@@ -355,7 +355,7 @@ function render(){sessSave();setTimeout(()=>{if(S.view==='start'&&(WEB||NATIVE))
 
 // ================= START =================
 function vStart(){
-  return `<h2>Anmelden</h2>
+  return `<h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px">Anmelden<span data-langslot></span></h2>
   <div class="card">
     <label>Ich bin</label>
     <div class="role">
@@ -365,12 +365,12 @@ function vStart(){
     <label>Vor- und Nachname (Pflicht)</label>
     <input id="nm" value="${esc(S.name)}" placeholder="z. B. Max Mustermann" autocomplete="name">
     ${WEB?`<div id="jpf" style="display:${S.role==='judge'?'block':'none'}"><label>PIN vom Supervisor</label><input id="jpin" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="4 Ziffern" style="font-size:24px;letter-spacing:6px;text-align:center"></div>`:''}
-    <div id="supf" style="display:${S.role==='judge'?'none':'block'}">${(()=>{const e=get('wbuEvent',{});return `<label>Promoter <span class="muted">(nur Supervisor)</span></label><input id="evn" value="${esc(e.name||'')}" placeholder="Name des Promoters (gern auch Veranstaltung)">
-    <label>Ort <span class="muted">(nur Supervisor)</span></label><input id="evo" name="veranstaltungsort" autocomplete="address-level2" value="${esc(e.ort||'')}" placeholder="z. B. Hamburg">
-    <label>Datum <span class="muted">(nur Supervisor)</span></label><input id="evd" type="date" value="${toIso(e.date||today())}">
-    <label>Ringarzt <span class="muted">(Pflicht für Supervisor – gilt für alle Kämpfe)</span></label><input id="eva" autocomplete="off" value="${esc(e.arzt||'')}" placeholder="Name des Ringarztes">
-    <label>Show auswählen <span class="muted">(Kämpfe und Namen werden übernommen)</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– Show auswählen –</option></select>
-    ${NATIVE?`<div id="npw" style="display:${S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
+    <div id="supf" style="display:${S.role==='judge'?'none':'block'}">${(()=>{const e=get('wbuEvent',{});return `<label>Show auswählen <span class="muted">(Kämpfe und Namen werden übernommen)</span></label><select id="evl" onchange="pickLive(this.value)"><option value="">– Show auswählen –</option></select>
+    <label>Promoter <span class="muted">(nur Supervisor)</span></label><input id="evn" autocomplete="off" value="" placeholder="Name des Promoters (gern auch Veranstaltung)">
+    <label>Ort <span class="muted">(nur Supervisor)</span></label><input id="evo" autocomplete="off" value="" placeholder="z. B. Hamburg">
+    <label>Datum <span class="muted">(nur Supervisor)</span></label><input id="evd" type="date" value="">
+    <label>Ringarzt <span class="muted">(Pflicht für Supervisor – gilt für alle Kämpfe)</span></label><input id="eva" autocomplete="off" value="" placeholder="Name des Ringarztes">
+${NATIVE?`<div id="npw" style="display:${S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none'}"><label>WBU-Supervisor-Passwort <span class="muted">(für die Ergebnis-Übertragung an WBU Sports)</span></label><input id="evpwn" type="password" autocomplete="off" placeholder="Passwort"></div>`:''}
     ${WEB?`<label>WBU-Supervisor-Passwort <span class="muted">(nur Supervisor)</span></label><input type="text" name="username" autocomplete="username" value="WBU-Supervisor" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><input id="evpw" name="password" type="password" autocomplete="current-password" placeholder="Passwort">
     <label>PIN für die Punktrichter <span class="muted">(Pflicht, 4 Ziffern – die Punktrichter kommen nur damit rein)</span></label><input id="evp" inputmode="numeric" maxlength="8" value="${esc(e.pin||'')}" placeholder="z. B. 2468">`:''}`})()}</div>
     <button class="btn" onclick="doLogin()">Los geht's</button>
@@ -395,8 +395,8 @@ async function loadLives(){const sel=$('evl');if(!sel)return;
   try{LIVES=(await lapi('l_list')).live||[];
     LIVES.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
     sel.innerHTML='<option value="">– Show auswählen –</option>'+LIVES.map(l=>`<option value="${l.id}" ${S.lid===l.id?'selected':''}>${esc(l.name)} · ${esc(l.ort||'')} · ${esc(fromIso(l.date)||l.date||'')}</option>`).join('')}catch(e){}}
-function pickLive(id){S.lid=id||'';const bt=S.lid==='hub'||S.lid==='pc';if($('evl')&&bt)$('evl').value='';if($('evb')&&!bt&&S.lid)$('evb').value='';if($('npw'))$('npw').style.display=S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l)return;
-  if($('evn'))$('evn').value=l.name;if($('evo'))$('evo').value=l.ort||'';if($('eva')&&l.arzt&&!$('eva').value)$('eva').value=l.arzt;if($('evd')&&l.date)$('evd').value=l.date}
+function pickLive(id){S.lid=id||'';const bt=S.lid==='hub'||S.lid==='pc';if($('evl')&&bt)$('evl').value='';if($('evb')&&!bt&&S.lid)$('evb').value='';if($('npw'))$('npw').style.display=S.lid&&S.lid!=='hub'&&S.lid!=='pc'?'block':'none';const l=LIVES.find(x=>x.id===id);if(!l){if(!id)['evn','evo','evd','eva'].forEach(k=>{if($(k))$(k).value=''});return}
+  if($('evn'))$('evn').value=l.name;if($('evo'))$('evo').value=l.ort||'';if($('eva'))$('eva').value=l.arzt||'';if($('evd')&&l.date)$('evd').value=l.date}
 function myRing(){return +get('wbuRing',1)}
 function liveRows(){const r=(S.live&&S.live.rows)||[];return (S.live&&S.live.rings||1)>1?r.filter(x=>(x.ring||1)===myRing()):r}
 // welcher WBU-Sports-Kampf gehört zu Scorecard-Kampf no? (automatisch der nächste offene)
@@ -1025,7 +1025,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('185')||0;
+const WEB_VERSION=Number('186')||0;
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

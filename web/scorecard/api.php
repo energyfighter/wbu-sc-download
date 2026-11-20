@@ -2270,6 +2270,42 @@ case 'k_del':      // Eintrag löschen (nur WBU-Passwort)
     withKaempfer(function (&$k) use ($in) { unset($k[(string)($in['id'] ?? '')]); });
     out(['ok' => true]);
 
+// ===================== WBU Sports: Veranstaltungen auf dem Server (für alle Geräte, Supervisor-Zugang) =====================
+case 'ws_save':   // ganze Veranstaltung speichern – Veranstalter (Konto), Supervisor (WBU-Passwort) oder WBU
+case 'ws_list':
+case 'ws_get':
+case 'ws_del':
+case 'ws_lock':
+    $sup = hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')));
+    $acc = clubByToken($in['tok'] ?? ''); $su = $acc && isSuper($acc);
+    if (!$sup && !$acc) fail('Bitte einloggen', 401);
+    $mail = $acc ? strtolower($acc['email']) : '';
+    $wsf = function ($id) use ($DIR) { if (!preg_match('/^[A-Za-z0-9_-]{3,40}$/', (string)$id)) fail('Ungültige Veranstaltung'); return "$DIR/ws_$id.json"; };
+    $mayAll = $sup || $su;
+    if ($a === 'ws_list') { $o = [];
+        foreach (glob("$DIR/ws_*.json") as $f) { $w = json_decode((string)@file_get_contents($f), true); if (!is_array($w) || empty($w['ev'])) continue;
+            if (!$mayAll && ($w['owner'] ?? '') !== $mail) continue; $e = $w['ev'];
+            $o[] = ['id' => $e['id'], 'type' => $e['type'] ?? '', 'name' => $e['name'] ?? '', 'ort' => $e['ort'] ?? '', 'date' => $e['date'] ?? '', 'mt' => $w['mt'] ?? 0, 'by' => $w['by'] ?? '',
+                'n' => ($e['type'] ?? '') === 'gala' ? count($e['fights'] ?? []) : count($e['cats'] ?? []), 'lock' => $w['lock'] ?? null]; }
+        usort($o, function ($x, $y) { return strcmp((string)$y['date'], (string)$x['date']); });
+        out(['ok' => true, 'list' => $o, 'sup' => $mayAll]); }
+    $f = $wsf($in['id'] ?? ($in['ev']['id'] ?? ''));
+    $fh = fopen($f, 'c+'); flock($fh, LOCK_EX); $w = json_decode((string)stream_get_contents($fh), true) ?: [];
+    $isOwner = ($w['owner'] ?? '') !== '' && ($w['owner'] ?? '') === $mail;
+    if (!empty($w['ev']) && !$mayAll && !$isOwner) { flock($fh, LOCK_UN); fclose($fh); fail('Diese Veranstaltung gehört einem anderen Veranstalter', 403); }
+    $res = ['ok' => true];
+    if ($a === 'ws_get') { if (empty($w['ev'])) { flock($fh, LOCK_UN); fclose($fh); fail('Veranstaltung nicht gefunden', 404); } $res += ['ev' => $w['ev'], 'mt' => $w['mt'] ?? 0, 'lock' => $w['lock'] ?? null]; }
+    elseif ($a === 'ws_save') { $ev = $in['ev'] ?? null; if (!is_array($ev) || empty($ev['id'])) { flock($fh, LOCK_UN); fclose($fh); fail('Leere Veranstaltung'); }
+        if (strlen(json_encode($ev)) > 4000000) { flock($fh, LOCK_UN); fclose($fh); fail('Veranstaltung zu groß'); }
+        if (empty($w['owner']) && $mail && !$sup) $w['owner'] = $mail;
+        $w['ev'] = $ev; $w['mt'] = round(microtime(true) * 1000); $w['by'] = txt($in['name'] ?? ($acc['trainer'] ?? 'Supervisor'), 60); $res['mt'] = $w['mt']; }
+    elseif ($a === 'ws_del') { if (!$su && !$isOwner) { flock($fh, LOCK_UN); fclose($fh); fail('Löschen nur der Veranstalter oder die WBU', 403); } $w = ['deleted' => time()]; }
+    elseif ($a === 'ws_lock') { $L = $w['lock'] ?? null; $dev = txt($in['dev'] ?? '', 40);
+        if (!$L || ($L['dev'] ?? '') === $dev || time() - (int)($L['at'] ?? 0) > 90 || !empty($in['take'])) $w['lock'] = $L = ['dev' => $dev, 'name' => txt($in['name'] ?? '', 60), 'at' => time(), 'since' => ($L && ($L['dev'] ?? '') === $dev) ? ($L['since'] ?? time()) : time()];
+        $res['lock'] = $L; }
+    ftruncate($fh, 0); rewind($fh); fwrite($fh, json_encode($w, JSON_UNESCAPED_UNICODE)); fflush($fh); flock($fh, LOCK_UN); fclose($fh);
+    out($res);
+
 case 'k_profil':   // Sportlerprofil: Bilanz je Sportart, Kämpfe, Titel, Sperre, Gewichte, Änderungen
     $tg = kAllowed($in) ? '' : kTrainerGym($in); $su = kIsSuper($in);
     if (!kAllowed($in) && $tg === '') fail('Nicht berechtigt', 403);
