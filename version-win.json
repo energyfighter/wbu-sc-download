@@ -1,7 +1,7 @@
 {
-  "versionCode": 206,
-  "versionName": "1.206",
+  "versionCode": 214,
+  "versionName": "1.214",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Supervisor-Korrektur: Der Supervisor kann jede Runde einer empfangenen Scorecard antippen und offensichtliche Fehler korrigieren – die Runde wird gold markiert (mit altem Wert), die Scorecard bekommt „SV-Korrektur“, im Bericht/PDF mit * gekennzeichnet."
+  "notes": "Papier-Modus: Schalter „Punktrichter werten auf Papier“ über Kampf N – der Supervisor tippt die Zettel ab (10:9, 10:10, 9:10, 10:8, 8:10 oder „mehr…“ frei), Ergebnis wie gewohnt mit K.O./T.K.O., Runde, Zeit. Ringrichter- und Punktrichter-Namen bleiben stehen und können aus einer gemeinsamen Liste angetippt werden."
 }
