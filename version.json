@@ -1,6 +1,6 @@
 {
-  "versionCode": 234,
-  "versionName": "1.234",
+  "versionCode": 235,
+  "versionName": "1.235",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Ringsprecher: neue Ansagetexte in 5 Sprachen, Siegerverkündung (🏆) nach dem Ergebnis, Regler für die Tonlage (dunkler/heller)."
+  "notes": "Ringsprecher: Name der Boxer wird getrennt, langsamer und betont gesprochen (eigene Regler Tempo Name / Tonlage Name). Dazu neue Ansagetexte, Siegerverkündung und Tonlage."
 }
