@@ -416,14 +416,26 @@ function pdfW($s, $font, $size) { global $PDFW; $s = @iconv('UTF-8', 'Windows-12
     for ($i = 0; $i < strlen($s); $i++) { $c = ord($s[$i]); $w += $c >= 32 ? $PDFW[$font][$c - 32] : 556; } return $w * $size / 1000; }
 function euroR($v) { $v = round((float)$v, 2); return abs($v - round($v)) < 0.005 ? number_format($v, 0, ',', '.') . ',-€' : number_format($v, 2, ',', '.') . ' €'; }
 /** Rechnung im Stil der WBU-Musterrechnung (Kopfbild, Stempel mit Unterschrift, § 19 UStG) */
+/** Rechnung in der Sprache der Seite (DE/EN/ES/FR; Russisch auf Englisch, weil die PDF-Grundschrift kein Kyrillisch kennt) */
+function invTr($s) {
+    static $M = ['en' => ['Rechnungsnummer: ' => 'Invoice number: ', 'Rechnung:' => 'Invoice:', 'Rechnung' => 'Invoice', 'Kunde:' => 'Customer:', 'Datum:  ' => 'Date:  ', 'Menge     -' => 'Qty     -', 'Beschreibung' => 'Description', '-  Einzelpreis' => '-  Unit price', '-   Gesamt' => '-   Total', 'Summe:' => 'Total:',
+            'Ohne Mehrwertsteuer (§ 19 UStG). Der Rechnungsbetrag ist bereits vollständig bezahlt – vielen Dank!' => 'No VAT (§ 19 UStG). The invoice amount has already been paid in full – thank you!', 'Zahlung erfolgt am ' => 'Payment made on ', ' auf folgendes Konto:' => ' to the following account:', 'Startgeld ' => 'Entry fee ', '(Kat. ' => '(Cat. '],
+        'es' => ['Rechnungsnummer: ' => 'N.º de factura: ', 'Rechnung:' => 'Factura:', 'Rechnung' => 'Factura', 'Kunde:' => 'Cliente:', 'Datum:  ' => 'Fecha:  ', 'Menge     -' => 'Cant.     -', 'Beschreibung' => 'Descripción', '-  Einzelpreis' => '-  Precio unit.', '-   Gesamt' => '-   Total', 'Summe:' => 'Total:',
+            'Ohne Mehrwertsteuer (§ 19 UStG). Der Rechnungsbetrag ist bereits vollständig bezahlt – vielen Dank!' => 'Sin IVA (§ 19 UStG). El importe ya está pagado en su totalidad – ¡gracias!', 'Zahlung erfolgt am ' => 'Pago realizado el ', ' auf folgendes Konto:' => ' a la siguiente cuenta:', 'Startgeld ' => 'Cuota ', '(Kat. ' => '(Cat. '],
+        'fr' => ['Rechnungsnummer: ' => 'N° de facture : ', 'Rechnung:' => 'Facture :', 'Rechnung' => 'Facture', 'Kunde:' => 'Client :', 'Datum:  ' => 'Date :  ', 'Menge     -' => 'Qté     -', 'Beschreibung' => 'Description', '-  Einzelpreis' => '-  Prix unit.', '-   Gesamt' => '-   Total', 'Summe:' => 'Total :',
+            'Ohne Mehrwertsteuer (§ 19 UStG). Der Rechnungsbetrag ist bereits vollständig bezahlt – vielen Dank!' => 'Sans TVA (§ 19 UStG). Le montant de la facture est déjà entièrement payé – merci !', 'Zahlung erfolgt am ' => 'Paiement effectué le ', ' auf folgendes Konto:' => ' sur le compte suivant :', 'Startgeld ' => 'Frais d\'inscription ', '(Kat. ' => '(Cat. ']];
+    $l = $GLOBALS['INV_LANG'] ?? 'de'; if ($l === 'ru') $l = 'en';
+    if (!isset($M[$l])) return $s;
+    return strtr((string)$s, $M[$l]);
+}
 function invoicePdf($t, $o, $inv) {
     global $RECH_IMG;
     $PW = 595.28; $PH = 841.89; $L = 71; $R = 479;
     $pages = []; $c = '';
     $txt = function ($x, $y, $s, $font = 'Helvetica', $size = 11, $rgb = '0 0 0') use (&$c) {
         $f = $font === 'Helvetica-Bold' ? 'F2' : 'F1';
-        $c .= "BT $rgb rg /$f $size Tf " . round($x, 2) . ' ' . round($y, 2) . ' Td (' . pdfTxt($s) . ") Tj ET\n"; };
-    $rtxt = function ($x, $y, $s, $font = 'Helvetica', $size = 11) use ($txt) { $txt($x - pdfW($s, $font, $size), $y, $s, $font, $size); };
+        $c .= "BT $rgb rg /$f $size Tf " . round($x, 2) . ' ' . round($y, 2) . ' Td (' . pdfTxt(invTr($s)) . ") Tj ET\n"; };
+    $rtxt = function ($x, $y, $s, $font = 'Helvetica', $size = 11) use ($txt) { $txt($x - pdfW(invTr($s), $font, $size), $y, $s, $font, $size); };
     $line = function ($x1, $y1, $x2, $y2, $w = 0.6, $rgb = '0 0 0') use (&$c) { $c .= "$rgb RG $w w $x1 $y1 m $x2 $y2 l S\n"; };
     $newPage = function () use (&$c, &$pages) { if ($c !== '') $pages[] = $c; $c = ''; };
     // Kopf
@@ -431,7 +443,7 @@ function invoicePdf($t, $o, $inv) {
     $c .= "q 408 0 0 138.4 $L " . ($y - 138.4) . " cm /Im1 Do Q\n"; $y -= 138.4 + 15;
     $a = 'World Boxing Union V. , Beckmannstrasse 9 , 31863 Coppenbrügge , '; $txt($L, $y, $a);
     $ux = $L + pdfW($a, 'Helvetica', 11); $txt($ux, $y, 'www.wbu-boxing.com', 'Helvetica', 11, '0 0 1'); $line($ux, $y - 1.5, $ux + pdfW('www.wbu-boxing.com', 'Helvetica', 11), $y - 1.5, 0.5, '0 0 1');
-    $y -= 15; $txt($L, $y, 'Rechnung:'); $line($L, $y - 1.5, $L + pdfW('Rechnung', 'Helvetica', 11), $y - 1.5, 0.5); $rtxt($R + 4, $y, 'Rechnungsnummer: ' . $inv['no']);
+    $y -= 15; $txt($L, $y, 'Rechnung:'); $line($L, $y - 1.5, $L + pdfW(invTr('Rechnung'), 'Helvetica', 11), $y - 1.5, 0.5); $rtxt($R + 4, $y, 'Rechnungsnummer: ' . $inv['no']);
     $y -= 15; $txt($L, $y, 'Kunde:'); $rtxt($R + 4, $y, 'Datum:  ' . date('d.m.Y', $inv['date']));
     $y -= 25;
     foreach (array_filter([$o['verein'] ?? '', $inv['name'] ?? '', $o['club'] ?? '']) as $k) { $txt($L, $y, $k); $y -= 14; }
@@ -1781,6 +1793,7 @@ case 't_mydoc':     // Verein: fehlende Unterlage eines eigenen Sportlers nachre
     out(['ok' => true] + $r);
 
 case 't_invoice':   // Rechnung herunterladen: Verein (eigene, bezahlte Bestellung) oder Veranstalter (Schlüssel)
+    $GLOBALS['INV_LANG'] = in_array($_GET['lang'] ?? ($in['lang'] ?? ''), ['en', 'es', 'fr', 'ru'], true) ? ($_GET['lang'] ?? $in['lang']) : 'de';
     $in2 = $in + $_GET;
     $club = clubByToken($in2['tok'] ?? '');
     $res = withTurnier($in2['tid'] ?? '', function (&$t) use ($in2, $club) {
