@@ -2149,6 +2149,16 @@ case 'r_list':
         unset($g['lid']);
     }
     unset($g);
+    // Öffentlich: Offizielle (Punktrichter, Ringrichter, Supervisor, Ringarzt) werden nie namentlich genannt – nur das Ergebnis
+    foreach ($G as &$g) {
+        unset($g['arzt'], $g['sups']);
+        foreach ($g['fights'] as &$x) {
+            unset($x['ref']);
+            $x['judges'] = array_map(function ($j) { return ['r' => (int)($j['r'] ?? 0), 'b' => (int)($j['b'] ?? 0)]; }, (array)($x['judges'] ?? []));
+        }
+        unset($x);
+    }
+    unset($g);
     $L = array_values($G);
     usort($L, function ($a, $b) { return $b['ts'] <=> $a['ts']; });
     out(['ok' => true, 'list' => $L]);

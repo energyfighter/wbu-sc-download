@@ -1088,7 +1088,7 @@ function jOnBox(n){
     <div style="font-weight:600;margin-top:4px">${on.length?on.map(esc).join(' · '):'<span>Noch kein Punktrichter eingeloggt</span>'}</div>
     ${ok?'':`<div style="font-weight:600;margin-top:4px"><span>Fehlende Punktrichter: PIN prüfen und neu anmelden lassen.</span></div>`}</div>`}
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('245')||0;
+const WEB_VERSION=Number('246')||0;
 let NEWVER=false,LASTACT=Date.now();
 ['pointerdown','keydown','touchstart'].forEach(t=>window.addEventListener(t,()=>{LASTACT=Date.now()},{capture:true,passive:true}));
 async function checkWebVersion(){
