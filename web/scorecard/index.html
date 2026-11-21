@@ -1079,7 +1079,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('240')||0;
+const WEB_VERSION=Number('241')||0;
 let NEWVER=false,LASTACT=Date.now();
 ['pointerdown','keydown','touchstart'].forEach(t=>window.addEventListener(t,()=>{LASTACT=Date.now()},{capture:true,passive:true}));
 async function checkWebVersion(){
@@ -1096,13 +1096,12 @@ function verSafe(){
 function verReload(){if(verSafe()){try{sessSave()}catch(e){}location.reload()}}
 // Punktrichter: direkt nach dem Absenden einer Runde / des Kampfes
 function verAfterSend(n){if(!NEWVER)return;n=n||0;const t0=LASTACT;setTimeout(()=>{if(LASTACT>t0+300)return;if(verSafe())verReload();else if(n<10)verAfterSend(n+1)},1500)}
-// Alle anderen (und Punktrichter ohne laufende Runde): nach 20 Sek ohne Bedienung
+// Zusätzlich alle 5 Min prüfen: auch ohne gesendete Runde nach 20 Sek ohne Bedienung (eingetippte Wertung bleibt gespeichert)
 function verIdle(){
   if(!NEWVER||Date.now()-LASTACT<20000)return;
-  if(S.role==='judge'&&S.view==='judge'&&S.card&&!S.card.done)return;  // laufender Kampf: nur nach dem Absenden
   verReload()}
 setInterval(verIdle,5000);
-setTimeout(checkWebVersion,3000);setInterval(checkWebVersion,60*1000);
+setTimeout(checkWebVersion,3000);setInterval(checkWebVersion,5*60*1000);
 
 // ---- Sitzung fest auf dem Handy sichern: Akku leer, App/Browser zu → nach dem Neustart geht es genau dort weiter ----
 const SESS_KEYS=['role','name','view','card','cur','editIdx','lastSent','delivered','sendId','web','lid','nlid','npass','openFight','chatWith','seen'];
