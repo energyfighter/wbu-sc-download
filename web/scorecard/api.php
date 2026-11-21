@@ -954,6 +954,45 @@ function migYtDillingen() {
     @file_put_contents($mark, date('c') . "\n" . implode("\n", $log));
 }
 migYtDillingen();
+// Ergebnis-Zettel: jede Datei an die KI geben – Fotos und PDF direkt, Excel/Word/CSV/Text als ausgelesener Text
+function scDocBlock($media, $data, $name) {
+    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    if (in_array($media, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) return ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $media, 'data' => $data]];
+    if ($media === 'application/pdf' || $ext === 'pdf') return ['type' => 'document', 'source' => ['type' => 'base64', 'media_type' => 'application/pdf', 'data' => $data]];
+    $bin = base64_decode($data, true); if ($bin === false || $bin === '') fail('Die Datei konnte nicht gelesen werden.');
+    $txt = '';
+    if (substr($bin, 0, 2) === 'PK' && class_exists('ZipArchive')) {          // xlsx, xlsm, ods, docx, odt, pptx …
+        $tmp = tempnam(sys_get_temp_dir(), 'sc'); file_put_contents($tmp, $bin); $z = new ZipArchive();
+        if ($z->open($tmp) === true) {
+            $ss = [];
+            if (($x = $z->getFromName('xl/sharedStrings.xml')) !== false && preg_match_all('#<si>(.*?)</si>#s', $x, $m)) foreach ($m[1] as $si) $ss[] = html_entity_decode(strip_tags($si), ENT_QUOTES | ENT_XML1, 'UTF-8');
+            for ($i = 0; $i < $z->numFiles; $i++) { $n = $z->getNameIndex($i);
+                if (preg_match('#^xl/worksheets/sheet\d+\.xml$#', $n)) {          // Excel: Zeile für Zeile, Zellen mit „ | “
+                    $x = $z->getFromIndex($i); $txt .= "\n--- Tabelle " . basename($n, '.xml') . " ---\n";
+                    if (preg_match_all('#<row[^>]*>(.*?)</row>#s', $x, $rows)) foreach ($rows[1] as $row) { $cells = [];
+                        if (preg_match_all('#<c([^>]*?)(?:/>|>(.*?)</c>)#s', $row, $cs, PREG_SET_ORDER)) foreach ($cs as $c) {
+                            $v = ''; if (isset($c[2]) && preg_match('#<v>(.*?)</v>#s', $c[2], $vv)) $v = $vv[1]; elseif (isset($c[2]) && preg_match('#<t[^>]*>(.*?)</t>#s', $c[2], $vv)) $v = $vv[1];
+                            if (strpos($c[1], 't="s"') !== false && $v !== '') $v = $ss[(int)$v] ?? '';
+                            $cells[] = html_entity_decode(strip_tags($v), ENT_QUOTES | ENT_XML1, 'UTF-8'); }
+                        if (trim(implode('', $cells)) !== '') $txt .= implode(' | ', $cells) . "\n"; }
+                } elseif (preg_match('#^(word/document\.xml|content\.xml|ppt/slides/slide\d+\.xml)$#', $n)) {   // Word, OpenOffice, PowerPoint
+                    $x = preg_replace('#</(w:p|text:p|text:h|a:p|table:table-row)>#', "\n", $z->getFromIndex($i));
+                    $x = preg_replace('#</(w:tc|table:table-cell)>#', ' | ', $x);
+                    $txt .= html_entity_decode(strip_tags($x), ENT_QUOTES | ENT_XML1, 'UTF-8') . "\n"; } }
+            $z->close(); }
+        @unlink($tmp);
+    }
+    if (trim($txt) === '') {
+        if (mb_check_encoding($bin, 'UTF-8') && !preg_match('/[\x00-\x08\x0E-\x1F]/', substr($bin, 0, 4000))) $txt = $bin;   // CSV, TXT, HTML, JSON …
+        else {   // alte Excel-/Word-Dateien (xls/doc): lesbare Textstücke herausholen
+            $u = @mb_convert_encoding($bin, 'UTF-8', 'UTF-16LE'); $parts = [];
+            foreach ([$u, @mb_convert_encoding($bin, 'UTF-8', 'Windows-1252')] as $s) if (preg_match_all('/[\p{L}\p{N}][\p{L}\p{N} .,:;\/\-()+]{2,}/u', (string)$s, $m)) $parts = array_merge($parts, $m[0]);
+            $txt = implode("\n", array_unique($parts)); }
+    }
+    $txt = trim($txt); if ($txt === '') fail('In dieser Datei wurde kein lesbarer Inhalt gefunden – bitte als Foto, PDF oder Excel schicken.');
+    return ['type' => 'text', 'text' => "Inhalt der Datei „" . $name . "“:\n" . mb_substr($txt, 0, 150000)];
+}
+
 switch ($a) {
 
 case 'events':
@@ -2038,7 +2077,7 @@ case 'l_grant':
         foreach (array_slice((array)($in['fights'] ?? []), 0, 80) as $f) {
             if (!is_array($f)) continue;
             $x = ['id' => preg_replace('/[^A-Za-z0-9_-]/', '', (string)($f['id'] ?? '')) ?: bin2hex(random_bytes(5))];
-            foreach (['red', 'blue', 'rl', 'rg', 'rw', 'rv', 'bl', 'bg', 'bw', 'bv', 'cls', 'title', 'kind', 'dur'] as $k) $x[$k] = txt($f[$k] ?? '', 120);
+            foreach (['red', 'blue', 'rl', 'rg', 'rw', 'rv', 'bl', 'bg', 'bw', 'bv', 'cls', 'cls0', 'title', 'kind', 'dur'] as $k) $x[$k] = txt($f[$k] ?? '', 120);
             $x['rounds'] = max(1, min(12, (int)($f['rounds'] ?? 6)));
             $fs[] = $x;
         }
@@ -2241,7 +2280,8 @@ case 'sc_scan':     // Supervisor: Foto/PDF des Ergebnis-Zettels -> KI (Claude H
     $akey = is_array($CFG) ? (string)($CFG['anthropic_key'] ?? '') : '';
     if ($akey === '') fail('KI-Schlüssel fehlt auf dem Server (config.php: anthropic_key)', 503);
     $media = (string)($in['media'] ?? ''); $data = (string)($in['data'] ?? '');
-    if (!in_array($media, ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], true) || $data === '' || strlen($data) > 9000000) fail('Bitte ein Foto (JPG/PNG) oder PDF schicken (höchstens 6 MB).');
+    if ($data === '' || strlen($data) > 14000000) fail('Datei leer oder zu groß (höchstens 10 MB).');
+    $src = scDocBlock($media, $data, (string)($in['name'] ?? ''));
     $lv = json_decode((string)@file_get_contents(lvfile($in['lid'] ?? '')), true);
     $rows = is_array($lv) ? ($lv['snap']['rows'] ?? []) : [];
     if (!$rows) fail('Keine Kämpfe in dieser Veranstaltung gefunden');
@@ -2253,7 +2293,6 @@ case 'sc_scan':     // Supervisor: Foto/PDF des Ergebnis-Zettels -> KI (Claude H
         . "Entscheidung k: UD (Punkte einstimmig), SD (Punkte geteilt), MD (Punkte Mehrheit), KO, TKO, RTD (Aufgabe in der Ecke), DQ, UDRAW/SDRAW/MDRAW (Unentschieden), TD (technische Entscheidung), TDRAW, NC (No Contest). Nur „Punkte/PS/n.P.“ ohne Angabe = UD.\n"
         . "r = Runde (Zahl) nur bei KO/TKO/RTD/DQ/TD, t = Zeit wie 1:23 falls angegeben, sonst leer.\n"
         . "Antworte NUR mit JSON: {\"results\":[{\"mid\":\"…\",\"w\":\"R|B|\",\"k\":\"…\",\"r\":3,\"t\":\"\",\"sure\":true,\"note\":\"was auf dem Zettel stand\"}]}. Kämpfe ohne Eintrag weglassen. sure=false, wenn du unsicher bist.";
-    $src = $media === 'application/pdf' ? ['type' => 'document', 'source' => ['type' => 'base64', 'media_type' => $media, 'data' => $data]] : ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $media, 'data' => $data]];
     $body = json_encode(['model' => 'claude-haiku-5-5', 'max_tokens' => 3000, 'messages' => [['role' => 'user', 'content' => [$src, ['type' => 'text', 'text' => $prompt]]]]]);
     $c = curl_init('https://api.anthropic.com/v1/messages');
     curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_TIMEOUT => 90,
