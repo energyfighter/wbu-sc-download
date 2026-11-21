@@ -1049,11 +1049,11 @@ case 'push':
 case 'sup_pull':
     $r = withEvent($in['ev'] ?? '', function (&$ev) use ($in) {
         if (!hash_equals($ev['key'], (string)($in['key'] ?? ''))) fail('Nicht berechtigt', 403);
-        $active = 0;
-        foreach ((array)$ev['seen'] as $j => $t) if (time() - $t < 20) $active++;
+        $active = 0; $names = [];
+        foreach ((array)$ev['seen'] as $j => $t) if (time() - $t < 20) { $active++; $names[] = (string)$j; }
         $live = !empty($ev['lid']) ? liveRows($ev['lid']) : null;
         if (!empty($ev['lid'])) supTouch($ev['lid']);
-        return ['cards' => array_values((array)$ev['cards']), 'msgs' => $ev['msgs'], 'judges' => $active, 'live' => $live];
+        return ['cards' => array_values((array)$ev['cards']), 'msgs' => $ev['msgs'], 'judges' => $active, 'jnames' => $names, 'live' => $live];
     });
     out(['ok' => true] + $r);
 
