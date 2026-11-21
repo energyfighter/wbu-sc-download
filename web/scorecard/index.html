@@ -1079,7 +1079,7 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('241')||0;
+const WEB_VERSION=Number('242')||0;
 let NEWVER=false,LASTACT=Date.now();
 ['pointerdown','keydown','touchstart'].forEach(t=>window.addEventListener(t,()=>{LASTACT=Date.now()},{capture:true,passive:true}));
 async function checkWebVersion(){
