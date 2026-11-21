@@ -2182,9 +2182,22 @@ case 'l_clock':     // Zeitnahme: Uhr eines Rings speichern (Veranstalter-Schlü
     }, true);
     out(['ok' => true]);
 
+case 'l_wg':        // Wiegen im Turnier: von jedem Leitstand der Veranstaltung (Veranstalter-Schlüssel), sofort für alle Geräte
+    $rg = (string)(int)($in['ring'] ?? 1); $mid = txt($in['mid'] ?? '', 60);
+    $r = withLive($in['lid'] ?? '', function (&$l) use ($in, $rg, $mid) {
+        if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
+        $W = (array)($l['wg'] ?? []); $w = (array)($W[$rg] ?? []);
+        if (($w['mid'] ?? '') !== $mid || !empty($in['reset'])) $w = ['mid' => $mid];
+        $c = (string)($in['c'] ?? '');
+        if (empty($in['reset']) && ($c === 'r' || $c === 'b')) { $v = ($in['v'] ?? '') === 'x' ? 'x' : 1; $w[$c] = $v;
+            if (isset($in['kg']) && is_numeric($in['kg'])) { $k = (array)($w['kg'] ?? []); $k[$c] = round((float)$in['kg'], 1); $w['kg'] = $k; } }
+        $w['t'] = (int)round(microtime(true) * 1000); $W[$rg] = $w; $l['wg'] = $W; return ['wg' => $w];
+    }, true);
+    out(['ok' => true] + $r);
+
 case 'l_clockget':  // WBU Time: öffentlich lesen (Fernseher)
     $rg = (string)(int)($in['ring'] ?? ($_GET['ring'] ?? 1));
-    $r = withLive($in['lid'] ?? ($_GET['lid'] ?? ''), function (&$l) use ($rg) { return ['st' => ((array)($l['clock'] ?? []))[$rg] ?? null, 'name' => $l['snap']['name'] ?? '']; });
+    $r = withLive($in['lid'] ?? ($_GET['lid'] ?? ''), function (&$l) use ($rg) { return ['st' => ((array)($l['clock'] ?? []))[$rg] ?? null, 'wg' => ((array)($l['wg'] ?? []))[$rg] ?? null, 'name' => $l['snap']['name'] ?? '']; });
     out(['ok' => true, 'srv' => (int)round(microtime(true) * 1000)] + $r);
 
 case 'l_get':
@@ -2409,7 +2422,7 @@ case 'ws_lock':
         $w['ev'] = $ev; $w['mt'] = round(microtime(true) * 1000); $w['by'] = txt($in['name'] ?? ($acc['trainer'] ?? 'Supervisor'), 60); $res['mt'] = $w['mt']; }
     elseif ($a === 'ws_del') { if (!$su && !$isOwner) { flock($fh, LOCK_UN); fclose($fh); fail('Löschen nur der Veranstalter oder die WBU', 403); } $w = ['deleted' => time()]; }
     elseif ($a === 'ws_lock') { $L = $w['lock'] ?? null; $dev = txt($in['dev'] ?? '', 40);
-        if (!$L || ($L['dev'] ?? '') === $dev || time() - (int)($L['at'] ?? 0) > 90 || !empty($in['take'])) $w['lock'] = $L = ['dev' => $dev, 'name' => txt($in['name'] ?? '', 60), 'at' => time(), 'since' => ($L && ($L['dev'] ?? '') === $dev) ? ($L['since'] ?? time()) : time()];
+        if (empty($in['peek']) && (!$L || ($L['dev'] ?? '') === $dev || time() - (int)($L['at'] ?? 0) > 90 || !empty($in['take']))) $w['lock'] = $L = ['dev' => $dev, 'name' => txt($in['name'] ?? '', 60), 'at' => time(), 'since' => ($L && ($L['dev'] ?? '') === $dev) ? ($L['since'] ?? time()) : time()];
         $res['lock'] = $L; }
     ftruncate($fh, 0); rewind($fh); fwrite($fh, json_encode($w, JSON_UNESCAPED_UNICODE)); fflush($fh); flock($fh, LOCK_UN); fclose($fh);
     out($res);
