@@ -431,7 +431,6 @@ function clkView(st,now,logo,title){
      ${nx.red?`<div class="ec"><div class="r"><small>ALS NÄCHSTES · KAMPF ${E(nx.no)}</small>${E(nx.red)}</div><div class="b"><small>${E(nx.kl||'')}</small>${E(nx.blue)}</div></div>`:''}</div>`}
   const cls=v.phase==='pause'?'pause':v.phase==='done'?'done':v.rem<=10000&&v.phase==='round'?'last':'';
   return `<div class="wt ${v.medOn?'withmed':''}"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${st.no?'Kampf '+E(st.no):'WBU Time'}${st.ring?' · '+(/^\d+$/.test(String(st.ring))?'Ring '+E(st.ring):E(st.ring)):''}<small>${E(st.kl||title||'')}</small></div></div>
-   ${clkWkBar(st,now,E)}
    <div class="ec"><div class="r"><small>ROTE ECKE</small>${E(st.red)||'&nbsp;'}</div><div class="b"><small>BLAUE ECKE</small>${E(st.blue)||'&nbsp;'}</div></div>
    <div class="main"><div class="box rd"><div class="lab">${v.phase==='pause'?'GLEICH RUNDE':'RUNDE'}</div><div class="big">${v.phase==='pause'?v.round+1:v.round}</div><div class="of">von ${st.rounds}</div></div>
      <div class="box tm ${cls}"><div class="lab">${v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'||v.fresh?'BEREIT':'ZEIT'}</div>
