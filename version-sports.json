@@ -1,6 +1,6 @@
 {
-  "versionCode": 272,
-  "versionName": "1.272",
+  "versionCode": 280,
+  "versionName": "1.280",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Scorecard: nie mehr weiße Seite (Fehler sichtbar, Neu laden), läuft auch auf älteren Handys. „↺ Kampf zurücksetzen“ beim Supervisor."
+  "notes": "Supervisor sieht, wie viele Punktrichter wirklich eingeloggt/verbunden sind (mit Namen, rot/grün). Scorecard im Browser aktualisiert sich selbst, ohne Ausloggen."
 }
