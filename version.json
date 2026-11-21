@@ -1,6 +1,6 @@
 {
-  "versionCode": 283,
-  "versionName": "1.283",
+  "versionCode": 285,
+  "versionName": "1.285",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Offizielles Wiegen am Vortag: Klassenprüfung, bei Übergewicht beide automatisch eine Klasse höher. Zettel-Scan nimmt alle Dateien (Foto, PDF, Excel, Word, CSV). Results ohne Namen von Offiziellen."
+  "notes": "Results: Wertungen nur bei Ringrichter-Wertung (1) oder 3 Punktrichtern, ohne Namen. Vortags-Wiegen mit Klassenprüfung. Zettel-Scan mit allen Dateien."
 }
