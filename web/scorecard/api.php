@@ -2204,6 +2204,43 @@ case 'l_wg':        // Wiegen im Turnier: von jedem Leitstand der Veranstaltung 
     }, true);
     out(['ok' => true] + $r);
 
+case 'sc_scan':     // Supervisor: Foto/PDF des Ergebnis-Zettels -> KI (Claude Haiku) liest die Ergebnisse und ordnet sie den Kämpfen zu
+    $ok = hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')));
+    if (!$ok && !empty($in['ev'])) $ok = (bool)withEvent($in['ev'], function (&$ev) use ($in) { return hash_equals((string)($ev['key'] ?? ''), (string)($in['key'] ?? '')); });
+    if (!$ok) fail('Nicht berechtigt', 403);
+    $akey = is_array($CFG) ? (string)($CFG['anthropic_key'] ?? '') : '';
+    if ($akey === '') fail('KI-Schlüssel fehlt auf dem Server (config.php: anthropic_key)', 503);
+    $media = (string)($in['media'] ?? ''); $data = (string)($in['data'] ?? '');
+    if (!in_array($media, ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], true) || $data === '' || strlen($data) > 9000000) fail('Bitte ein Foto (JPG/PNG) oder PDF schicken (höchstens 6 MB).');
+    $lv = json_decode((string)@file_get_contents(lvfile($in['lid'] ?? '')), true);
+    $rows = is_array($lv) ? ($lv['snap']['rows'] ?? []) : [];
+    if (!$rows) fail('Keine Kämpfe in dieser Veranstaltung gefunden');
+    $fc = ''; $mids = [];
+    foreach ($rows as $x) { $mids[(string)$x['mid']] = 1; $fc .= 'mid=' . $x['mid'] . ' | Kampf ' . ($x['no'] ?? '') . ' | ROT: ' . ($x['a'] ?? '') . ' | BLAU: ' . ($x['b'] ?? '') . ' | ' . ($x['kl'] ?? '') . ' | Runden: ' . ($x['rounds'] ?? '') . ($x['done'] ? ' | hat schon ein Ergebnis' : '') . "\n"; }
+    $prompt = "Du liest den Ergebnis-Zettel eines Supervisors von einer Box-Veranstaltung (Handschrift, oft Abkürzungen).\n"
+        . "Veranstaltung: " . ($lv['snap']['name'] ?? '') . "\nFight Card (alle Kämpfe):\n$fc\n"
+        . "Ordne jedes Ergebnis auf dem Zettel dem richtigen Kampf zu (über Namen oder Kampfnummer). Sieger: R = rote Ecke, B = blaue Ecke.\n"
+        . "Entscheidung k: UD (Punkte einstimmig), SD (Punkte geteilt), MD (Punkte Mehrheit), KO, TKO, RTD (Aufgabe in der Ecke), DQ, UDRAW/SDRAW/MDRAW (Unentschieden), TD (technische Entscheidung), TDRAW, NC (No Contest). Nur „Punkte/PS/n.P.“ ohne Angabe = UD.\n"
+        . "r = Runde (Zahl) nur bei KO/TKO/RTD/DQ/TD, t = Zeit wie 1:23 falls angegeben, sonst leer.\n"
+        . "Antworte NUR mit JSON: {\"results\":[{\"mid\":\"…\",\"w\":\"R|B|\",\"k\":\"…\",\"r\":3,\"t\":\"\",\"sure\":true,\"note\":\"was auf dem Zettel stand\"}]}. Kämpfe ohne Eintrag weglassen. sure=false, wenn du unsicher bist.";
+    $src = $media === 'application/pdf' ? ['type' => 'document', 'source' => ['type' => 'base64', 'media_type' => $media, 'data' => $data]] : ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $media, 'data' => $data]];
+    $body = json_encode(['model' => 'claude-haiku-5-5', 'max_tokens' => 3000, 'messages' => [['role' => 'user', 'content' => [$src, ['type' => 'text', 'text' => $prompt]]]]]);
+    $c = curl_init('https://api.anthropic.com/v1/messages');
+    curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_TIMEOUT => 90,
+        CURLOPT_HTTPHEADER => ['content-type: application/json', 'x-api-key: ' . $akey, 'anthropic-version: 2023-06-01']]);
+    $resp = curl_exec($c); $code = curl_getinfo($c, CURLINFO_HTTP_CODE); curl_close($c);
+    $j = json_decode((string)$resp, true);
+    if ($code !== 200 || !is_array($j)) fail('KI nicht erreichbar (' . $code . ')' . (is_array($j) && !empty($j['error']['message']) ? ': ' . $j['error']['message'] : ''), 502);
+    $txt = ''; foreach (($j['content'] ?? []) as $b) if (($b['type'] ?? '') === 'text') $txt .= $b['text'];
+    $a = strpos($txt, '{'); $e = strrpos($txt, '}'); $p = $a !== false && $e > $a ? json_decode(substr($txt, $a, $e - $a + 1), true) : null;
+    if (!is_array($p) || !isset($p['results'])) fail('Der Zettel konnte nicht gelesen werden – bitte ein schärferes Foto machen.', 422);
+    $K = ['UD', 'SD', 'MD', 'UDRAW', 'SDRAW', 'MDRAW', 'KO', 'TKO', 'RTD', 'DQ', 'TDRAW', 'TD', 'NC']; $out = [];
+    foreach ((array)$p['results'] as $x) { $m = (string)($x['mid'] ?? ''); $k = strtoupper((string)($x['k'] ?? ''));
+        if (!isset($mids[$m]) || !in_array($k, $K, true)) continue;
+        $out[] = ['mid' => $m, 'w' => in_array($x['w'] ?? '', ['R', 'B'], true) ? $x['w'] : '', 'k' => $k, 'r' => is_numeric($x['r'] ?? null) ? (int)$x['r'] : null,
+                  't' => txt($x['t'] ?? '', 8), 'sure' => !empty($x['sure']), 'note' => txt($x['note'] ?? '', 80)]; }
+    out(['ok' => true, 'results' => $out, 'usage' => $j['usage'] ?? null]);
+
 case 'l_clockget':  // WBU Time: öffentlich lesen (Fernseher)
     $rg = (string)(int)($in['ring'] ?? ($_GET['ring'] ?? 1));
     $r = withLive($in['lid'] ?? ($_GET['lid'] ?? ''), function (&$l) use ($rg) { return ['st' => ((array)($l['clock'] ?? []))[$rg] ?? null, 'wg' => ((array)($l['wg'] ?? []))[$rg] ?? null, 'name' => $l['snap']['name'] ?? '']; });
