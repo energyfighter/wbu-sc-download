@@ -1964,7 +1964,16 @@ case 'l_create':
     // Veranstalter-Passwort – oder das Konto des WBU-Präsidenten (Superadmin) ohne Passwort
     if (!orgPassOk($in['pass'] ?? '') && !isSuper(clubByToken($in['tok'] ?? ''))) fail('Falsches Passwort', 403);
     $l = ['id' => bin2hex(random_bytes(8)), 'key' => bin2hex(random_bytes(12)), 'created' => time(), 'updated' => time(), 'snap' => null, 'results' => new stdClass()];
-    if (!empty($in['test'])) $l['test'] = 1;   // Testveranstaltung: voll bedienbar, aber nirgends öffentlich (Liste, Startseite, Ergebnisse, Datenbank)
+    if (!empty($in['test'])) {   // Testveranstaltung: voll bedienbar, aber nirgends öffentlich (Liste, Startseite, Ergebnisse, Datenbank)
+        $l['test'] = 1; $tdev = txt($in['tdev'] ?? '', 80);
+        // „Alles zurücksetzen“: dieselbe Test-Live leeren statt eine neue anzulegen
+        $rl = (string)($in['rlid'] ?? '');
+        if (preg_match('/^[a-f0-9]{16}$/', $rl) && file_exists(lvfile($rl))) { $o = json_decode((string)@file_get_contents(lvfile($rl)), true);
+            if (is_array($o) && !empty($o['test']) && hash_equals((string)($o['key'] ?? ''), (string)($in['rkey'] ?? ''))) { $l['id'] = $o['id']; $l['key'] = $o['key']; } }
+        if ($tdev !== '') { $l['tdev'] = $tdev;   // je Gerät und Art (Gala/Turnier) nur eine Test-Live – alte Kopien wegräumen
+            foreach (glob("$DIR/lv_*.json") as $f) { $o = json_decode((string)@file_get_contents($f), true);
+                if (is_array($o) && !empty($o['test']) && ($o['tdev'] ?? '') === $tdev && ($o['id'] ?? '') !== $l['id']) @unlink($f); } }
+    }
     if (file_put_contents(lvfile($l['id']), json_encode($l, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
     out(['ok' => true, 'lid' => $l['id'], 'key' => $l['key']]);
 
@@ -2279,6 +2288,8 @@ case 'l_list':
                    'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'sup' => (int)($l['sup'] ?? 0), 'rings' => $sn['rings'] ?? 1, 'ringName' => $sn['ringName'] ?? 'Ring', 'test' => (int)!empty($l['test'])];
     }
     usort($list, function ($x, $y) { return $y['updated'] - $x['updated']; });
+    $seen = []; $list = array_values(array_filter($list, function ($x) use (&$seen) {   // Testveranstaltungen: je Name nur die neueste zeigen
+        if (empty($x['test'])) return true; $k = $x['type'] ?: $x['name']; if (isset($seen[$k])) return false; $seen[$k] = 1; return true; }));
     out(['ok' => true, 'live' => $list]);
 
 case 'k_list':     // Kämpfer-Datenbank lesen (geschlossen)
