@@ -188,7 +188,7 @@ function kBackfill(&$k) {
     global $DIR;
     foreach (glob("$DIR/tu_*.json") as $f) { $t = json_decode((string)@file_get_contents($f), true); if (!is_array($t)) continue;
         foreach (($t['regs'] ?? []) as $r) if (empty($r['storno'])) kPut($k, kFromReg($r), 't:' . $t['id']); }
-    foreach (glob("$DIR/lv_*.json") as $f) { $l = json_decode((string)@file_get_contents($f), true); if (!is_array($l) || empty($l['snap']) || ($l['snap']['type'] ?? '') !== 'gala') continue;
+    foreach (glob("$DIR/lv_*.json") as $f) { $l = json_decode((string)@file_get_contents($f), true); if (!is_array($l) || empty($l['snap']) || !empty($l['test']) || ($l['snap']['type'] ?? '') !== 'gala') continue;
         foreach (($l['snap']['rows'] ?? []) as $row) { $x = $row['f'] ?? null; if (!is_array($x)) continue;
             foreach (['r', 'b'] as $s) kPut($k, ['name' => $x[$s === 'r' ? 'red' : 'blue'] ?? '', 'land' => $x[$s . 'l'] ?? '', 'geb' => $x[$s . 'g'] ?? '', 'kg' => $x[$s . 'w'] ?? '', 'gym' => $x[$s . 'v'] ?? '', 'klasse' => $x['cls'] ?? ''], 'l:' . $l['id']); } }
 }
@@ -1959,6 +1959,7 @@ case 'l_create':
     // Veranstalter-Passwort – oder das Konto des WBU-Präsidenten (Superadmin) ohne Passwort
     if (!orgPassOk($in['pass'] ?? '') && !isSuper(clubByToken($in['tok'] ?? ''))) fail('Falsches Passwort', 403);
     $l = ['id' => bin2hex(random_bytes(8)), 'key' => bin2hex(random_bytes(12)), 'created' => time(), 'updated' => time(), 'snap' => null, 'results' => new stdClass()];
+    if (!empty($in['test'])) $l['test'] = 1;   // Testveranstaltung: voll bedienbar, aber nirgends öffentlich (Liste, Startseite, Ergebnisse, Datenbank)
     if (file_put_contents(lvfile($l['id']), json_encode($l, JSON_UNESCAPED_UNICODE)) === false) fail('Speicherfehler – Schreibrechte für den Ordner „daten“ prüfen', 500);
     out(['ok' => true, 'lid' => $l['id'], 'key' => $l['key']]);
 
@@ -1971,8 +1972,9 @@ case 'l_push':
         if (!tKeyOk($l, $in['key'] ?? '')) fail('Nicht berechtigt', 403);
         if (!empty($l['fc']) && (int)($snap['fcv'] ?? 0) < (int)$l['fc']['v'] && !empty($l['snap']['rows'])) { $snap['rows'] = $l['snap']['rows']; $snap['fcv'] = $l['fc']['v']; }
         if (trim((string)($snap['yt'] ?? '')) === '' && !empty($l['snap']['yt'])) $snap['yt'] = $l['snap']['yt'];
-        $l['snap'] = $snap; $l['updated'] = time();
+        $l['snap'] = $snap; $l['updated'] = time(); $GLOBALS['lvTest'] = !empty($l['test']);
     }, true);
+    if (!empty($GLOBALS['lvTest'])) out(['ok' => true]);
     $sn = $snap; $lid = (string)$in['lid'];
     if (trim((string)($sn['name'] ?? '')) !== '') {
         $nk = count($sn['rows'] ?? []);
@@ -2038,6 +2040,7 @@ case 'r_submit':
     if (!$okPass) fail('Falsches WBU-Passwort', 403);
     $d = is_array($in['data'] ?? null) ? $in['data'] : fail('Keine Ergebnisse');
     $lid = preg_match('/^[a-f0-9]{16}$/', (string)($d['lid'] ?? '')) ? $d['lid'] : '';
+    if ($lid !== '') { $lt = json_decode((string)@file_get_contents(lvfile($lid)), true); if (is_array($lt) && !empty($lt['test'])) out(['ok' => true, 'test' => true]); }   // Testveranstaltung: nichts in die Ergebnisse
     $T = function ($k, $n = 120) use ($d) { return txt($d[$k] ?? '', $n); };
     $grp = $lid ?: substr(sha1(mb_strtolower($T('name') . '|' . $T('date') . '|' . $T('ort'))), 0, 16);
     $fs = [];
@@ -2221,7 +2224,7 @@ case 'shows':      // öffentlich: kommende Galas und Turniere aus WBU Sports f�
     $list = []; $heute = date('Y-m-d');
     foreach (glob("$DIR/lv_*.json") as $f) {
         $l = json_decode((string)@file_get_contents($f), true);
-        if (!is_array($l) || empty($l['snap']) || !in_array($l['snap']['type'] ?? '', ['gala', 'turnier'], true)) continue;
+        if (!is_array($l) || empty($l['snap']) || !empty($l['test']) || !in_array($l['snap']['type'] ?? '', ['gala', 'turnier'], true)) continue;
         $sn = $l['snap']; $d = substr((string)($sn['date'] ?? ''), 0, 10);
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) || $d < $heute) continue;
         $t = preg_match('/^\d{1,2}:\d{2}$/', (string)($sn['time'] ?? '')) ? str_pad($sn['time'], 5, '0', STR_PAD_LEFT) : '19:00';
@@ -2233,7 +2236,7 @@ case 'shows':      // öffentlich: kommende Galas und Turniere aus WBU Sports f�
 case 'yt_live':   // öffentlich: YouTube-Livestreams der Veranstaltungen (Veranstaltungstag) – läuft der Stream gerade?
     $heute = date('Y-m-d'); $gestern = (int)date('G') < 6 ? date('Y-m-d', time() - 86400) : '-'; $out = [];   // Folgetag nur bis 6 Uhr morgens (lange Shows) $cf = "$DIR/ytlive.json";
     $cache = json_decode((string)@file_get_contents($cf), true) ?: []; $neu = 0;
-    foreach (glob("$DIR/lv_*.json") as $f) { $l = json_decode((string)@file_get_contents($f), true); $sn = is_array($l) ? ($l['snap'] ?? null) : null;
+    foreach (glob("$DIR/lv_*.json") as $f) { $l = json_decode((string)@file_get_contents($f), true); $sn = is_array($l) && empty($l['test']) ? ($l['snap'] ?? null) : null;
         if (!is_array($sn)) continue; $yt = trim((string)($sn['yt'] ?? '')); $d = substr((string)($sn['date'] ?? ''), 0, 10);
         if ($yt === '' || ($d !== $heute && $d !== $gestern)) continue;
         $c = $cache[$yt] ?? null;
@@ -2248,13 +2251,14 @@ case 'l_list':
     foreach (glob("$DIR/lv_*.json") as $f) {
         $l = json_decode(@file_get_contents($f), true);
         if (!is_array($l) || empty($l['snap'])) continue;
+        if (!empty($l['test']) && time() - ($l['updated'] ?? 0) > 86400) continue;   // Testveranstaltung: nur für die Scorecard (24 h), öffentliche Seiten filtern 'test'
         $sn = $l['snap'];
         // sichtbar: kürzlich bearbeitet ODER Veranstaltungstag ist heute/noch nicht vorbei (Galas/Turniere früh angelegt)
         $evDay = strtotime((string)($sn['date'] ?? '')) ?: 0;
         if (time() - ($l['updated'] ?? 0) > 3 * 86400 && !($evDay && $evDay >= strtotime('today') - 86400)) continue;
         $open = 0; foreach (($sn['rows'] ?? []) as $x) if (empty($x['done'])) $open++;
         $list[] = ['id' => $l['id'], 'name' => $sn['name'] ?? '', 'ort' => $sn['ort'] ?? '', 'date' => $sn['date'] ?? '', 'arzt' => $sn['arzt'] ?? '',
-                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'sup' => (int)($l['sup'] ?? 0), 'rings' => $sn['rings'] ?? 1, 'ringName' => $sn['ringName'] ?? 'Ring'];
+                   'type' => $sn['type'] ?? '', 'offen' => $open, 'updated' => $l['updated'], 'sup' => (int)($l['sup'] ?? 0), 'rings' => $sn['rings'] ?? 1, 'ringName' => $sn['ringName'] ?? 'Ring', 'test' => (int)!empty($l['test'])];
     }
     usort($list, function ($x, $y) { return $y['updated'] - $x['updated']; });
     out(['ok' => true, 'live' => $list]);

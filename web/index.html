@@ -600,7 +600,7 @@ const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth
 // Laufen mehrere gleichzeitig, erscheinen mehrere Monitore untereinander.
 async function lmList(){try{const L0=(await lmApi('l_list',{})).live||[],now=Date.now()/1000;
   const heute=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
-  LM.evs=L0.filter(e=>e.type==='gala'&&e.sup&&now-e.sup<12*3600&&(!e.date||e.date<=heute)&&(e.offen>0||now-e.updated<1800));   // erst am Veranstaltungstag (Test-Anmeldungen vorher zählen nicht)   // erst wenn sich der Supervisor verbunden hat
+  LM.evs=L0.filter(e=>!e.test&&e.type==='gala'&&e.sup&&now-e.sup<12*3600&&(!e.date||e.date<=heute)&&(e.offen>0||now-e.updated<1800));   // erst am Veranstaltungstag (Test-Anmeldungen vorher zählen nicht)   // erst wenn sich der Supervisor verbunden hat
   for(const k in LM.D)if(!LM.evs.some(e=>e.id===k))delete LM.D[k]}catch(e){}
  await lmData()}
 async function lmData(){await Promise.all(LM.evs.map(async e=>{try{const j=await lmApi('l_get',{lid:e.id});if(j.snap)(LM.D[e.id]=LM.D[e.id]||{}).snap=j.snap}catch(x){}}));lmDraw()}
