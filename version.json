@@ -1,6 +1,6 @@
 {
-  "versionCode": 282,
-  "versionName": "1.282",
+  "versionCode": 283,
+  "versionName": "1.283",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Results: Wertungen als Punktrichter 1/2/3, keine Namen von Offiziellen. Supervisor sieht eingeloggte Punktrichter. Scorecard im Browser aktualisiert sich selbst."
+  "notes": "Offizielles Wiegen am Vortag: Klassenprüfung, bei Übergewicht beide automatisch eine Klasse höher. Zettel-Scan nimmt alle Dateien (Foto, PDF, Excel, Word, CSV). Results ohne Namen von Offiziellen."
 }
