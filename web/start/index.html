@@ -253,12 +253,12 @@ const SHOWS_ALL=[
 ];
 let SHOWS=(()=>{const n=new Date(),h=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
  return SHOWS_ALL.filter(x=>x.d>=h).sort((a,b)=>a.d<b.d?-1:1)})();
-function showsHtml(){return SHOWS.filter(x=>x.img).length?SHOWS.filter(x=>x.img).slice(0,20).map(x=>`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}
+function showsHtml(){return SHOWS.filter(x=>x.img).length?SHOWS.filter(x=>x.img).slice(0,20).map(x=>x.lid?`<a href="/live/?l=${x.lid}" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`:`<a href="${x.img}" onclick="return zoomU('${x.img}')" title="${x.t}"><img src="${x.img}" alt="${x.t}" loading="lazy"></a>`).join(''):`<p>${t('noshow')}</p>`}
 // Galas aus WBU Sports (Plakat vom Veranstalter hochgeladen + Countdown) automatisch dazunehmen
 function showsMerge(list){const norm=x=>(x||'').toLowerCase().replace(/[^a-z0-9äöüß]/g,'');let ch=false;
  (list||[]).forEach(a=>{const m=SHOWS_ALL.find(x=>(x.d===a.d||(x.st||[]).some(v=>v.slice(0,10)===a.d))&&norm(x.ort)===norm(a.ort));
-  if(m){if(!m.img&&a.img){m.img=a.img;ch=true}return}
-  SHOWS_ALL.push({d:a.d,img:a.img,t:a.n+(a.ort?' – '+a.ort:''),n:a.n,ort:a.ort,st:a.st});ch=true});
+  if(m){if(!m.img&&a.img){m.img=a.img;ch=true}if(a.lid&&!m.lid){m.lid=a.lid;ch=true}return}
+  SHOWS_ALL.push({d:a.d,img:a.img,t:a.n+(a.ort?' – '+a.ort:''),n:a.n,ort:a.ort,st:a.st,lid:a.lid});ch=true});
  if(!ch)return;const n=new Date(),h=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
  SHOWS=SHOWS_ALL.filter(x=>x.d>=h).sort((a,b)=>a.d<b.d?-1:1);const b=document.getElementById('showsL');if(b)b.innerHTML=showsHtml();try{cdDraw()}catch(e){}}
 fetch('/scorecard/api.php?a=shows',{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j&&j.ok)showsMerge(j.shows)}).catch(()=>{});

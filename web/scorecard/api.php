@@ -110,6 +110,10 @@ function withTurnier($id, $fn, $write = false) {
 }
 function tKeyOk($t, $key) { return is_string($key) && $key !== '' && hash_equals($t['key'], $key); }
 // Öffentliche Angaben (ohne Schlüssel und ohne Anmeldedaten)
+function tLid($tid) { global $DIR; if ($tid === '') return '';
+    foreach (glob("$DIR/lv_*.json") as $f) { $l = json_decode((string)@file_get_contents($f), true);
+        if (is_array($l) && empty($l['test']) && ($l['snap']['tid'] ?? '') === $tid) return $l['id']; }
+    return ''; }
 function tPublic($t) {
     $cnt = 0; $pers = []; $clubs = [];
     foreach ($t['regs'] as $r) if (regIn($t, $r)) {
@@ -1617,6 +1621,7 @@ case 't_info':      // öffentlich (ohne Login): Turnierseite zum Informieren �
     if (!is_array($t)) fail('Turnier nicht gefunden', 404);
     $p = tPublic($t); unset($p['iban'], $p['bic'], $p['inhaber']);
     $p['docs'] = array_intersect_key((array)($t['docs'] ?? []), ['plakat' => 1, 'aus' => 1, 'ablauf' => 1, 'haft' => 1]);
+    if ($lid = tLid($t['id'] ?? '')) $p['lid'] = $lid;   // Live-Seite dieses Turniers (Fight Card + Brackets)
     out(['ok' => true, 't' => $p]);
 
 case 't_list':
@@ -1634,7 +1639,7 @@ case 't_list':
 
 case 't_get':
     needLogin($in['tok'] ?? '');
-    $r = withTurnier($in['tid'] ?? '', function (&$t) { $p = tPublic($t); $p['offen'] = tOffen($t); return $p; });
+    $r = withTurnier($in['tid'] ?? '', function (&$t) { $p = tPublic($t); $p['offen'] = tOffen($t); if ($lid = tLid($t['id'] ?? '')) $p['lid'] = $lid; return $p; });
     out(['ok' => true, 'turnier' => $r]);
 
 case 't_register':
@@ -2229,7 +2234,7 @@ case 'shows':      // öffentlich: kommende Galas und Turniere aus WBU Sports f�
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) || $d < $heute) continue;
         $t = preg_match('/^\d{1,2}:\d{2}$/', (string)($sn['time'] ?? '')) ? str_pad($sn['time'], 5, '0', STR_PAD_LEFT) : '19:00';
         $list[] = ['d' => $d, 'n' => (string)($sn['name'] ?? ''), 'ort' => (string)($sn['ort'] ?? ''), 'st' => [$d . 'T' . $t],
-                   'img' => !empty($l['plakat']) ? '/scorecard/api.php?a=l_plakatimg&id=' . $l['id'] . '&v=' . $l['plakat'] : '', 'lid' => $l['id']];
+                   'img' => !empty($l['plakat']) ? '/scorecard/api.php?a=l_plakatimg&id=' . $l['id'] . '&v=' . $l['plakat'] : '', 'lid' => $l['id'], 'type' => $sn['type'], 'tid' => (string)($sn['tid'] ?? '')];
     }
     out(['ok' => true, 'shows' => $list]);
 
