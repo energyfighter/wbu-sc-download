@@ -2204,6 +2204,9 @@ case 'l_wg':        // Wiegen im Turnier: von jedem Leitstand der Veranstaltung 
     }, true);
     out(['ok' => true] + $r);
 
+case 'sc_info':     // Scorecard: ist der Zettel-Scan freigeschaltet (KI-Schlüssel auf dem Server)?
+    out(['ok' => true, 'scan' => is_array($CFG) && !empty($CFG['anthropic_key'])]);
+
 case 'sc_scan':     // Supervisor: Foto/PDF des Ergebnis-Zettels -> KI (Claude Haiku) liest die Ergebnisse und ordnet sie den Kämpfen zu
     $ok = hash_equals(SUP_PASS_SHA256, hash('sha256', (string)($in['pass'] ?? '')));
     if (!$ok && !empty($in['ev'])) $ok = (bool)withEvent($in['ev'], function (&$ev) use ($in) { return hash_equals((string)($ev['key'] ?? ''), (string)($in['key'] ?? '')); });
