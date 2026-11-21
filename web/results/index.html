@@ -185,8 +185,7 @@ function evCard(g){const q=Q;const match=f=>!q||[f.red,f.blue,f.title].join(' ')
    ${g.places&&g.places.length?`<div class="pod"><h3 class="H">${t('places')}</h3><div class="pgrid">${g.places.map(p=>`<div class="pc"><b>${esc(tr(p.kl))}</b>
      <div class="pl g1"><em>1.</em>${p.first?esc(p.first.n):'–'}</div><div class="pl g2"><em>2.</em>${p.second?esc(p.second.n):'–'}</div>
      <div class="pl g3"><em>3.</em>${(p.third||[]).filter(Boolean).map(x=>esc(x.n)).join(', ')||'–'}</div></div>`).join('')}</div></div>`:''}
-   ${fs.map(f=>bout(f,multi)).join('')}
-   <button class="adm" onclick="adm('${g.id}',${g.hidden?0:1})">${t(g.hidden?'show':'hide')}</button></section>`}
+   ${fs.map(f=>bout(f,multi)).join('')}</section>`}
 function draw(){document.documentElement.lang=L;
   const list=ALL.filter(g=>F==='all'||(F==='g'?g.type!=='turnier':g.type==='turnier'));
   const nB=ALL.reduce((s,g)=>s+g.fights.length,0),nT=ALL.reduce((s,g)=>s+g.fights.filter(f=>split(f).title.length).length,0),nK=ALL.reduce((s,g)=>s+g.fights.filter(f=>STOP.includes(f.k)).length,0);
