@@ -1,7 +1,7 @@
 {
-  "versionCode": 285,
-  "versionName": "1.285",
+  "versionCode": 286,
+  "versionName": "1.286",
   "setup": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
   "zip": "https://github.com/energyfighter/wbu-sc-download/raw/windows/WBU-Sports-Setup.exe",
-  "notes": "Results: Wertungen nur bei Ringrichter-Wertung (1) oder 3 Punktrichtern, ohne Namen. Vortags-Wiegen mit Klassenprüfung. Zettel-Scan mit allen Dateien."
+  "notes": "Punktrichter nur 1 (Ringrichter-Wertung / Referee Scoring) oder 3. Results ohne Ausblenden-Knopf, ohne Namen. Vortags-Wiegen, Zettel-Scan mit allen Dateien."
 }
