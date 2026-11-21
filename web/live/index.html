@@ -226,7 +226,7 @@ function startRes(){
      ${F.map(f=>`<tr><td><b>${f.no}</b></td>${rings?`<td>${f.ring}</td>`:''}<td>${esc(f.title||'')}${f.rounds?`<div style="font-size:12px">${f.rounds} Runden${f.dur?' à '+esc(f.dur):''}</div>`:''}</td>
        <td class="r">${esc(f.red)}${info(f.ri)}</td><td class="b">${esc(f.blue)}${info(f.bi)}</td>
        <td class="w ${f.w==='R'?'r':f.w==='B'?'b':''}">${f.w==='R'?esc(f.red):f.w==='B'?esc(f.blue):(f.k?'–':'')}</td><td>${esc(f.kn||'kein Ergebnis')}</td>
-       <td>${f.r?'Rd '+f.r+(f.t?' / '+esc(f.t):''):'–'}</td><td>${(f.judges||[]).map((j,i)=>`Punktrichter ${i+1}: <span class="r">${j.r}</span> : <span class="b">${j.b}</span>`).join('<br>')||'–'}</td></tr>`).join('')}</table></div>
+       <td>${f.r?'Rd '+f.r+(f.t?' / '+esc(f.t):''):'–'}</td><td>${(f.judges||[]).length===2?'–':(f.judges||[]).map((j,i)=>`${f.judges.length===1?'Ringrichter-Wertung':'Punktrichter '+(i+1)}: <span class="r">${j.r}</span> : <span class="b">${j.b}</span>`).join('<br>')||'–'}</td></tr>`).join('')}</table></div>
      <button class="adm" onclick="resAdm('${g.id}',${g.hidden?0:1})">${g.hidden?'WBU: wieder einblenden':'WBU: ausblenden'}</button></div>`};
   const draw=()=>{const y=scrollY;$('app').innerHTML=`${head(null)}<div class="wrap rs"><h1 style="margin:6px 0 4px">🏆 WBU Ergebnisse</h1><p style="margin:0 0 12px">Alle Ergebnisse der WBU-Galas und -Turniere – automatisch vom Supervisor übermittelt.</p>
     <input id="rq" placeholder="Suchen: Name, Veranstaltung, Ort …" value="${esc(q)}" oninput="window.__rq(this.value)">${L.length?L.map(ev).join('')||'<p>Nichts gefunden.</p>':'<p>Noch keine Resultate.</p>'}</div>`;
