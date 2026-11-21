@@ -1,6 +1,6 @@
 {
-  "versionCode": 280,
-  "versionName": "1.280",
+  "versionCode": 282,
+  "versionName": "1.282",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-Sports.apk",
-  "notes": "Supervisor sieht, wie viele Punktrichter wirklich eingeloggt/verbunden sind (mit Namen, rot/grün). Scorecard im Browser aktualisiert sich selbst, ohne Ausloggen."
+  "notes": "Results: Wertungen als Punktrichter 1/2/3, keine Namen von Offiziellen. Supervisor sieht eingeloggte Punktrichter. Scorecard im Browser aktualisiert sich selbst."
 }
