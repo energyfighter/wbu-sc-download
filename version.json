@@ -1,6 +1,6 @@
 {
-  "versionCode": 270,
-  "versionName": "1.270",
+  "versionCode": 271,
+  "versionName": "1.271",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Neu: „📷 Ergebnis-Zettel scannen“ (Foto/PDF, KI liest aus, prüfen, hochladen) – gesperrt, bis der KI-Zugang eingerichtet ist. Walk-In/Kampf-Start erst nach dem Wiegen."
+  "notes": "Neu: „↺ Kampf zurücksetzen“ beim Supervisor – alle Runden aller Punktrichter weg, Punktrichter beginnen wieder bei Runde 1. Dazu Ergebnis-Zettel scannen (gesperrt bis KI-Zugang)."
 }
