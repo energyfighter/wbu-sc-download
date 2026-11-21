@@ -1079,15 +1079,16 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // Supervisor sieht vor dem Kampf, ob wirklich alle gewählten Punktrichter eingeloggt sind
+window.wbuJudgesOn=a=>{const js=JSON.stringify(a||[]);if(js!==S.jnJs){S.jnJs=js;S.jOn=a||[];if(S.role==='sup')softRender()}};
 function jOnBox(n){
-  if(!S.web||S.role!=='sup')return '';
+  if(!(S.web||NATIVE)||S.role!=='sup')return '';
   const on=S.jOn||[],k=on.length,ok=k>=n;
   return `<div style="margin:8px 0 4px;padding:10px 12px;border-radius:10px;font-weight:700;color:#fff;background:${ok?'#1e8e3e':'#c62828'}">
     ${ok?'✓':'⚠'} <span>Punktrichter eingeloggt</span>: ${k} / ${n}
     <div style="font-weight:600;margin-top:4px">${on.length?on.map(esc).join(' · '):'<span>Noch kein Punktrichter eingeloggt</span>'}</div>
     ${ok?'':`<div style="font-weight:600;margin-top:4px"><span>Fehlende Punktrichter: PIN prüfen und neu anmelden lassen.</span></div>`}</div>`}
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('244')||0;
+const WEB_VERSION=Number('245')||0;
 let NEWVER=false,LASTACT=Date.now();
 ['pointerdown','keydown','touchstart'].forEach(t=>window.addEventListener(t,()=>{LASTACT=Date.now()},{capture:true,passive:true}));
 async function checkWebVersion(){
