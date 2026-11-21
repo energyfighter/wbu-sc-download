@@ -413,7 +413,15 @@ const CLK_CSS=`.wt{position:fixed;inset:0;background:#e9ebef;color:#000;font-fam
 .wt .med .lab{color:#d0021b}.wt .med .big{font-size:8vw;color:#d0021b}
 .wt.withmed .rd .big{font-size:12vw}.wt.withmed .tm .big{font-size:14vw}
 .wt.adm .rd .big{font-size:min(17vw,21vh)}.wt.adm .tm .big{font-size:min(20vw,24vh)}.wt.adm .lab{font-size:min(2.4vw,3.4vh)}.wt.adm .rd .of{font-size:min(3vw,4vh)}
+.wt .wk{background:#ffe9a8;border:.35vw solid #e2a500;border-radius:1.4vw;padding:.6vw 2vw;font-weight:900;font-size:2.6vw;text-align:center;color:#000}.wt .wk b{font-size:3.2vw}.wt .wk.r{background:#d0021b;border-color:#d0021b;color:#fff}.wt .wk.b{background:#0047bb;border-color:#0047bb;color:#fff}.wt.adm .wk{font-size:min(2.6vw,3.6vh)}
 .wt.adm.withmed .rd .big{font-size:min(12vw,13vh)}.wt.adm.withmed .tm .big{font-size:min(14vw,15vh)}.wt.adm .med .big{font-size:min(8vw,9vh)}`;
+// Turnier: Einlauf nach der Siegerehrung – Entry-Zeit, dann Aufruf rote Ecke (Waage), 1 Minute später blaue Ecke
+const WK_STEP=60000;
+function clkWk(st,now){const w=st&&st.wk;if(!w)return null;if(w.pz)return {ph:'pz',left:0};const d=now-w.t0;if(d<w.E)return {ph:'entry',left:w.E-d};if(d<w.E+WK_STEP)return {ph:'red',left:w.E+WK_STEP-d};return {ph:'blue',left:0}}
+function clkWkBar(st,now,E){const v=clkAt(st,now),k=clkWk(st,now);if(!k||v.run||!(v.phase==='idle'||v.fresh))return '';
+  if(k.ph==='entry')return `<div class="wk"><span>NÄCHSTER KAMPF · EINLAUF IN</span> <b>${clkFmt(k.left)}</b></div>`;
+  if(k.ph==='red')return `<div class="wk r"><span>AUFRUF ROTE ECKE</span> <b>${E(st.red)}</b> <span>BITTE ZUR WAAGE UND IN DEN RING</span></div>`;
+  if(k.ph==='blue')return `<div class="wk b"><span>AUFRUF BLAUE ECKE</span> <b>${E(st.blue)}</b> <span>BITTE ZUR WAAGE UND IN DEN RING</span></div>`;return ''}
 function clkView(st,now,logo,title){
   if(!st)return `<div class="wt"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">WBU Time<small>${title||''}</small></div></div><div class="main" style="grid-template-columns:1fr"><div class="box"><div class="lab">KEIN KAMPF AKTIV</div></div></div></div>`;
   const v=clkAt(st,now),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -423,6 +431,7 @@ function clkView(st,now,logo,title){
      ${nx.red?`<div class="ec"><div class="r"><small>ALS NÄCHSTES · KAMPF ${E(nx.no)}</small>${E(nx.red)}</div><div class="b"><small>${E(nx.kl||'')}</small>${E(nx.blue)}</div></div>`:''}</div>`}
   const cls=v.phase==='pause'?'pause':v.phase==='done'?'done':v.rem<=10000&&v.phase==='round'?'last':'';
   return `<div class="wt ${v.medOn?'withmed':''}"><div class="hd">${logo?`<img src="${logo}">`:''}<div class="t">${st.no?'Kampf '+E(st.no):'WBU Time'}${st.ring?' · '+(/^\d+$/.test(String(st.ring))?'Ring '+E(st.ring):E(st.ring)):''}<small>${E(st.kl||title||'')}</small></div></div>
+   ${clkWkBar(st,now,E)}
    <div class="ec"><div class="r"><small>ROTE ECKE</small>${E(st.red)||'&nbsp;'}</div><div class="b"><small>BLAUE ECKE</small>${E(st.blue)||'&nbsp;'}</div></div>
    <div class="main"><div class="box rd"><div class="lab">${v.phase==='pause'?'GLEICH RUNDE':'RUNDE'}</div><div class="big">${v.phase==='pause'?v.round+1:v.round}</div><div class="of">von ${st.rounds}</div></div>
      <div class="box tm ${cls}"><div class="lab">${v.phase==='pause'?'PAUSE':v.phase==='done'?'KAMPF BEENDET':v.phase==='idle'||v.fresh?'BEREIT':'ZEIT'}</div>
