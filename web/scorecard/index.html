@@ -597,7 +597,7 @@ function updSum(){sessSave();
 const FRESH=()=>({r:10,b:10,dr:0,db:0});
 function pushRound(){S.card.rounds.push({r:S.cur.r,b:S.cur.b,dr:S.cur.dr,db:S.cur.db});S.cur=FRESH()}
 function roundSave(){pushRound();if(S.card.rounds.length>=MAXR){askFinish();return}render();window.scrollTo(0,0)}
-function roundSend(){pushRound();transmit();if(S.card.rounds.length>=MAXR){askFinish();return}render();window.scrollTo(0,0)}
+function roundSend(){pushRound();transmit();if(S.card.rounds.length>=MAXR){askFinish();return}render();window.scrollTo(0,0);verAfterSend()}
 function sheet(html){$('modal').innerHTML=`<div class="modal" onclick="if(event.target===this)closeSheet()"><div class="sheet">${html}</div></div>`}
 function closeSheet(){$('modal').innerHTML=''}
 function askFinish(){
@@ -608,7 +608,7 @@ function askFinish(){
   <p class="muted">Danach kannst du jede Runde noch antippen und korrigieren.</p>
   <button class="btn sec" onclick="closeSheet()">Abbrechen</button>`);
 }
-function finish(withCur){if(withCur)pushRound();S.card.done=true;transmit();S.view='sent';render();window.scrollTo(0,0)}
+function finish(withCur){if(withCur)pushRound();S.card.done=true;transmit();S.view='sent';render();window.scrollTo(0,0);verAfterSend()}
 function openEnd(){
   const rn=S.card.rounds.length+1;
   sheet(`<h2>Kampf vorzeitig beendet</h2><p class="muted">Nur ein Hinweis – das Ergebnis entscheidet der Supervisor.</p>
@@ -1079,14 +1079,30 @@ async function fcStandalone(lid){
 window.addEventListener('storage',e=>{if(e.key==='wbuChat'){refreshChat(true);return}if(S.role==='sup'&&(S.view==='sup'||S.view==='fight'))softRender()});
 
 // ---------- Web: neue Version auf dem Server? Dann Hinweis „neu laden“ ----------
-const WEB_VERSION=Number('239')||0;
+const WEB_VERSION=Number('240')||0;
+let NEWVER=false,LASTACT=Date.now();
+['pointerdown','keydown','touchstart'].forEach(t=>window.addEventListener(t,()=>{LASTACT=Date.now()},{capture:true,passive:true}));
 async function checkWebVersion(){
   if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
-    if(j.version>WEB_VERSION&&!document.getElementById('newver')){const d=document.createElement('div');d.id='newver';
-      d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:99;background:#e8b931;color:#1a1300;padding:12px 16px;border-radius:12px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);cursor:pointer;max-width:92vw;text-align:center';
-      d.textContent='Neue Version verfügbar – hier tippen zum Neuladen';d.onclick=()=>location.reload();document.body.appendChild(d)}}catch(e){}}
-setTimeout(checkWebVersion,3000);setInterval(checkWebVersion,5*60*1000);
+    if(j.version>WEB_VERSION){NEWVER=true;verIdle()}}catch(e){}}
+// Neue Version still laden – nur in einem sicheren Moment, nie mitten in einer Eingabe
+function verSafe(){
+  if(!NEWVER)return false;
+  if(flushing||outbox().length)return false;                       // erst alles gesendet
+  if($('modal')&&$('modal').innerHTML.trim())return false;          // kein Fenster offen
+  const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return false;
+  return true}
+function verReload(){if(verSafe()){try{sessSave()}catch(e){}location.reload()}}
+// Punktrichter: direkt nach dem Absenden einer Runde / des Kampfes
+function verAfterSend(n){if(!NEWVER)return;n=n||0;const t0=LASTACT;setTimeout(()=>{if(LASTACT>t0+300)return;if(verSafe())verReload();else if(n<10)verAfterSend(n+1)},1500)}
+// Alle anderen (und Punktrichter ohne laufende Runde): nach 20 Sek ohne Bedienung
+function verIdle(){
+  if(!NEWVER||Date.now()-LASTACT<20000)return;
+  if(S.role==='judge'&&S.view==='judge'&&S.card&&!S.card.done)return;  // laufender Kampf: nur nach dem Absenden
+  verReload()}
+setInterval(verIdle,5000);
+setTimeout(checkWebVersion,3000);setInterval(checkWebVersion,60*1000);
 
 // ---- Sitzung fest auf dem Handy sichern: Akku leer, App/Browser zu → nach dem Neustart geht es genau dort weiter ----
 const SESS_KEYS=['role','name','view','card','cur','editIdx','lastSent','delivered','sendId','web','lid','nlid','npass','openFight','chatWith','seen'];
