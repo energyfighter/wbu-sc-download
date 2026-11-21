@@ -1,6 +1,6 @@
 {
-  "versionCode": 238,
-  "versionName": "1.238",
+  "versionCode": 249,
+  "versionName": "1.249",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Uhr: Nach „Runde neu“ oder „Nächste Runde“ steht BEREIT und START; beim Start kommen „Ringfrei – Runde X“ und der Gong."
+  "notes": "Fight Card: Kampf nur noch mit „🗑 Kampf löschen“ und Rückfrage löschen, oben „‹ Zurück zur Scorecard“. Supervisor bedient den Leitstand voll; Scorecard fest eingebaut."
 }
