@@ -1618,6 +1618,17 @@ case 'c_logo':      // Logo-Bild (öffentlich lesbar, wie auf einer Urkunde)
     foreach (['png', 'jpg'] as $e) if ($id !== '' && file_exists(docdir() . "/logo_$id.$e")) sendFile(docdir() . "/logo_$id.$e", $e, "logo.$e");
     fail('Kein Logo', 404);
 
+case 't_find':      // öffentlich: offenes Turnier über den Namen finden (z. B. Banner „DM 2027“ auf der Startseite)
+    $words = array_filter(preg_split('/\s+/', mb_strtolower(txt($in['q'] ?? ($_GET['q'] ?? ''), 80))));
+    if (!$words) fail('Suchbegriff fehlt');
+    $best = null;
+    foreach (glob("$DIR/tu_*.json") as $f) { $t = json_decode((string)@file_get_contents($f), true);
+        if (!is_array($t) || empty($t['open'])) continue; $n = mb_strtolower((string)($t['name'] ?? ''));
+        $ok = true; foreach ($words as $w) if (mb_strpos($n, $w) === false) $ok = false;
+        if ($ok && (!$best || strcmp((string)$t['date'], (string)$best['date']) < 0)) $best = $t; }
+    if (!$best) fail('Turnier nicht gefunden', 404);
+    out(['ok' => true, 'tid' => $best['id']]);
+
 case 't_info':      // öffentlich (ohne Login): Turnierseite zum Informieren – Plakat, Ausschreibung, Eckdaten
     $t = json_decode((string)@file_get_contents(tufile($in['tid'] ?? ($_GET['tid'] ?? ''))), true);
     if (!is_array($t)) fail('Turnier nicht gefunden', 404);

@@ -1578,6 +1578,7 @@ function vInfo(){const t=S.info;if(!t)return '<div class="card">Lädt …</div>'
      <li><b>Unterlagen hochladen</b> – Teilnahmeerklärung${t.attest?' und sportärztliches Attest':''} (gleich oder später).</li><li><b>Startgeld überweisen</b> – mit dem angezeigten Zahlungscode, bis zum Anmeldeschluss ${deDate(t.schluss)}.</li></ol>
     ${t.open?`<div class="g2"><button class="btn full" onclick="S.view='login';S.lmode='reg';render();scrollTo(0,0)">Jetzt registrieren &amp; anmelden ›</button><button class="btn sec full" onclick="S.view='login';S.lmode='login';render();scrollTo(0,0)">Ich habe schon ein Konto – einloggen</button></div>`:'<p><b>Die Anmeldung ist geschlossen.</b></p>'}</div>`;
   return `<div style="display:grid;grid-template-columns:1fr;gap:16px;align-items:start">
+   ${d.aus?`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">📄 Ausschreibung</h2><a href="${pubDoc(t.id,'aus')}" target="_blank" style="color:#000;font-weight:700">📥 PDF herunterladen</a></div><div id="pdf_aus" style="margin-top:12px"></div></div>`:''}
 
    <div><div class="card"><h1 style="margin:0 0 8px">${esc(t.name)}</h1>
      <table class="l"><tr><td>Datum</td><td><b>${deDate(t.date)}</b></td></tr><tr><td>Ort</td><td><b>${esc(t.ort||'')}</b></td></tr>${t.promoter?`<tr><td>Veranstalter</td><td><b>${esc(t.promoter)}</b></td></tr>`:''}
@@ -1585,7 +1586,6 @@ function vInfo(){const t=S.info;if(!t)return '<div class="card">Lädt …</div>'
       ${sp.length?`<tr><td>Disziplinen</td><td><b>${sp.map(esc).join(' · ')}</b></td></tr>`:''}<tr><td>Angemeldet</td><td><b>${t.pers||0} Teilnehmer · ${t.clubs||0} Clubs</b></td></tr></table>
      ${t.info?`<div style="margin-top:10px;white-space:pre-line;line-height:1.5">${esc(t.info)}</div>`:''}
      ${t.lid?`<div class="g2" style="margin-top:12px"><a class="btn full" href="../live/?l=${t.lid}">📋 Fight Card</a><a class="btn full" href="../live/?l=${t.lid}&tab=br">🏆 Brackets</a></div>`:`<p class="muted" style="margin:10px 0 0">🏆 Fight Card und Brackets erscheinen hier, sobald ausgelost ist.</p>`}</div>${cta}</div></div>
-   ${d.aus?`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">📄 Ausschreibung</h2><a href="${pubDoc(t.id,'aus')}" target="_blank" style="color:#000;font-weight:700">als PDF öffnen</a></div><div id="pdf_aus" style="margin-top:12px"></div></div>`:''}
    ${d.ablauf?`<div class="card"><details ontoggle="if(this.open&&!$('pdf_abl').innerHTML)pdfShow('pdf_abl','${pubDoc(t.id,'ablauf')}')"><summary style="cursor:pointer;font-weight:800;font-size:18px">📄 Ablaufplan anzeigen</summary><div id="pdf_abl" style="margin-top:12px"></div></details></div>`:''}
    ${cta}`}
 function logout(){saveAuth(null);S.view='login';history.replaceState(null,'','?');render()}
@@ -1947,7 +1947,7 @@ function render(keepInputs){
   catch(e){h=`<div class="card"><b>Fehler beim Anzeigen:</b> ${esc(e.message)}<br><button class="btn" style="margin-top:10px" onclick="location.reload()">Seite neu laden</button></div>`}
   $('app').innerHTML=h;accBar();
 }
-const WEB_VERSION=Number('238')||0;
+const WEB_VERSION=Number('239')||0;
 async function checkWebVersion(){if(!/^https?:/.test(location.protocol))return;
   try{const r=await fetch('webversion.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
     if(j.version>WEB_VERSION&&!$('newver')){const d=document.createElement('div');d.id='newver';
@@ -1964,7 +1964,9 @@ async function akkCheck(c){$('app').innerHTML='<div class="card">Wird geprüft �
    :`<div class="card" style="border:4px solid #c62828;text-align:center"><div style="font-size:64px;line-height:1">⛔</div><h1 style="margin:6px 0;color:#c62828">Nicht gültig</h1><p>Diese Karte ist nicht (mehr) im System – bitte an die Turnierleitung wenden.</p></div>`}
 // Aus WBU Sports geöffnet: Veranstalter sieht alles sofort, ohne eigenes Konto
 {const vk=new URLSearchParams(location.search).get('vk');if(q&&vk&&!(AUTH&&AUTH.me.rolle==='veranstalter'))saveAuth({tok:'vk:'+q+':'+vk,me:{trainer:'Veranstalter',rolle:'veranstalter',club:'–',email:''}});if(vk)history.replaceState(null,'','?t='+q)}
-if(AKKC)akkCheck(AKKC);else if(new URLSearchParams(location.search).get('hilfe')){S.view='hilfe';render()}else if(!AUTH&&q)openInfo(q);else if(!AUTH){S.view='login';render()}else if(q)openT(q);else loadList();
+const FIND=new URLSearchParams(location.search).get('find'),INFO=new URLSearchParams(location.search).get('info');
+if(FIND){api('t_find',{q:FIND}).then(j=>{history.replaceState(null,'','?t='+j.tid+'&info=1');openInfo(j.tid)}).catch(()=>{AUTH?loadList():(S.view='login',render())})}
+else if(AKKC)akkCheck(AKKC);else if(INFO&&q)openInfo(q);else if(new URLSearchParams(location.search).get('hilfe')){S.view='hilfe';render()}else if(!AUTH&&q)openInfo(q);else if(!AUTH){S.view='login';render()}else if(q)openT(q);else loadList();
 </script>
 </body>
 </html>

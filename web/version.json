@@ -1,16 +1,16 @@
 {
-  "version": 238,
+  "version": 239,
   "files": {
     "scorecard/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "scorecard/api.php": "40403307b2e049d3fd385cee1c983be314458ef8c1ca7cf912bf7565300e0c0f",
+    "scorecard/api.php": "c6c9939a0350931cb7f63ef8da1ae4cc7f426e684771c00dcc76dcc7bc0299e1",
     "scorecard/icon-192.png": "0ea170ce544071f69d5b498a9c5d7e2d8d12974661aea422b140db7709795565",
-    "scorecard/index.html": "e2fdc42eaf065f8a84c2b25e423dff5e1bdabf68da62e66bb639d84a91b4a0ef",
+    "scorecard/index.html": "e98571886dba14b8f84ffae66a9a243551f64f9316645314ca3e7717232f362d",
     "scorecard/manifest.json": "438d2e367506560fbb6d9d50b69e794733c1d3336461e9db8fe50bab9aee17f8",
     "scorecard/update.php": "54413ca2c7c9e47b47989dffc19fbfbfa1f8d82cc7ba2ff51336784519adfe7f",
     "scorecard/fonts/wbu-b.ttf": "522e113fcc11d3cdd4feb7e5d0b5e5f7bac1ce6fe9b64d0e1d02bb82be238fc3",
     "scorecard/fonts/wbu-r.ttf": "589f938be75eec2400ee3d78f674c60f7589499508c4d119f2ee0f01ddf605c8",
     "veranstalter/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "veranstalter/index.html": "375b2d3b2b22db34b8410d233dbf2313f144e35a8cea46a5e51726bbe3ab4670",
+    "veranstalter/index.html": "181b370de4a3d7cbf23805b93d1eff64719de22966bc61cca5022f310f23f2ea",
     "veranstalter/pdf.min.js": "9fab0c910bf1484835c5c2aeb68f7eb3dfce7f9eb435a004526c5af86d70890c",
     "veranstalter/pdf.worker.min.js": "bc0d1b88ea0b66196b1d36a58ac243c6d92adfe725624e2a9fdd381bdf8ef434",
     "veranstalter/docs/Ablaufplan-WBU-2027.pdf": "6c3b939cdb704f45dd8a46dbd4df184ff6322595180b8d2dbf6418a2fe888ba3",
@@ -234,7 +234,7 @@
     "veranstalter/docs/praes-ru-41.jpg": "3018852300757730abada273035008f5b22132e8489aaab56852aeab0c72b3da",
     "veranstalter/docs/praes-ru-42.jpg": "699187c2f9f02d498b56c8bf7b75d3383e1887526d864755d953b0fd3e592b72",
     "anmeldung/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "anmeldung/index.html": "517bbeb0ea7c6504090ef14682f9d7e360d2b940d2438a95008f5feef16b0bde",
+    "anmeldung/index.html": "1956bc49e61891f2d6db157b5ee1d62ff1543351e6fb71d0eacc9276a25af0ea",
     "live/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "live/index.html": "1e57c5789b8bf7c2984c635e2169d474fdd75ba5a9ba214015abb5071f7bd286",
     "results/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
@@ -242,7 +242,7 @@
     "rankings/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
     "rankings/index.html": "aec055172b1dc7a2f50bd9ec1c12325edb87cf7255fe444fc9a30a134257ae0d",
     "start/.htaccess": "96b8fc7d3f450d3444632a9becc16bd657f52bc982dea84a4fedad96971fc47d",
-    "start/index.html": "823cbbd5a8a580949637e7e7ed87b0737a4c109a4428a7b2f153e98f30d92f0e",
+    "start/index.html": "e8d0ead4ddaedaaa013a72159e3455f2025673f2a3a6e8abdd8fac8f5864540b",
     "start/img/againstracism.webp": "cf71be3e8d7780b07997b972c307c122a33a640363bc42573f180af007968331",
     "start/img/arena-handy.jpg": "28c4ab14e03d23859d8693582f07c5c18b3456991d1ee9095c9c99a46e30e739",
     "start/img/arena-pc.jpg": "8581bcdc212d0363347f1a0726cf11ab13da8d0e8be69c4e3eda6bc8844fc0fb",
@@ -263,7 +263,7 @@
     "coin/fight-quiz.html": "25671744341b40c0d23edb86fd90318f7afefb75f78df2a3cde6cee87e0a4658",
     "coin/games.html": "dc3976c0d261277ea7166536b80ab53fa81668e1869ce864e83493fbb4b98353",
     "coin/index.html": "543e24ecb5297511e1a6321822e9f2daf9dafcf42e3cb4b8199319f5ea8d982a",
-    "index.html": "823cbbd5a8a580949637e7e7ed87b0737a4c109a4428a7b2f153e98f30d92f0e",
+    "index.html": "e8d0ead4ddaedaaa013a72159e3455f2025673f2a3a6e8abdd8fac8f5864540b",
     "datenschutz.html": "5e89241c94c17008f2cc2bc1d55d62ebff5bf511f7ef05bfd3083cc585ec8515"
   }
 }
