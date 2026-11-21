@@ -2206,6 +2206,10 @@ case 'l_wg':        // Wiegen im Turnier: von jedem Leitstand der Veranstaltung 
     }, true);
     out(['ok' => true] + $r);
 
+case 'jserr':      // Scorecard: Anzeige-Fehler mitschreiben (zur Fehlersuche, ohne persönliche Daten)
+    $line = date('c') . ' ' . json_encode(['m' => txt($in['m'] ?? '', 600), 'v' => txt($in['v'] ?? '', 20), 'r' => txt($in['r'] ?? '', 10), 'ua' => txt($in['ua'] ?? '', 160)], JSON_UNESCAPED_UNICODE) . "\n";
+    @file_put_contents("$DIR/jserr.log", $line, FILE_APPEND); out(['ok' => true]);
+
 case 'sc_info':     // Scorecard: ist der Zettel-Scan freigeschaltet (KI-Schlüssel auf dem Server)?
     out(['ok' => true, 'scan' => is_array($CFG) && !empty($CFG['anthropic_key'])]);
 
