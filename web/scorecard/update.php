@@ -50,6 +50,11 @@ function fetch($url) {
     return @file_get_contents($url, false, $ctx);
 }
 
+// Immer den neuesten Stand eines festen Commits laden (keine zwischengespeicherten, gemischten Dateien von GitHub)
+if (function_exists('curl_init')) { $c = curl_init('https://api.github.com/repos/energyfighter/wbu-sc-download/commits/main');
+    curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_USERAGENT => 'WBU-Updater', CURLOPT_HTTPHEADER => ['Accept: application/vnd.github.sha']]);
+    $sha = trim((string)curl_exec($c)); $code = curl_getinfo($c, CURLINFO_HTTP_CODE); curl_close($c);
+    if ($code === 200 && preg_match('/^[0-9a-f]{40}$/', $sha)) $BASE = "https://raw.githubusercontent.com/energyfighter/wbu-sc-download/$sha/web/"; }
 $manifest = fetch($BASE . 'version.json');
 $m = json_decode((string)$manifest, true);
 if (!is_array($m) || empty($m['version']) || empty($m['files'])) exit("GitHub nicht erreichbar oder version.json fehlerhaft\n");
