@@ -1008,6 +1008,8 @@ case 'push':
             if (!$isSup) fail('Nicht berechtigt', 403);
             $ev['cur'] = ['no' => (int)($item['no'] ?? 0), 'kl' => txt($item['kl'] ?? ''), 'red' => txt($item['red'] ?? ''), 'blue' => txt($item['blue'] ?? ''),
                           'rc' => txt($item['rc'] ?? ''), 'bc' => txt($item['bc'] ?? '')];
+            if (is_array($item['rst'] ?? null)) $ev['cur']['rst'] = ['no' => (int)($item['rst']['no'] ?? 0), 'ts' => (int)($item['rst']['ts'] ?? 0),   // Supervisor hat einen Kampf zurückgesetzt
+                'ids' => array_slice(array_map(function ($x) { return txt($x, 40); }, (array)($item['rst']['ids'] ?? [])), 0, 20)];
             return;
         }
         if (($item['t'] ?? '') === 'res') {            // Supervisor: Ergebnis zurück an WBU Sports
