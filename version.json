@@ -1,6 +1,6 @@
 {
-  "versionCode": 269,
-  "versionName": "1.269",
+  "versionCode": 270,
+  "versionName": "1.270",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Neu: „📷 Ergebnis-Zettel scannen“ – Supervisor fotografiert den Zettel mit den Ergebnissen, die KI liest sie aus, prüfen und hochladen. Walk-In/Kampf-Start erst nach dem Wiegen."
+  "notes": "Neu: „📷 Ergebnis-Zettel scannen“ (Foto/PDF, KI liest aus, prüfen, hochladen) – gesperrt, bis der KI-Zugang eingerichtet ist. Walk-In/Kampf-Start erst nach dem Wiegen."
 }
