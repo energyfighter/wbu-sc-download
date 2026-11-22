@@ -2285,14 +2285,14 @@ case 'sc_scan':     // Supervisor: Foto/PDF des Ergebnis-Zettels -> KI (Claude H
     $lv = json_decode((string)@file_get_contents(lvfile($in['lid'] ?? '')), true);
     $rows = is_array($lv) ? ($lv['snap']['rows'] ?? []) : [];
     if (!$rows) fail('Keine Kämpfe in dieser Veranstaltung gefunden');
-    $fc = ''; $mids = [];
-    foreach ($rows as $x) { $mids[(string)$x['mid']] = 1; $fc .= 'mid=' . $x['mid'] . ' | Kampf ' . ($x['no'] ?? '') . ' | ROT: ' . ($x['a'] ?? '') . ' | BLAU: ' . ($x['b'] ?? '') . ' | ' . ($x['kl'] ?? '') . ' | Runden: ' . ($x['rounds'] ?? '') . ($x['done'] ? ' | hat schon ein Ergebnis' : '') . "\n"; }
+    $fc = ''; $mids = []; $byNo = [];
+    foreach ($rows as $x) { $mids[(string)$x['mid']] = 1; if (($x['no'] ?? '') !== '') $byNo[(string)$x['no']] = (string)$x['mid']; $fc .= 'mid=' . $x['mid'] . ' | Kampf ' . ($x['no'] ?? '') . ' | ROT: ' . ($x['a'] ?? '') . ' | BLAU: ' . ($x['b'] ?? '') . ' | ' . ($x['kl'] ?? '') . ' | Runden: ' . ($x['rounds'] ?? '') . ($x['done'] ? ' | hat schon ein Ergebnis' : '') . "\n"; }
     $prompt = "Du liest den Ergebnis-Zettel eines Supervisors von einer Box-Veranstaltung (Handschrift, oft Abkürzungen).\n"
         . "Veranstaltung: " . ($lv['snap']['name'] ?? '') . "\nFight Card (alle Kämpfe):\n$fc\n"
         . "Ordne jedes Ergebnis auf dem Zettel dem richtigen Kampf zu (über Namen oder Kampfnummer). Sieger: R = rote Ecke, B = blaue Ecke.\n"
         . "Entscheidung k: UD (Punkte einstimmig), SD (Punkte geteilt), MD (Punkte Mehrheit), KO, TKO, RTD (Aufgabe in der Ecke), DQ, UDRAW/SDRAW/MDRAW (Unentschieden), TD (technische Entscheidung), TDRAW, NC (No Contest). Nur „Punkte/PS/n.P.“ ohne Angabe = UD.\n"
         . "r = Runde (Zahl) nur bei KO/TKO/RTD/DQ/TD, t = Zeit wie 1:23 falls angegeben, sonst leer.\n"
-        . "Antworte NUR mit JSON: {\"results\":[{\"mid\":\"…\",\"w\":\"R|B|\",\"k\":\"…\",\"r\":3,\"t\":\"\",\"sure\":true,\"note\":\"was auf dem Zettel stand\"}]}. Kämpfe ohne Eintrag weglassen. sure=false, wenn du unsicher bist.";
+        . "Antworte NUR mit JSON: {\"results\":[{\"mid\":\"…\",\"no\":1,\"red\":\"Name Rot laut Zettel\",\"blue\":\"Name Blau laut Zettel\",\"w\":\"R|B|\",\"k\":\"…\",\"r\":3,\"t\":\"\",\"sure\":true,\"note\":\"was auf dem Zettel stand\"}]}. Kämpfe ohne Eintrag weglassen. Steht ein Ergebnis auf dem Zettel, das zu keinem Kampf der Fight Card passt, trotzdem aufnehmen mit mid=\"\". sure=false, wenn du unsicher bist.";
     $body = json_encode(['model' => 'claude-haiku-5-5', 'max_tokens' => 3000, 'messages' => [['role' => 'user', 'content' => [$src, ['type' => 'text', 'text' => $prompt]]]]]);
     $c = curl_init('https://api.anthropic.com/v1/messages');
     curl_setopt_array($c, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_TIMEOUT => 90,
@@ -2304,11 +2304,13 @@ case 'sc_scan':     // Supervisor: Foto/PDF des Ergebnis-Zettels -> KI (Claude H
     $a = strpos($txt, '{'); $e = strrpos($txt, '}'); $p = $a !== false && $e > $a ? json_decode(substr($txt, $a, $e - $a + 1), true) : null;
     if (!is_array($p) || !isset($p['results'])) fail('Der Zettel konnte nicht gelesen werden – bitte ein schärferes Foto machen.', 422);
     $K = ['UD', 'SD', 'MD', 'UDRAW', 'SDRAW', 'MDRAW', 'KO', 'TKO', 'RTD', 'DQ', 'TDRAW', 'TD', 'NC']; $out = [];
+    $raw = [];
     foreach ((array)$p['results'] as $x) { $m = (string)($x['mid'] ?? ''); $k = strtoupper((string)($x['k'] ?? ''));
-        if (!isset($mids[$m]) || !in_array($k, $K, true)) continue;
+        if (!isset($mids[$m]) && isset($byNo[(string)($x['no'] ?? '')])) $m = $byNo[(string)$x['no']];   // Ersatz: über die Kampfnummer
+        if (!isset($mids[$m]) || !in_array($k, $K, true)) { $raw[] = txt(trim(($x['no'] ?? '') . ' ' . ($x['red'] ?? '') . ' – ' . ($x['blue'] ?? '') . ': ' . ($x['note'] ?? ($x['w'] ?? '') . ' ' . $k)), 120); continue; }
         $out[] = ['mid' => $m, 'w' => in_array($x['w'] ?? '', ['R', 'B'], true) ? $x['w'] : '', 'k' => $k, 'r' => is_numeric($x['r'] ?? null) ? (int)$x['r'] : null,
                   't' => txt($x['t'] ?? '', 8), 'sure' => !empty($x['sure']), 'note' => txt($x['note'] ?? '', 80)]; }
-    out(['ok' => true, 'results' => $out, 'usage' => $j['usage'] ?? null]);
+    out(['ok' => true, 'results' => $out, 'raw' => array_slice($raw, 0, 40), 'evname' => (string)($lv['snap']['name'] ?? ''), 'nf' => count($rows), 'usage' => $j['usage'] ?? null]);
 
 case 'l_clockget':  // WBU Time: öffentlich lesen (Fernseher)
     $rg = (string)(int)($in['ring'] ?? ($_GET['ring'] ?? 1));
