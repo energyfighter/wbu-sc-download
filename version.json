@@ -1,6 +1,6 @@
 {
-  "versionCode": 287,
-  "versionName": "1.287",
+  "versionCode": 290,
+  "versionName": "1.290",
   "apk": "https://github.com/energyfighter/wbu-sc-download/raw/main/WBU-SC.apk",
-  "notes": "Reset-Knöpfe mit doppelter Bestätigung. Punktrichter nur 1 (Ringrichter-Wertung) oder 3. Vortags-Wiegen, Zettel-Scan mit allen Dateien."
+  "notes": "Zettel-Scan: Zuordnung auch über Kampfnummer; zeigt bei Problemen die gewählte Veranstaltung und was gelesen wurde. Reset mit doppelter Bestätigung."
 }
